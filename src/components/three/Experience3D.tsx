@@ -29,27 +29,25 @@ export function Experience3D({ cv, projects, lowPower: initialLowPower, onFail }
           camera={{ position: [0, 1.4, 5], fov: 35 }}
           onCreated={({ gl }) => gl.domElement.addEventListener("webglcontextlost", onFail)}
         >
-          <color attach="background" args={["#f5f5f7"]} />
-          {/* Fog in the background colour dissolves the floor edge into an endless studio. */}
-          <fog attach="fog" args={["#f5f5f7", 7, 20]} />
+          <color attach="background" args={["#f4f1ea"]} />
           <PerformanceMonitor onDecline={() => setLowPower(true)} />
           <Environment resolution={256}>
             <Lightformer intensity={2} position={[0, 5, -2]} scale={[10, 2, 1]} rotation-x={Math.PI / 2} />
             <Lightformer intensity={1} position={[-5, 1, 0]} scale={[2, 6, 1]} rotation-y={Math.PI / 2} />
             <Lightformer intensity={1} position={[5, 1, 0]} scale={[2, 6, 1]} rotation-y={-Math.PI / 2} />
           </Environment>
-          <hemisphereLight args={["#ffffff", "#f5f5f7", 0.8]} />
+          <hemisphereLight args={["#ffffff", "#f4f1ea", 0.9]} />
           <directionalLight position={[3, 6, 4]} intensity={1.2} castShadow={!lowPower} />
           <ScrollTracker content={content} />
           <CameraRig />
           <Suspense fallback={null}>
             <Figure shadows={!lowPower} />
           </Suspense>
-          <Hero lowPower={lowPower} />
+          <Hero />
           <Timeline experience={cv.experience} education={cv.education} />
           <SkillOrbit skills={cv.skills} />
           <AgentNetwork />
-          <ContactShadows position={[0, 0, 0]} opacity={0.35} scale={10} blur={2.5} far={4} frames={lowPower ? 1 : Infinity} />
+          <ContactShadows position={[0, 0.001, 0]} opacity={0.5} scale={10} blur={0.6} far={4} color="#000000" frames={lowPower ? 1 : Infinity} />
         </Canvas>
       </div>
       <main ref={content} className="relative">

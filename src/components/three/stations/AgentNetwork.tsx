@@ -9,8 +9,8 @@ import { useStationOffset } from "../station-offset";
 
 const COUNT = 40;
 const LINK = 1.3;
-const CYAN = new Color("#22d3ee");
-const VIOLET = new Color("#8b5cf6");
+const BLUE = new Color("#2b4bff");
+const SIGNAL = new Color("#ffe500");
 
 /** Deterministic pseudo-random so server/client and every visit look the same. */
 function rand(seed: number) {
@@ -18,7 +18,7 @@ function rand(seed: number) {
   return x - Math.floor(x);
 }
 
-/** A glowing node graph of "agents" wrapped around the figure. */
+/** A hard-edged node graph of "agents" wrapped around the figure. */
 export function AgentNetwork() {
   const root = useRef<Group>(null);
   const nodes = useRef<Group>(null);
@@ -32,14 +32,12 @@ export function AgentNetwork() {
     });
     const pos: number[] = [];
     const col: number[] = [];
-    const c = new Color();
     points.forEach((p, i) =>
       points.slice(i + 1).forEach((q) => {
         if (p.distanceTo(q) > LINK) return;
         for (const v of [p, q]) {
           pos.push(v.x, v.y, v.z);
-          c.copy(CYAN).lerp(VIOLET, v.y / 3);
-          col.push(c.r, c.g, c.b);
+          col.push(0, 0, 0);
         }
       }),
     );
@@ -60,13 +58,13 @@ export function AgentNetwork() {
   return (
     <group ref={root}>
       <lineSegments geometry={lines}>
-        <lineBasicMaterial vertexColors opacity={0.6} toneMapped={false} />
+        <lineBasicMaterial vertexColors />
       </lineSegments>
       <group ref={nodes}>
         {points.map((p, i) => (
           <mesh key={i} position={p}>
-            <sphereGeometry args={[0.04, 12, 12]} />
-            <meshBasicMaterial color={CYAN.clone().lerp(VIOLET, p.y / 3)} toneMapped={false} />
+            <boxGeometry args={[0.09, 0.09, 0.09]} />
+            <meshBasicMaterial color={i % 3 ? SIGNAL : BLUE} />
           </mesh>
         ))}
       </group>

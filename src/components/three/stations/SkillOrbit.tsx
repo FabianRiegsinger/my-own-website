@@ -1,6 +1,7 @@
 "use client";
 
 import { useFrame } from "@react-three/fiber";
+import { Outlines } from "@react-three/drei";
 import { useRef } from "react";
 import type { Group } from "three";
 import type { SkillGroup } from "@/content/types";
@@ -32,7 +33,8 @@ export function SkillOrbit({ skills }: { skills: SkillGroup[] }) {
                 return (
                   <mesh key={item.name} position={[Math.cos(a) * radius, 0, Math.sin(a) * radius]}>
                     <sphereGeometry args={[0.04 + 0.022 * item.level, 24, 24]} />
-                    <meshStandardMaterial color={item.level >= 4 ? "#2f7bf6" : "#d6d6db"} emissive={item.level >= 4 ? "#2f7bf6" : "#000000"} emissiveIntensity={0.35} roughness={0.4} />
+                    <meshToonMaterial color={item.level >= 4 ? "#ffe500" : "#ffffff"} />
+                    <Outlines thickness={0.02} color="#000000" />
                   </mesh>
                 );
               })}

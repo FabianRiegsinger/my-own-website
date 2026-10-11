@@ -9,7 +9,8 @@ import { STATIONS, stationWeight } from "@/lib/scroll-map";
 import { fade } from "../fade";
 import { useStationOffset } from "../station-offset";
 
-const GLOW = "#2f7bf6";
+const INK = "#000000";
+const SIGNAL = "#ffe500";
 const SPACING = 5;
 const DASHES = 24;
 const timeline = STATIONS.find((s) => s.id === "timeline")!;
@@ -20,19 +21,19 @@ function Car(props: ThreeElements["group"]) {
     <group {...props}>
       <mesh position-y={0.45}>
         <boxGeometry args={[0.8, 0.4, 1.9]} />
-        <meshStandardMaterial color="#ffffff" roughness={0.7} />
-        <Edges color={GLOW} />
+        <meshStandardMaterial color={SIGNAL} roughness={0.8} />
+        <Edges color={INK} lineWidth={2} />
       </mesh>
       <mesh position={[0, 0.82, -0.1]}>
         <boxGeometry args={[0.7, 0.34, 1]} />
-        <meshStandardMaterial color="#ffffff" roughness={0.7} />
-        <Edges color={GLOW} />
+        <meshStandardMaterial color="#ffffff" roughness={0.8} />
+        <Edges color={INK} lineWidth={2} />
       </mesh>
       {[-0.65, 0.65].flatMap((z) =>
         [-0.42, 0.42].map((x) => (
           <mesh key={`${x}${z}`} position={[x, 0.2, z]} rotation-z={Math.PI / 2}>
             <cylinderGeometry args={[0.2, 0.2, 0.12, 12]} />
-            <meshStandardMaterial color="#1d1d1f" />
+            <meshStandardMaterial color={INK} />
           </mesh>
         )),
       )}
@@ -67,8 +68,8 @@ export function Timeline({ experience, education }: { experience: Experience[]; 
       <group ref={dashes}>
         {Array.from({ length: DASHES }, (_, i) => (
           <mesh key={i} position-y={0.003} rotation-x={-Math.PI / 2}>
-            <planeGeometry args={[0.06, 0.5]} />
-            <meshBasicMaterial color={GLOW} toneMapped={false} />
+            <planeGeometry args={[0.12, 0.5]} />
+            <meshBasicMaterial color={INK} />
           </mesh>
         ))}
       </group>
@@ -76,8 +77,8 @@ export function Timeline({ experience, education }: { experience: Experience[]; 
         {milestones.map((isJob, i) => (
           <group key={i} position-z={-SPACING * (i + 1)}>
             <mesh position-y={1.2}>
-              <torusGeometry args={[1.2, 0.012, 8, 64]} />
-              <meshBasicMaterial color={GLOW} toneMapped={false} />
+              <torusGeometry args={[1.2, 0.035, 4, 4]} />
+              <meshBasicMaterial color={INK} />
             </mesh>
             {isJob && <Car position={[-2.6, 0, 0]} rotation-y={0.3} />}
           </group>

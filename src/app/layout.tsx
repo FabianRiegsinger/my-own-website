@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Space_Grotesk, Space_Mono } from "next/font/google";
 import { cv } from "@/content/cv";
 import { SITE_URL } from "@/lib/site";
 import "./globals.css";
 
-const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
+const grotesk = Space_Grotesk({ variable: "--font-grotesk", subsets: ["latin"] });
+const mono = Space_Mono({ variable: "--font-mono", subsets: ["latin"], weight: ["400", "700"] });
 
 const title = "Fabian Riegsinger — Automotive Engineer → Agentic Builder";
 const description = cv.profile.summary.split(". ")[0] + ".";
@@ -30,7 +31,7 @@ const personJsonLd = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${inter.variable} h-full antialiased`}>
+    <html lang="en" className={`${grotesk.variable} ${mono.variable} h-full antialiased`}>
       <body className="min-h-full bg-bg text-ink font-sans">
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(personJsonLd) }} />
         {children}

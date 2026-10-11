@@ -139,6 +139,8 @@ agentic:    { intro: string; tools: string[]; workUse: string }
 
 ## 5. Visual style
 
+> **2026-10-11 update:** restyled to neo-brutalism on `feat/brutalism`: paper `#F4F1EA`, black `#000`, signal yellow `#FFE500` blocks, blue `#2B4BFF` links; Space Grotesk + Space Mono; 3 px black borders, square corners, unblurred `6px 6px 0` shadows; gridded paper floor, white figure with black outline, black/yellow/blue stations. The values below describe the original Apple-style design.
+
 - Background `#F5F5F7`, text `#1D1D1F`, muted text `#6E6E73` (4.66:1).
 - Accent: `#2563EB` for text and links (4.75:1 on background); `#2F7BF6` only for 3D glow and large
   decorative shapes (3.65:1, fails as text).

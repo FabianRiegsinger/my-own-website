@@ -102,8 +102,24 @@ test("hero text stays uncovered while the model loads", async ({ page }) => {
 
 test("career timeline runs oldest to newest", async ({ page }) => {
   await page.goto("/");
-  const text = (await page.locator("#timeline").first().innerText()).replace(/\s+/g, " ");
+  // textContent: the DOM order, independent of CSS text-transform
+  const text = ((await page.locator("#timeline").first().textContent()) ?? "").replace(/\s+/g, " ");
   const order = ["B.Eng.", "M.Sc.", "ESAS Automotive GmbH", "Mobileye Germany GmbH"].map((t) => text.indexOf(t));
   expect(order.every((i) => i >= 0)).toBe(true);
   expect([...order].sort((a, b) => a - b)).toEqual(order);
+});
+
+test("neo-brutalist styling: hard borders, square corners, offset shadows", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" }); // static page: deterministic layout
+  await page.goto("/");
+  for (const sel of ["#skills li > div, #skills div.grid > div", "#contact a"]) {
+    const s = await page.locator(sel).first().evaluate((el) => {
+      const c = getComputedStyle(el);
+      return { border: parseFloat(c.borderTopWidth), radius: c.borderTopLeftRadius, shadow: c.boxShadow };
+    });
+    expect(s.border).toBeGreaterThanOrEqual(3);
+    expect(s.radius).toBe("0px");
+    expect(s.shadow).toMatch(/rgb\(0, 0, 0\) \d+px \d+px 0px/);
+  }
+  expect(await page.evaluate(() => getComputedStyle(document.body).backgroundColor)).toBe("rgb(244, 241, 234)");
 });

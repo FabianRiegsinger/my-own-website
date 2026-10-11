@@ -1,7 +1,7 @@
 "use client";
 
-import { useAnimations, useGLTF } from "@react-three/drei";
-import { useFrame } from "@react-three/fiber";
+import { Outlines, useAnimations, useGLTF } from "@react-three/drei";
+import { createPortal, useFrame } from "@react-three/fiber";
 import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import { MathUtils, MeshStandardMaterial, type Group, type Mesh } from "three";
 import { heading, stationAt, type ClipName } from "@/lib/scroll-map";
@@ -17,16 +17,20 @@ export function Figure({ shadows }: { shadows: boolean }) {
   const { actions, mixer } = useAnimations(animations, group);
   const offset = useStationOffset();
   const current = useRef<ClipName | null>(null);
+  const meshes = useMemo(() => {
+    const list: Mesh[] = [];
+    scene.traverse((o) => (o as Mesh).isMesh && list.push(o as Mesh));
+    return list;
+  }, [scene]);
   const material = useMemo(() => new MeshStandardMaterial({ color: "#f2f2f2", roughness: 0.6, metalness: 0 }), []);
 
+  // Only the model's own meshes: the outline meshes added below must keep their black material.
   useEffect(() => {
-    scene.traverse((o) => {
-      if ((o as Mesh).isMesh) {
-        (o as Mesh).material = material;
-        o.castShadow = shadows;
-      }
-    });
-  }, [scene, material, shadows]);
+    for (const m of meshes) {
+      m.material = material;
+      m.castShadow = shadows;
+    }
+  }, [meshes, material, shadows]);
 
   const clipFor = (offset: number): ClipName => {
     const wanted = stationAt(offset).clip;
@@ -51,7 +55,13 @@ export function Figure({ shadows }: { shadows: boolean }) {
     current.current = clip;
   });
 
-  return <primitive ref={group} object={scene} />;
+  return (
+    <>
+      <primitive ref={group} object={scene} />
+      {/* Thick black ink outline on every (skinned) mesh: the neo-brutalist figure. */}
+      {meshes.map((m) => createPortal(<Outlines screenspace thickness={3} color="#000000" />, m))}
+    </>
+  );
 }
 
 useGLTF.preload(MODEL, "/draco/");
