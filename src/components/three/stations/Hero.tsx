@@ -1,17 +1,20 @@
 "use client";
 
-import { MeshReflectorMaterial } from "@react-three/drei";
+import { Grid } from "@react-three/drei";
 
-/** The studio floor every station stands on; reflective unless the device is in low-power mode. */
-export function Hero({ lowPower }: { lowPower: boolean }) {
+/** Glowing perspective wireframe floor, as in engineering banner art; fog fades it into the navy sky. */
+export function Hero() {
   return (
-    <mesh rotation-x={-Math.PI / 2} receiveShadow>
-      <planeGeometry args={[60, 60]} />
-      {lowPower ? (
-        <meshStandardMaterial color="#ffffff" roughness={1} />
-      ) : (
-        <MeshReflectorMaterial color="#ffffff" resolution={512} blur={[400, 100]} mixBlur={1} mixStrength={0.25} roughness={1} mirror={0.2} depthScale={0} />
-      )}
-    </mesh>
+    <Grid
+      infiniteGrid
+      cellSize={0.5}
+      cellThickness={0.6}
+      cellColor="#3a4bb0"
+      sectionSize={2.5}
+      sectionThickness={1.2}
+      sectionColor="#7b5cf0"
+      fadeDistance={20}
+      fadeStrength={1.2}
+    />
   );
 }

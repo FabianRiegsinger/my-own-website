@@ -1,6 +1,5 @@
 "use client";
 
-import { Edges } from "@react-three/drei";
 import { useFrame, type ThreeElements } from "@react-three/fiber";
 import { useRef } from "react";
 import type { Group } from "three";
@@ -9,30 +8,29 @@ import { STATIONS, stationWeight } from "@/lib/scroll-map";
 import { fade } from "../fade";
 import { useStationOffset } from "../station-offset";
 
-const GLOW = "#2f7bf6";
+const GLOW = "#b07cf7";
+const clay = { roughness: 0.3, clearcoat: 1, clearcoatRoughness: 0.15 };
 const SPACING = 5;
 const DASHES = 24;
 const timeline = STATIONS.find((s) => s.id === "timeline")!;
 
-/** Unbranded low-poly car outline, a nod to the automotive milestones. */
+/** Unbranded glossy clay car, a nod to the automotive milestones. */
 function Car(props: ThreeElements["group"]) {
   return (
     <group {...props}>
       <mesh position-y={0.45}>
         <boxGeometry args={[0.8, 0.4, 1.9]} />
-        <meshStandardMaterial color="#ffffff" roughness={0.7} />
-        <Edges color={GLOW} />
+        <meshPhysicalMaterial color="#2ee6a6" {...clay} />
       </mesh>
       <mesh position={[0, 0.82, -0.1]}>
         <boxGeometry args={[0.7, 0.34, 1]} />
-        <meshStandardMaterial color="#ffffff" roughness={0.7} />
-        <Edges color={GLOW} />
+        <meshPhysicalMaterial color="#e8ebff" {...clay} />
       </mesh>
       {[-0.65, 0.65].flatMap((z) =>
         [-0.42, 0.42].map((x) => (
           <mesh key={`${x}${z}`} position={[x, 0.2, z]} rotation-z={Math.PI / 2}>
             <cylinderGeometry args={[0.2, 0.2, 0.12, 12]} />
-            <meshStandardMaterial color="#1d1d1f" />
+            <meshPhysicalMaterial color="#141a52" {...clay} />
           </mesh>
         )),
       )}
@@ -76,7 +74,7 @@ export function Timeline({ experience, education }: { experience: Experience[]; 
         {milestones.map((isJob, i) => (
           <group key={i} position-z={-SPACING * (i + 1)}>
             <mesh position-y={1.2}>
-              <torusGeometry args={[1.2, 0.012, 8, 64]} />
+              <torusGeometry args={[1.2, 0.03, 16, 96]} />
               <meshBasicMaterial color={GLOW} toneMapped={false} />
             </mesh>
             {isJob && <Car position={[-2.6, 0, 0]} rotation-y={0.3} />}

@@ -139,6 +139,8 @@ agentic:    { intro: string; tools: string[]; workUse: string }
 
 ## 5. Visual style
 
+> **2026-10-11 update (`style/neon`, alternative to `feat/brutalism`):** "neon engineering" restyle after a Dribbble engineering-banner reference: navy→indigo gradient `#0B1033`→`#1A1F5E`→`#2A1E5C`, white text, muted `#AEB6E8`; sections as rounded translucent banner cards with a faint grid and neon corner strokes; per-section accents mint `#2EE6A6`, lavender `#B07CF7`, cyan `#22C7F0`, coral `#FF6B6B` with glowing pill buttons; Nunito; neon wireframe grid floor, glossy clay figure and objects, violet wireframe wave. The values below describe the original Apple-style design.
+
 - Background `#F5F5F7`, text `#1D1D1F`, muted text `#6E6E73` (4.66:1).
 - Accent: `#2563EB` for text and links (4.75:1 on background); `#2F7BF6` only for 3D glow and large
   decorative shapes (3.65:1, fails as text).

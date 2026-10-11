@@ -1,16 +1,59 @@
 @import "tailwindcss";
 
 @theme inline {
-  --color-bg: #f5f5f7;
-  --color-ink: #1d1d1f;
-  --color-muted: #6e6e73;
-  --color-accent: #2563eb;
-  --color-glow: #2f7bf6;
-  --font-sans: var(--font-inter);
+  --color-bg: #0b1033;
+  --color-ink: #ffffff;
+  --color-muted: #aeb6e8;
+  --color-navy: #121a4d;
+  --color-mint: #2ee6a6;
+  --color-lavender: #b07cf7;
+  --color-cyan: #22c7f0;
+  --color-coral: #ff6b6b;
+  --font-sans: var(--font-nunito);
+}
+
+body {
+  background-color: #0b1033;
+  background-image: linear-gradient(160deg, #0b1033 0%, #1a1f5e 55%, #2a1e5c 100%);
+  background-attachment: fixed;
+}
+
+/* Banner card: translucent navy, faint wireframe grid fading toward the edges, soft depth. */
+@utility banner {
+  position: relative;
+  border-radius: 1.75rem;
+  background-color: rgb(18 26 77 / 0.55);
+  background-image:
+    linear-gradient(rgb(120 140 255 / 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(120 140 255 / 0.08) 1px, transparent 1px);
+  background-size: 36px 36px;
+  box-shadow: 0 30px 80px -30px rgb(0 0 0 / 0.6), inset 0 0 0 1px rgb(255 255 255 / 0.06);
+}
+
+/* Pill button in the section's accent, with a matching glow. */
+@utility pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  border-radius: 9999px;
+  background: var(--accent);
+  color: #0b1033;
+  font-weight: 800;
+  box-shadow: 0 8px 24px -6px var(--accent);
+  transition: transform 150ms ease, box-shadow 150ms ease;
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 30px -6px var(--accent);
+  }
 }
 
 html {
   scroll-behavior: smooth;
+}
+
+:focus-visible {
+  outline: 3px solid #2ee6a6;
+  outline-offset: 3px;
 }
 
 @media (prefers-reduced-motion: reduce) {

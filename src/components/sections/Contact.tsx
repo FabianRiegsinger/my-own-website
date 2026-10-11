@@ -1,17 +1,17 @@
 import type { CV } from "@/content/types";
 import { EmailLink } from "../EmailLink";
 import { ICONS, Icon } from "./icons";
-import { Eyebrow, Section } from "./Section";
+import { ACCENT, Eyebrow, Section, Title } from "./Section";
 
-const linkClass =
-  "inline-flex min-h-11 min-w-11 cursor-pointer items-center gap-3 rounded-full bg-white/80 px-5 py-3 font-medium transition-colors duration-200 hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
+const linkClass = "pill min-h-11 min-w-11 cursor-pointer px-5 py-3";
+const footerLink = "inline-flex min-h-11 min-w-11 items-center text-sm text-muted underline-offset-4 hover:text-ink hover:underline";
 
 export function Contact({ cv }: { cv: CV }) {
   const { links } = cv.profile;
   return (
-    <Section id="contact">
+    <Section id="contact" accent={ACCENT.mint}>
       <Eyebrow>Contact</Eyebrow>
-      <h2 className="text-4xl font-semibold tracking-tight sm:text-5xl">Let&apos;s talk</h2>
+      <Title>Let&apos;s talk</Title>
       <div className="mt-10 flex flex-wrap gap-3">
         <a href={links.github} className={linkClass} rel="me">
           <Icon path={ICONS.github} /> GitHub
@@ -26,9 +26,9 @@ export function Contact({ cv }: { cv: CV }) {
           <Icon path={ICONS.email} /> Email
         </EmailLink>
       </div>
-      <footer className="mt-24 flex gap-6 text-sm text-muted">
-        <a href="/impressum" className="inline-flex min-h-11 min-w-11 items-center underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-accent">Impressum</a>
-        <a href="/privacy" className="inline-flex min-h-11 min-w-11 items-center underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-accent">Privacy</a>
+      <footer className="mt-24 flex gap-6">
+        <a href="/impressum" className={footerLink}>Impressum</a>
+        <a href="/privacy" className={footerLink}>Privacy</a>
       </footer>
     </Section>
   );

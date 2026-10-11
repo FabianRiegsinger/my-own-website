@@ -107,3 +107,13 @@ test("career timeline runs oldest to newest", async ({ page }) => {
   expect(order.every((i) => i >= 0)).toBe(true);
   expect([...order].sort((a, b) => a - b)).toEqual(order);
 });
+
+test("neon engineering styling: dark navy, rounded banner cards, pill buttons", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" }); // static page: deterministic layout
+  await page.goto("/");
+  expect(await page.evaluate(() => getComputedStyle(document.body).backgroundColor)).toBe("rgb(11, 16, 51)");
+  const card = await page.locator("#skills > div").evaluate((el) => parseFloat(getComputedStyle(el).borderTopLeftRadius));
+  expect(card).toBeGreaterThanOrEqual(24);
+  const pill = await page.locator("#contact a").first().evaluate((el) => parseFloat(getComputedStyle(el).borderTopLeftRadius));
+  expect(pill).toBeGreaterThanOrEqual(999);
+});

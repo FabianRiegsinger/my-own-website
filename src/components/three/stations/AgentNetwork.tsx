@@ -2,7 +2,7 @@
 
 import { useFrame } from "@react-three/fiber";
 import { useMemo, useRef } from "react";
-import { BufferGeometry, Color, Float32BufferAttribute, type Group, Vector3 } from "three";
+import { BufferGeometry, Color, Float32BufferAttribute, type Group, PlaneGeometry, Vector3 } from "three";
 import { stationWeight } from "@/lib/scroll-map";
 import { fade } from "../fade";
 import { useStationOffset } from "../station-offset";
@@ -24,7 +24,7 @@ export function AgentNetwork() {
   const nodes = useRef<Group>(null);
   const offset = useStationOffset();
 
-  const { points, lines } = useMemo(() => {
+  const { points, lines, wave } = useMemo(() => {
     const points = Array.from({ length: COUNT }, (_, i) => {
       const a = (1 + rand(i)) * Math.PI; // behind the figure only, never between figure and cameras
       const r = 1.6 + rand(i + 100) * 1.6;
@@ -46,7 +46,11 @@ export function AgentNetwork() {
     const lines = new BufferGeometry();
     lines.setAttribute("position", new Float32BufferAttribute(pos, 3));
     lines.setAttribute("color", new Float32BufferAttribute(col, 3));
-    return { points, lines };
+    // Violet wireframe "wave surface" behind the network, as in the reference's model banner.
+    const wave = new PlaneGeometry(7, 3.5, 48, 24);
+    const p = wave.attributes.position;
+    for (let i = 0; i < p.count; i++) p.setZ(i, 0.35 * Math.sin(p.getX(i) * 1.4) * Math.cos(p.getY(i) * 1.8));
+    return { points, lines, wave };
   }, []);
 
   useFrame(({ clock }, dt) => {
@@ -59,6 +63,9 @@ export function AgentNetwork() {
 
   return (
     <group ref={root}>
+      <mesh geometry={wave} position={[0, 1.4, -3.2]} rotation-x={-0.35}>
+        <meshBasicMaterial color="#b07cf7" wireframe opacity={0.35} toneMapped={false} />
+      </mesh>
       <lineSegments geometry={lines}>
         <lineBasicMaterial vertexColors opacity={0.6} toneMapped={false} />
       </lineSegments>

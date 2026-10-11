@@ -3,7 +3,7 @@
 import { useAnimations, useGLTF } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
-import { MathUtils, MeshStandardMaterial, type Group, type Mesh } from "three";
+import { MathUtils, MeshPhysicalMaterial, type Group, type Mesh } from "three";
 import { heading, stationAt, type ClipName } from "@/lib/scroll-map";
 import { switchClip } from "./clips";
 import { useStationOffset } from "./station-offset";
@@ -17,7 +17,7 @@ export function Figure({ shadows }: { shadows: boolean }) {
   const { actions, mixer } = useAnimations(animations, group);
   const offset = useStationOffset();
   const current = useRef<ClipName | null>(null);
-  const material = useMemo(() => new MeshStandardMaterial({ color: "#f2f2f2", roughness: 0.6, metalness: 0 }), []);
+  const material = useMemo(() => new MeshPhysicalMaterial({ color: "#f4f6ff", roughness: 0.3, clearcoat: 1, clearcoatRoughness: 0.1 }), []);
 
   useEffect(() => {
     scene.traverse((o) => {
