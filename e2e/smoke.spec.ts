@@ -60,3 +60,26 @@ test("missing model falls back", async ({ page }) => {
   await expect(page.locator("canvas")).toHaveCount(0, { timeout: 10_000 });
   await expect(page.getByText("Mobileye Germany GmbH").first()).toBeVisible();
 });
+
+test("json-ld present", async ({ page }) => {
+  await page.goto("/");
+  const raw = await page.locator('script[type="application/ld+json"]').first().textContent();
+  const data = JSON.parse(raw!);
+  expect(data["@type"]).toBe("Person");
+  expect(data.sameAs).toHaveLength(3);
+  expect(raw).not.toContain("@web.de");
+});
+
+for (const path of ["/impressum", "/privacy"]) {
+  test(`legal page ${path} loads`, async ({ page }) => {
+    const res = await page.goto(path);
+    expect(res?.status()).toBe(200);
+    await expect(page.locator("h1")).toBeVisible();
+  });
+}
+
+test("metadata", async ({ page }) => {
+  await page.goto("/");
+  await expect(page).toHaveTitle("Fabian Riegsinger — Automotive Engineer → Agentic Builder");
+  expect(await page.locator('meta[property="og:image"]').count()).toBeGreaterThan(0);
+});
