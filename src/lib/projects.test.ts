@@ -61,6 +61,11 @@ describe("getProjects", () => {
     expect((await getProjects(f)).map((p) => p.name)).toEqual(["snap-notes"]);
   });
 
+  it("falls back to overrides when no repo is tagged", async () => {
+    const f = (async () => Response.json([repo({ name: "x", topics: [] })])) as typeof fetch;
+    expect((await getProjects(f)).map((p) => p.name)).toEqual(["snap-notes"]);
+  });
+
   it("falls back to overrides on network error", async () => {
     const f = (async () => {
       throw new TypeError("fetch failed");

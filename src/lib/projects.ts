@@ -67,7 +67,8 @@ export async function getProjects(fetchImpl: typeof fetch = fetch): Promise<Proj
       headers: { Accept: "application/vnd.github+json" },
     });
     if (!res.ok) return fromOverrides(projectOverrides);
-    return selectProjects((await res.json()) as GitHubRepo[], projectOverrides);
+    const projects = selectProjects((await res.json()) as GitHubRepo[], projectOverrides);
+    return projects.length ? projects : fromOverrides(projectOverrides);
   } catch {
     return fromOverrides(projectOverrides);
   }
