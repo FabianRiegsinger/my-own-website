@@ -6,7 +6,7 @@ export const cv: CV = {
     headline: "Automotive System Integration & Software Engineer",
     location: "Ingolstadt, Germany",
     summary:
-      "Software engineer with 8+ years in the automotive industry, combining C++ and Python with deep knowledge of autonomous-driving architectures. Today I am the on-site resident for AUDI in Mobileye's ADAS Level 3 program, keeping a fleet of about 30 development vehicles running. I bridge engineering teams and OEM stakeholders, and I build with AI agents every day.",
+      "Software engineer with 8+ years in automotive, working in C++ and Python on autonomous-driving software. I'm Mobileye's on-site resident at AUDI for the ADAS Level 3 program and keep about 30 development vehicles running. Most of my day is spent between AUDI's engineers and Mobileye R&D. I write much of my code with AI agents.",
     links: {
       github: "https://github.com/FabianRiegsinger",
       linkedin: "https://www.linkedin.com/in/fabian-riegsinger-736b78b7/",
@@ -22,11 +22,11 @@ export const cv: CV = {
       end: null,
       location: "Ingolstadt, Germany",
       highlights: [
-        "On-site resident inside AUDI's development environment and first escalation point for the ADAS/AD stack across ~30 test vehicles.",
-        "Triage sensor and perception issues by correlating logs, CAN/Ethernet traces and vehicle telemetry, resolving field issues daily.",
+        "First escalation point at AUDI for software and integration issues in the ADAS/AD stack on ~30 test vehicles.",
+        "Triage sensor and perception issues from logs, CAN/Ethernet traces and vehicle telemetry; several field issues a day.",
         "Build Python tooling that speeds up software rollout and fleet upgrades.",
-        "Coordinate integration of EyeQ-based software with AUDI's vehicle platform, from bug report to verified fix.",
-        "Keep fleet flashing, versioning and calibration consistent.",
+        "Coordinate EyeQ software integration with AUDI's vehicle platform: bug reports, reproduction steps, fix verification.",
+        "Maintain flashing, software versions and calibration across the fleet.",
       ],
       tags: ["ADAS L3", "EyeQ", "Python", "CAN", "Automotive Ethernet"],
     },
@@ -37,11 +37,11 @@ export const cv: CV = {
       end: "2024-11",
       location: "Ingolstadt, Germany",
       highlights: [
-        "Designed a React/Electron/Capacitor environment-visualization tool that became the standard across AUDI's test fleet.",
-        "Promoted from developer to coordinator of a 4-engineer team, including hiring and technical interviews.",
+        "Designed a React/Electron/Capacitor environment-visualization tool, now the standard visualization on AUDI's test fleet.",
+        "Promoted from developer to coordinator of a 4-engineer team; screened applicants and ran technical interviews.",
         "Built C++ sensor-fusion modules combining camera, LiDAR and radar detections.",
-        "Wrote C++ FlexRay/CAN/Ethernet protocol transformers bridging third-party and in-house components.",
-        "Created cloud data-evaluation pipelines and a Route Evaluator in Python/React.",
+        "Wrote C++ FlexRay/CAN/Ethernet protocol transformers between third-party and in-house components.",
+        "Built cloud data-evaluation pipelines and a Route Evaluator in Python/React.",
       ],
       tags: ["C++", "Sensor fusion", "React", "FlexRay", "Team lead"],
     },
@@ -108,10 +108,10 @@ export const cv: CV = {
   ],
   agentic: {
     intro:
-      "Eight years of shipping software into real cars taught me integration, debugging under pressure and clear interfaces. Now I bring that discipline to building with AI agents.",
+      "I spent eight years integrating and debugging software in test vehicles. Now I use AI agents for a large part of my coding.",
     tools: ["Claude Code", "Cursor"],
     workUse:
-      "I use Claude Code and Cursor daily, from building the Python tooling for fleet rollouts to shipping side projects like this website.",
+      "I use Claude Code and Cursor every day, at work and on side projects. This website was built with Claude Code.",
   },
   additional: [{ title: "C++/OOP Tutor, Technische Hochschule Mittelhessen", year: "2017" }],
 };

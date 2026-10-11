@@ -6,7 +6,7 @@ export function Agentic({ cv, projects }: { cv: CV; projects: Project[] }) {
   return (
     <Section id="agentic">
       <div className="max-w-2xl">
-        <Eyebrow>The agentic shift</Eyebrow>
+        <Eyebrow>Now</Eyebrow>
         <h2 className="text-4xl font-semibold tracking-tight sm:text-5xl">Building with AI agents</h2>
         <p className="mt-6 text-xl leading-relaxed">{cv.agentic.intro}</p>
         <p className="mt-4 leading-relaxed text-muted">{cv.agentic.workUse}</p>

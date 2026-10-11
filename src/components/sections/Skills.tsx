@@ -5,7 +5,7 @@ export function Skills({ cv }: { cv: CV }) {
   return (
     <Section id="skills">
       <Eyebrow>Skills</Eyebrow>
-      <h2 className="text-4xl font-semibold tracking-tight sm:text-5xl">What I bring</h2>
+      <h2 className="text-4xl font-semibold tracking-tight sm:text-5xl">What I work with</h2>
       <div className="mt-12 grid max-w-3xl gap-4 sm:grid-cols-2">
         {cv.skills.map((g) => (
           <div key={g.group} className="rounded-3xl bg-white/80 p-6">

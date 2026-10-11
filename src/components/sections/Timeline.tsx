@@ -7,7 +7,7 @@ export function Timeline({ cv }: { cv: CV }) {
     <Section id="timeline">
       <div className="max-w-2xl">
         <Eyebrow>Career</Eyebrow>
-        <h2 className="text-4xl font-semibold tracking-tight sm:text-5xl">8+ years shipping software into real cars</h2>
+        <h2 className="text-4xl font-semibold tracking-tight sm:text-5xl">Eight years in automotive software</h2>
         <ol className="mt-12 space-y-12 border-l border-ink/15 pl-6">
           {[...cv.education].reverse().map((e) => (
             <li key={e.degree} className="relative">
