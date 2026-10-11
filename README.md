@@ -32,4 +32,8 @@ Sources and licenses: `public/models/LICENSE.md`. The current figure is a placeh
 
 ## Deploy
 
-Vercel, with `NEXT_PUBLIC_SITE_URL` set to the production URL (used for metadata, sitemap and structured data).
+Vercel. Optional env vars:
+
+- `NEXT_PUBLIC_SITE_URL`: custom domain for metadata, sitemap and structured data (defaults to the Vercel
+  production domain).
+- `GITHUB_TOKEN`: a fine-grained token with no permissions; avoids GitHub's anonymous rate limit on shared IPs.

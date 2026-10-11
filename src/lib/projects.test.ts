@@ -74,4 +74,16 @@ describe("getProjects", () => {
     expect(out.map((p) => p.name)).toEqual(["snap-notes"]);
     expect(out[0].url).toBe("https://github.com/FabianRiegsinger/snap-notes");
   });
+
+  it("sends GITHUB_TOKEN when set, to avoid shared-IP rate limits", async () => {
+    let auth: string | null = "unset";
+    const f = (async (_url: string, init?: RequestInit) => {
+      auth = new Headers(init?.headers).get("Authorization");
+      return Response.json([repo({ name: "snap-notes" })]);
+    }) as typeof fetch;
+    await getProjects(f, "tok123");
+    expect(auth).toBe("Bearer tok123");
+    await getProjects(f, undefined);
+    expect(auth).toBeNull();
+  });
 });

@@ -61,10 +61,14 @@ function fromOverrides(overrides: ProjectOverride[]): Project[] {
 }
 
 /** Never throws: on any GitHub failure the overrides list keeps the section populated. */
-export async function getProjects(fetchImpl: typeof fetch = fetch): Promise<Project[]> {
+export async function getProjects(
+  fetchImpl: typeof fetch = fetch,
+  token: string | undefined = process.env.GITHUB_TOKEN,
+): Promise<Project[]> {
   try {
     const res = await fetchImpl(`https://api.github.com/users/${USER}/repos?per_page=100`, {
-      headers: { Accept: "application/vnd.github+json" },
+      // Optional token: anonymous calls share Vercel's IPs and hit GitHub's 60/hour limit.
+      headers: { Accept: "application/vnd.github+json", ...(token && { Authorization: `Bearer ${token}` }) },
     });
     if (!res.ok) return fromOverrides(projectOverrides);
     const projects = selectProjects((await res.json()) as GitHubRepo[], projectOverrides);

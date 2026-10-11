@@ -83,3 +83,19 @@ test("metadata", async ({ page }) => {
   await expect(page).toHaveTitle("Fabian Riegsinger — Automotive Engineer → Agentic Builder");
   expect(await page.locator('meta[property="og:image"]').count()).toBeGreaterThan(0);
 });
+
+test("hero text stays uncovered while the model loads", async ({ page }) => {
+  await page.route("**/figure.glb", async (r) => {
+    await new Promise((res) => setTimeout(res, 4000));
+    await r.continue();
+  });
+  await page.goto("/");
+  await expect(page.locator("canvas")).toBeAttached({ timeout: 10_000 });
+  const heading = page.getByRole("heading", { name: "Fabian Riegsinger" });
+  const box = (await heading.boundingBox())!;
+  const covered = await page.evaluate(
+    ([x, y]) => !document.elementFromPoint(x, y)?.closest("h1"),
+    [box.x + box.width / 2, box.y + box.height / 2],
+  );
+  expect(covered).toBe(false);
+});

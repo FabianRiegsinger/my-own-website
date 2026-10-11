@@ -1,7 +1,7 @@
 "use client";
 
 import { Canvas } from "@react-three/fiber";
-import { ContactShadows, Environment, Lightformer, Loader, PerformanceMonitor } from "@react-three/drei";
+import { ContactShadows, Environment, Lightformer, PerformanceMonitor } from "@react-three/drei";
 import { Suspense, useRef, useState } from "react";
 import type { ExperienceProps } from "../ExperienceGate";
 import { Sections } from "../StaticPage";
@@ -55,7 +55,6 @@ export function Experience3D({ cv, projects, lowPower: initialLowPower, onFail }
       <main ref={content} className="relative">
         <Sections cv={cv} projects={projects} />
       </main>
-      <Loader containerStyles={{ background: "#f5f5f7" }} barStyles={{ background: "#2563eb" }} dataStyles={{ color: "#1d1d1f" }} />
     </StationOffset.Provider>
   );
 }
