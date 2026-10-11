@@ -120,7 +120,7 @@ agentic:    { intro: string; tools: string[]; workUse: string }
 
 | Group | Items (level) |
 |---|---|
-| Languages | C++ (5), Python (5), JavaScript/React (4), HTML/CSS (3) |
+| Languages | C++ (3), Python (4), JavaScript/React (3), HTML/CSS (2) |
 | Automotive | ADAS/AD integration (5), FlexRay/CAN/Automotive Ethernet (5), Sensor fusion (4), Vector CANoe (4) |
 | Tooling | Git (5), Linux (4), CMake/Conan (4), Jenkins (3) |
 | Leadership | OEM stakeholder interface (5), Team coordination (4), Hiring/interviewing (3), Jira/Confluence (4) |
