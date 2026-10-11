@@ -139,12 +139,20 @@ agentic:    { intro: string; tools: string[]; workUse: string }
 
 ## 5. Visual style
 
-- Background `#F5F5F7`, text `#1D1D1F`, accent `#2F7BF6`; agentic section adds a cyan–violet glow.
+- Background `#F5F5F7`, text `#1D1D1F`, muted text `#6E6E73` (4.66:1).
+- Accent: `#2563EB` for text and links (4.75:1 on background); `#2F7BF6` only for 3D glow and large
+  decorative shapes (3.65:1, fails as text).
+- Agentic section adds a cyan–violet glow (`#22d3ee` → `#8b5cf6`), 3D/decoration only, never text
+  (1.66:1 and 3.89:1).
 - Light theme only. Inter, large tight headlines, quiet body text.
 - Figure: matte white/ceramic material, faceless. Studio lighting: environment map + one key light,
   subtle reflective floor, contact shadows.
 - Automotive and agent elements: thin lines, low-poly, never photoreal, no brand logos.
-- Motion: eased, slow camera moves; text fades/slides in per section.
+- Motion: eased, slow camera moves; text fades/slides in per section. At most 1–2 animated elements
+  per view (the figure plus one set piece); no other decorative animation.
+- Interaction: visible focus rings on all links and buttons, `cursor-pointer` on clickable
+  elements, touch targets >= 44×44 px.
+- Icons: SVG only (Simple Icons for GitHub, LinkedIn, Xing); no emoji.
 
 ### Figure asset
 

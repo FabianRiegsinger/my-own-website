@@ -12,7 +12,9 @@
 
 ## Global Constraints
 
-- Colors: background `#F5F5F7`, text `#1D1D1F`, accent `#2F7BF6`; agentic section glow cyan–violet. Light theme only.
+- Colors: background `#F5F5F7`, text `#1D1D1F`, muted `#6E6E73`. Accent text/links `#2563EB`; `#2F7BF6` only for 3D glow and large shapes. Glow `#22d3ee` → `#8b5cf6` only in 3D/decoration, never text. Light theme only.
+- Interaction: visible focus ring (`focus-visible:outline-2 outline-accent`) on every link/button, `cursor-pointer` on clickables, touch targets >= 44×44 px. Icons SVG only (Simple Icons), no emoji.
+- Motion: at most 1–2 animated elements per view (figure + one set piece); text only fades in.
 - Font: Inter via `next/font/google`.
 - English only. No phone number anywhere in the repo's site code or content.
 - Email is never present as a plain `user@domain` string in rendered HTML; assembled client-side on click.
@@ -39,7 +41,7 @@
 - Modify: `.gitignore` (add `/test-results`, `/playwright-report`)
 
 **Interfaces:**
-- Produces: `npm run dev|build|test|e2e`; Tailwind theme colors `bg`, `ink`, `accent` mapped to the Global Constraints hex values; path alias `@/*` → `src/*`.
+- Produces: `npm run dev|build|test|e2e`; Tailwind theme colors `bg` `#F5F5F7`, `ink` `#1D1D1F`, `muted` `#6E6E73`, `accent` `#2563EB`, `glow` `#2F7BF6`; path alias `@/*` → `src/*`.
 
 - [ ] **Step 1:** Run `npx create-next-app@latest . --ts --tailwind --app --src-dir --eslint --import-alias "@/*" --use-npm` (keep existing `README.md`, `LICENSE`, `docs/`).
 - [ ] **Step 2:** Install: `npm i three @react-three/fiber@^9 @react-three/drei@^10` and `npm i -D @types/three vitest @vitejs/plugin-react jsdom @testing-library/react @playwright/test @gltf-transform/cli`. Run `npx playwright install chromium`.
@@ -147,9 +149,9 @@
 - Produces: each section `({ cv }: { cv: typeof cv }) => JSX`, except `Agentic({ cv, projects }: {...; projects: Project[]})`. Each section root is `<section id="<StationId>" className="min-h-screen ...">` so 3D and static layouts share it. `StaticPage({ cv, projects })`. `EmailLink({ user, domain, children })` client component: renders `<a href="#" ...>`; on click sets `location.href = "mailto:" + user + "@" + domain`.
 - `page.tsx` (server): `const projects = await getProjects(); return <StaticPage cv={cv} projects={projects} />` (Task 7 wraps this in the gate).
 
-- [ ] **Step 1: Write failing tests:** `EmailLink.test.tsx` → rendered HTML does not contain `"@web.de"`; click calls location assignment with `mailto:fabian.riegsinger@web.de` (stub `window.location`). Extend `e2e/smoke.spec.ts`: `cv text in DOM` (texts "Mobileye Germany GmbH", "ESAS Automotive GmbH", "Claude Code", "snap-notes" visible); `no phone number` (`page.content()` not matching `/\+49/`); `mobile 360px no horizontal scroll` (Review Focus 5: viewport 360×800, `document.documentElement.scrollWidth <= 360`).
+- [ ] **Step 1: Write failing tests:** `EmailLink.test.tsx` → rendered HTML does not contain `"@web.de"`; click calls location assignment with `mailto:fabian.riegsinger@web.de` (stub `window.location`). Extend `e2e/smoke.spec.ts`: `cv text in DOM` (texts "Mobileye Germany GmbH", "ESAS Automotive GmbH", "Claude Code", "snap-notes" visible); `no phone number` (`page.content()` not matching `/\+49/`); `mobile 360px no horizontal scroll` (Review Focus 5: viewport 360×800, `document.documentElement.scrollWidth <= 360`); `contact links are 44px targets` (each contact link `boundingBox()` width and height >= 44); `focus ring visible` (Tab to first contact link, computed `outline-style` !== "none").
 - [ ] **Step 2:** Run `npm test -- EmailLink` and `npm run e2e`. Expected: FAIL.
-- [ ] **Step 3:** Implement sections. Visual: large tight headlines, accent color for dates/tags, timeline as vertical line with entries, skills as group cards with 5-dot level bars, project cards (name, tagline or description, language, stars, link). Contact: GitHub, LinkedIn, Xing, EmailLink. Footer links `/impressum`, `/privacy`.
+- [ ] **Step 3:** Implement sections. Visual: large tight headlines, accent color for dates/tags, timeline as vertical line with entries, skills as group cards with 5-dot level bars, project cards (name, tagline or description, language, stars, link). Contact: GitHub, LinkedIn, Xing, EmailLink, each with an inline SVG icon from Simple Icons (`npm i simple-icons`, import `siGithub`, `siLinkedin`, `siXing`) plus a visible text label. Footer links `/impressum`, `/privacy`.
 - [ ] **Step 4:** Run tests. Expected: all pass.
 - [ ] **Step 5:** Commit `feat: add CV sections and static page`.
 
