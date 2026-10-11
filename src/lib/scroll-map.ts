@@ -45,3 +45,12 @@ export function toStationOffset(y: number, sections: { top: number; height: numb
   const st = STATIONS[i];
   return st.start + clamp01((y - s.top) / s.height) * (st.end - st.start);
 }
+
+/** 1 inside the station's range, linear fade to 0 over `fade` on either side. */
+export function stationWeight(offset: number, id: StationId, fade = 0.05): number {
+  const s = STATIONS.find((st) => st.id === id)!;
+  const o = clamp01(offset);
+  if (o >= s.start && o <= s.end) return 1;
+  const d = o < s.start ? s.start - o : o - s.end;
+  return clamp01(1 - d / fade);
+}

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { STATIONS, stationAt, localProgress, toStationOffset } from "./scroll-map";
+import { STATIONS, stationAt, localProgress, toStationOffset, stationWeight } from "./scroll-map";
 
 describe("scroll-map", () => {
   it("ranges are contiguous and cover 0..1", () => {
@@ -32,5 +32,12 @@ describe("scroll-map", () => {
 
   it("returns 0 when sections are not measured yet", () => {
     expect(toStationOffset(500, [])).toBe(0);
+  });
+
+  it("station weight is 1 inside its range and fades to 0 outside", () => {
+    expect(stationWeight(0.45, "timeline")).toBe(1);
+    expect(stationWeight(0.1, "timeline")).toBe(0);
+    expect(stationWeight(0.275, "timeline")).toBeCloseTo(0.5);
+    expect(stationWeight(1, "contact")).toBe(1);
   });
 });
