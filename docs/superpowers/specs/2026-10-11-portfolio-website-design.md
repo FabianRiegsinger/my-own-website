@@ -54,7 +54,7 @@ figure's animation clip, and the visible station. All mapping lives in `lib/scro
 | 0.30–0.60 | Career timeline | walk | Glowing path, low-poly unbranded car silhouette, floating milestones | Education, ESAS 2018–2024, Mobileye 2024–now |
 | 0.60–0.75 | Skills | idle | Skill clusters orbiting the figure, size = level | Skill groups |
 | 0.75–0.90 | Agentic shift | typing | Network of glowing nodes and lines | Claude Code, Cursor, how used at work; GitHub project cards |
-| 0.90–1.00 | Contact | wave | Calm close-up | GitHub, Xing, obfuscated email link |
+| 0.90–1.00 | Contact | wave | Calm close-up | GitHub, LinkedIn, Xing, obfuscated email link |
 
 ## 3. Components
 
@@ -84,7 +84,7 @@ figure's animation clip, and the visible station. All mapping lives in `lib/scro
 ```ts
 type Level = 1 | 2 | 3 | 4 | 5;
 
-profile:    { name, headline, location, summary, links: { github, xing, email } }
+profile:    { name, headline, location, summary, links: { github, xing, linkedin, email } }
 experience: { company, role, start, end: string | null, location, highlights: string[], tags: string[] }[]
 education:  { degree, school, end, note }[]
 skills:     { group: "Languages" | "Automotive" | "Tooling" | "Leadership" | "AI"; items: { name: string; level: Level }[] }[]
@@ -94,7 +94,10 @@ agentic:    { intro: string; tools: string[]; workUse: string }
 ### Content (from the CV, typos corrected)
 
 - **Profile:** Fabian Riegsinger, M.Sc. — "Automotive System Integration & Software Engineer",
-  Ingolstadt, Germany. GitHub `FabianRiegsinger`. No phone number on the site.
+  Ingolstadt, Germany. No phone number on the site.
+- **Links:** GitHub `https://github.com/FabianRiegsinger`, LinkedIn
+  `https://www.linkedin.com/in/fabian-riegsinger-736b78b7/`, Xing
+  `https://www.xing.com/profile/Fabian_Riegsinger`.
 - **Experience:**
   - Mobileye Germany GmbH, Technical Support Resident (R&D), AUDI project, Dec 2024 – present:
     on-site resident for AUDI's ADAS Level 3 program, first-line escalation for a ~30-vehicle test
@@ -181,7 +184,6 @@ Blog, CMS, contact form, analytics, multi-language (English only), dark mode.
 
 ## 10. Open items for the owner
 
-- Xing profile URL.
 - Confirm or adjust skill levels in section 4.
 - Custom domain (optional).
 - Impressum and privacy details.
