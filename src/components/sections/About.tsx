@@ -4,7 +4,7 @@ import { Eyebrow, Section } from "./Section";
 export function About({ cv }: { cv: CV }) {
   return (
     <Section id="about">
-      <div className="max-w-2xl">
+      <div className="max-w-xl">
         <Eyebrow>About</Eyebrow>
         <p className="text-2xl leading-relaxed sm:text-3xl">{cv.profile.summary}</p>
         <p className="mt-6 text-muted">{cv.profile.location}</p>

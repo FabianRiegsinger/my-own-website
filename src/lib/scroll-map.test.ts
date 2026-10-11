@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { STATIONS, stationAt, localProgress } from "./scroll-map";
+import { STATIONS, stationAt, localProgress, toStationOffset } from "./scroll-map";
 
 describe("scroll-map", () => {
   it("ranges are contiguous and cover 0..1", () => {
@@ -21,5 +21,16 @@ describe("scroll-map", () => {
 
   it("local progress is relative to the station", () => {
     expect(localProgress(0.45)).toBeCloseTo(0.5);
+  });
+
+  it("maps a scroll position inside a measured section onto its station range", () => {
+    const sections = [0, 1, 2, 3, 4, 5].map((i) => ({ top: i * 1000, height: 1000 }));
+    expect(toStationOffset(2500, sections)).toBeCloseTo(0.45); // middle of timeline
+    expect(toStationOffset(-10, sections)).toBe(0);
+    expect(toStationOffset(99999, sections)).toBe(1);
+  });
+
+  it("returns 0 when sections are not measured yet", () => {
+    expect(toStationOffset(500, [])).toBe(0);
   });
 });

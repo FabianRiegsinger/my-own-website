@@ -26,6 +26,7 @@ test("mobile 360px no horizontal scroll", async ({ page }) => {
 test("contact links are 44px targets", async ({ page }) => {
   await page.goto("/");
   const links = page.locator("#contact a");
+  await expect(links.first()).toBeAttached();
   expect(await links.count()).toBeGreaterThanOrEqual(4);
   for (const link of await links.all()) {
     const box = (await link.boundingBox())!;
@@ -39,4 +40,23 @@ test("focus ring visible", async ({ page }) => {
   const first = page.locator("#contact a").first();
   await first.focus();
   expect(await first.evaluate((el) => getComputedStyle(el).outlineStyle)).not.toBe("none");
+});
+
+test("canvas mounts", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.locator("canvas")).toBeVisible({ timeout: 10_000 });
+});
+
+test("reduced motion shows static page", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/");
+  await expect(page.getByText("Mobileye Germany GmbH").first()).toBeVisible();
+  await expect(page.locator("canvas")).toHaveCount(0);
+});
+
+test("missing model falls back", async ({ page }) => {
+  await page.route("**/figure.glb", (r) => r.abort());
+  await page.goto("/");
+  await expect(page.locator("canvas")).toHaveCount(0, { timeout: 10_000 });
+  await expect(page.getByText("Mobileye Germany GmbH").first()).toBeVisible();
 });

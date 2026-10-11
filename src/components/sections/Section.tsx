@@ -5,7 +5,8 @@ import type { StationId } from "@/lib/scroll-map";
 export function Section({ id, children, className = "" }: { id: StationId; children: ReactNode; className?: string }) {
   return (
     <section id={id} className={`flex min-h-screen items-center px-4 py-24 sm:px-8 ${className}`}>
-      <div className="mx-auto w-full max-w-6xl">{children}</div>
+      {/* Mobile: frosted backdrop keeps text readable over the 3D figure. */}
+      <div className="mx-auto w-full max-w-6xl max-md:rounded-3xl max-md:bg-bg/80 max-md:p-5 max-md:backdrop-blur-sm">{children}</div>
     </section>
   );
 }

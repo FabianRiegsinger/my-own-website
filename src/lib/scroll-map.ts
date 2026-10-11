@@ -11,16 +11,14 @@ export interface Station {
   target: Vec3;
 }
 
-export const SCROLL_PAGES = 6;
-
-// Figure stays at the origin; the timeline pulls the camera back along -z as the figure walks.
+// Figure stays at the origin; scenery (Task 8 stations) moves past it.
 export const STATIONS: Station[] = [
   { id: "hero", start: 0, end: 0.15, clip: "idle", camera: [0, 1.4, 5], target: [0, 1, 0] },
   { id: "about", start: 0.15, end: 0.3, clip: "idle", camera: [3, 1.6, 3.5], target: [0, 1.1, 0] },
-  { id: "timeline", start: 0.3, end: 0.6, clip: "walk", camera: [2.5, 2, -3], target: [0, 1, -6] },
+  { id: "timeline", start: 0.3, end: 0.6, clip: "walk", camera: [2.4, 1.6, 4.2], target: [0, 1, 0] },
   { id: "skills", start: 0.6, end: 0.75, clip: "idle", camera: [0, 2.2, 6], target: [0, 1, 0] },
   { id: "agentic", start: 0.75, end: 0.9, clip: "typing", camera: [-3, 1.8, 4], target: [0, 1, 0] },
-  { id: "contact", start: 0.9, end: 1, clip: "wave", camera: [0, 1.5, 3.2], target: [0, 1.3, 0] },
+  { id: "contact", start: 0.9, end: 1, clip: "wave", camera: [0, 1.3, 6], target: [0, 1, 0] },
 ];
 
 const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
@@ -33,4 +31,17 @@ export function stationAt(offset: number): Station {
 export function localProgress(offset: number): number {
   const s = stationAt(offset);
   return clamp01((clamp01(offset) - s.start) / (s.end - s.start));
+}
+
+/**
+ * Maps a pixel position (viewport centre, in content coordinates) onto the station scale, using the
+ * measured DOM sections (ordered like STATIONS). Keeps 3D in sync with text of any height.
+ */
+export function toStationOffset(y: number, sections: { top: number; height: number }[]): number {
+  if (sections.length === 0) return 0;
+  const i = sections.findIndex((s) => y < s.top + s.height);
+  if (i === -1) return 1;
+  const s = sections[i];
+  const st = STATIONS[i];
+  return st.start + clamp01((y - s.top) / s.height) * (st.end - st.start);
 }

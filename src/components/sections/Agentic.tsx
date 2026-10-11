@@ -19,7 +19,7 @@ export function Agentic({ cv, projects }: { cv: CV; projects: Project[] }) {
         </ul>
       </div>
       <h3 className="mt-16 text-2xl font-semibold">Side projects</h3>
-      <ul className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <ul className="mt-6 grid max-w-3xl gap-4 sm:grid-cols-2">
         {projects.map((p) => (
           <li key={p.name}>
             <a
