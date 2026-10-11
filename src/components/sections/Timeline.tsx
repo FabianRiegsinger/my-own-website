@@ -9,7 +9,16 @@ export function Timeline({ cv }: { cv: CV }) {
         <Eyebrow>Career</Eyebrow>
         <h2 className="text-4xl font-semibold tracking-tight sm:text-5xl">8+ years shipping software into real cars</h2>
         <ol className="mt-12 space-y-12 border-l border-ink/15 pl-6">
-          {cv.experience.map((e) => (
+          {[...cv.education].reverse().map((e) => (
+            <li key={e.degree} className="relative">
+              <span className="absolute -left-[31px] top-1.5 h-3 w-3 rounded-full border-2 border-accent bg-bg" aria-hidden="true" />
+              <p className="text-sm font-medium text-accent">{formatMonth(e.end)}</p>
+              <h3 className="mt-1 text-xl font-semibold">{e.degree}</h3>
+              <p className="text-muted">{e.school}</p>
+              <p className="mt-2">{e.note}</p>
+            </li>
+          ))}
+          {[...cv.experience].reverse().map((e) => (
             <li key={e.company} className="relative">
               <span className="absolute -left-[31px] top-1.5 h-3 w-3 rounded-full bg-accent" aria-hidden="true" />
               <p className="text-sm font-medium text-accent">
@@ -29,15 +38,6 @@ export function Timeline({ cv }: { cv: CV }) {
                   </li>
                 ))}
               </ul>
-            </li>
-          ))}
-          {cv.education.map((e) => (
-            <li key={e.degree} className="relative">
-              <span className="absolute -left-[31px] top-1.5 h-3 w-3 rounded-full border-2 border-accent bg-bg" aria-hidden="true" />
-              <p className="text-sm font-medium text-accent">{formatMonth(e.end)}</p>
-              <h3 className="mt-1 text-xl font-semibold">{e.degree}</h3>
-              <p className="text-muted">{e.school}</p>
-              <p className="mt-2">{e.note}</p>
             </li>
           ))}
         </ol>

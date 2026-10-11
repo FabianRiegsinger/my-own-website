@@ -2,9 +2,10 @@
 
 import { useAnimations, useGLTF } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
+import { MathUtils } from "three";
 import { useEffect, useMemo, useRef } from "react";
 import { MeshStandardMaterial, type Group, type Mesh } from "three";
-import { stationAt, type ClipName } from "@/lib/scroll-map";
+import { heading, stationAt, type ClipName } from "@/lib/scroll-map";
 import { useStationOffset } from "./station-offset";
 
 const MODEL = "/models/figure.glb";
@@ -27,7 +28,9 @@ export function Figure({ shadows }: { shadows: boolean }) {
     });
   }, [scene, material, shadows]);
 
-  useFrame(() => {
+  useFrame((_, dt) => {
+    // Walk toward the oncoming milestones (the future), not away from them.
+    if (group.current) group.current.rotation.y = MathUtils.damp(group.current.rotation.y, heading(offset.current), 4, dt);
     const wanted = stationAt(offset.current).clip;
     const clip: ClipName = actions[wanted] ? wanted : "idle"; // placeholder model lacks typing/wave
     if (clip === current.current) return;

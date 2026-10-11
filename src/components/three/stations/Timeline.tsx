@@ -40,7 +40,7 @@ function Car(props: ThreeElements["group"]) {
   );
 }
 
-/** Milestone gates (oldest first) slide past the walking figure; cars mark the industry jobs. */
+/** Milestone gates (oldest first) come toward the figure as it walks into the distance; cars mark the industry jobs. */
 export function Timeline({ experience, education }: { experience: Experience[]; education: Education[] }) {
   const root = useRef<Group>(null);
   const world = useRef<Group>(null);

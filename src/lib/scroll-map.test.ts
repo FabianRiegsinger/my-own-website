@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { STATIONS, stationAt, localProgress, toStationOffset, stationWeight } from "./scroll-map";
+import { STATIONS, stationAt, localProgress, toStationOffset, stationWeight, heading } from "./scroll-map";
 
 describe("scroll-map", () => {
   it("ranges are contiguous and cover 0..1", () => {
@@ -39,5 +39,11 @@ describe("scroll-map", () => {
     expect(stationWeight(0.1, "timeline")).toBe(0);
     expect(stationWeight(0.275, "timeline")).toBeCloseTo(0.5);
     expect(stationWeight(1, "contact")).toBe(1);
+  });
+
+  it("figure turns to walk into the distance during the timeline only", () => {
+    expect(heading(0.45)).toBeCloseTo(Math.PI);
+    expect(heading(0.1)).toBe(0);
+    expect(heading(0.7)).toBe(0);
   });
 });

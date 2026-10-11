@@ -54,3 +54,8 @@ export function stationWeight(offset: number, id: StationId, fade = 0.05): numbe
   const d = o < s.start ? s.start - o : o - s.end;
   return clamp01(1 - d / fade);
 }
+
+/** Figure yaw: faces the visitor (0), turns to walk into the distance (π) through the timeline. */
+export function heading(offset: number): number {
+  return Math.PI * stationWeight(offset, "timeline", 0.03);
+}

@@ -99,3 +99,11 @@ test("hero text stays uncovered while the model loads", async ({ page }) => {
   );
   expect(covered).toBe(false);
 });
+
+test("career timeline runs oldest to newest", async ({ page }) => {
+  await page.goto("/");
+  const text = (await page.locator("#timeline").first().innerText()).replace(/\s+/g, " ");
+  const order = ["B.Eng.", "M.Sc.", "ESAS Automotive GmbH", "Mobileye Germany GmbH"].map((t) => text.indexOf(t));
+  expect(order.every((i) => i >= 0)).toBe(true);
+  expect([...order].sort((a, b) => a - b)).toEqual(order);
+});
