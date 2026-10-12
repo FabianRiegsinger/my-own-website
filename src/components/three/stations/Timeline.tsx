@@ -5,14 +5,13 @@ import { useFrame, type ThreeElements } from "@react-three/fiber";
 import { useRef } from "react";
 import type { Group } from "three";
 import type { Education, Experience } from "@/content/types";
-import { STATIONS, stationWeight } from "@/lib/scroll-map";
+import { careerTravel, careerWeight, JOB_STATIONS } from "@/lib/scroll-map";
 import { fade } from "../fade";
 import { useStationOffset } from "../station-offset";
 
 const GLOW = "#2f7bf6";
 const SPACING = 5;
 const DASHES = 24;
-const timeline = STATIONS.find((s) => s.id === "timeline")!;
 
 /** Unbranded low-poly car outline, a nod to the automotive milestones. */
 function Car(props: ThreeElements["group"]) {
@@ -47,13 +46,13 @@ export function Timeline({ experience, education }: { experience: Experience[]; 
   const dashes = useRef<Group>(null);
   const offset = useStationOffset();
   const milestones = [...education.map(() => false).reverse(), ...experience.map(() => true).reverse()];
-  const length = milestones.length * SPACING;
+  // Education page walks past both degrees, each job page past its own gate.
+  const gates = { education: education.length, ...Object.fromEntries(JOB_STATIONS.map((id) => [id, 1])) };
 
   useFrame(() => {
     if (!root.current || !world.current || !dashes.current) return;
-    fade(root.current, stationWeight(offset.current, "timeline"));
-    const p = Math.min(1, Math.max(0, (offset.current - timeline.start) / (timeline.end - timeline.start)));
-    const travel = p * length;
+    fade(root.current, careerWeight(offset.current));
+    const travel = careerTravel(offset.current, gates) * SPACING;
     world.current.position.z = travel;
     // Hide milestones once they pass the figure so nothing sweeps across the camera and the text.
     world.current.children.forEach((m) => (m.visible = m.position.z + travel < 1));

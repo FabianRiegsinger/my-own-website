@@ -11,6 +11,38 @@
 
 html {
   scroll-behavior: smooth;
+  /* Each section is a page: settle on page starts, but never trap a reader inside a tall page. */
+  scroll-snap-type: y proximity;
+}
+
+/*
+ * Page transitions: panels rise and fade in as their page scrolls in, and drift up and out as it leaves.
+ * Scroll-driven (no JS); uses `translate`/`opacity` so it composes with the hover tilt's `transform`.
+ * Browsers without view timelines simply show the panels.
+ */
+@keyframes page-through {
+  0% {
+    opacity: 0;
+    translate: 0 56px;
+  }
+  30%,
+  70% {
+    opacity: 1;
+    translate: 0 0;
+  }
+  100% {
+    opacity: 0;
+    translate: 0 -56px;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    .reveal {
+      animation: page-through linear both;
+      animation-timeline: view();
+    }
+  }
 }
 
 /* Soft colour field behind everything (like an iOS wallpaper): liquid glass only reads with colour to refract. */
