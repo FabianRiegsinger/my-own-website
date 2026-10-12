@@ -40,7 +40,7 @@ export function AgentNetwork() {
   const root = useRef<Group>(null);
   const spin = useRef<Group>(null);
   const nodes = useRef<Group>(null);
-  const center = useMemo(networkCenter, []);
+  const center = useMemo(() => networkCenter(), []);
   const offset = useStationOffset();
 
   const { points, lines } = useMemo(() => {
