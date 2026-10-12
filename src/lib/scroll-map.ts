@@ -9,19 +9,21 @@ export interface Station {
   clip: ClipName;
   camera: Vec3;
   target: Vec3;
+  /** Desktop only: moves the figure right by this fraction of the screen width (0 = centred). */
+  shift: number;
 }
 
 // Figure stays at the origin; scenery (Task 8 stations) moves past it.
 export const STATIONS: Station[] = [
-  { id: "hero", start: 0, end: 0.12, clip: "idle", camera: [0, 1.4, 5], target: [0, 1, 0] },
-  { id: "about", start: 0.12, end: 0.24, clip: "idle", camera: [3, 1.6, 3.5], target: [0, 1.1, 0] },
+  { id: "hero", start: 0, end: 0.12, clip: "idle", camera: [0, 1.4, 5], target: [0, 1, 0], shift: 0 },
+  { id: "about", start: 0.12, end: 0.24, clip: "idle", camera: [3, 1.6, 3.5], target: [0, 1.1, 0], shift: 0 },
   // Career pages: one walk through the milestones, the camera drifting a little per page.
-  { id: "education", start: 0.24, end: 0.36, clip: "walk", camera: [2.4, 1.6, 4.2], target: [0, 1, 0] },
-  { id: "esas", start: 0.36, end: 0.48, clip: "walk", camera: [2.1, 1.5, 4.4], target: [0, 1, 0] },
-  { id: "mobileye", start: 0.48, end: 0.6, clip: "walk", camera: [2.6, 1.7, 4], target: [0, 1, 0] },
-  { id: "skills", start: 0.6, end: 0.72, clip: "idle", camera: [0, 2.2, 6], target: [0, 1, 0] },
-  { id: "agentic", start: 0.72, end: 0.86, clip: "typing", camera: [-3, 1.8, 4], target: [0, 1, 0] },
-  { id: "contact", start: 0.86, end: 1, clip: "wave", camera: [0, 1.3, 6], target: [0, 1, 0] },
+  { id: "education", start: 0.24, end: 0.36, clip: "walk", camera: [2.4, 1.6, 4.2], target: [0, 1, 0], shift: 0 },
+  { id: "esas", start: 0.36, end: 0.48, clip: "walk", camera: [2.1, 1.5, 4.4], target: [0, 1, 0], shift: 0 },
+  { id: "mobileye", start: 0.48, end: 0.6, clip: "walk", camera: [2.6, 1.7, 4], target: [0, 1, 0], shift: 0 },
+  { id: "skills", start: 0.6, end: 0.72, clip: "idle", camera: [0, 2.2, 6], target: [0, 1, 0], shift: 0 },
+  { id: "agentic", start: 0.72, end: 0.86, clip: "typing", camera: [-3, 1.8, 4], target: [0, 1, 0], shift: 0.32 },
+  { id: "contact", start: 0.86, end: 1, clip: "wave", camera: [0, 1.3, 6], target: [0, 1, 0], shift: 0 },
 ];
 
 const clamp01 = (x: number) => Math.min(1, Math.max(0, x));

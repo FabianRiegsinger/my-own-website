@@ -1,17 +1,20 @@
 "use client";
 
 import { useFrame } from "@react-three/fiber";
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
 import { MathUtils, Vector3 } from "three";
 import { localProgress, stationAt, STATIONS } from "@/lib/scroll-map";
 import { useStationOffset } from "./station-offset";
 
+const DESKTOP = 768;
+
 /** Eases the camera from the current station's pose toward the next one as the section scrolls by. */
 export function CameraRig() {
   const offset = useStationOffset();
+  const shift = useRef(0);
 
   const [pos, look, goalPos, goalLook] = useMemo(() => [new Vector3(), new Vector3(), new Vector3(), new Vector3()], []);
-  useFrame(({ camera }, dt) => {
+  useFrame(({ camera, size }, dt) => {
     const s = stationAt(offset.current);
     const next = STATIONS[STATIONS.indexOf(s) + 1] ?? s;
     const t = MathUtils.smoothstep(localProgress(offset.current), 0.5, 1);
@@ -21,6 +24,12 @@ export function CameraRig() {
     camera.position.lerp(goalPos, k);
     look.lerp(goalLook, k);
     camera.lookAt(look);
+    // Shift the projection (not the camera) so a station can stand the figure off-centre, clear of its scenery.
+    shift.current = MathUtils.lerp(shift.current, MathUtils.lerp(s.shift, next.shift, t), k);
+    if (!("setViewOffset" in camera)) return;
+    if (size.width >= DESKTOP && Math.abs(shift.current) > 1e-4) {
+      camera.setViewOffset(size.width, size.height, -shift.current * size.width, 0, size.width, size.height);
+    } else camera.clearViewOffset();
   });
   return null;
 }

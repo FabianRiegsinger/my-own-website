@@ -71,3 +71,10 @@ describe("scroll-map", () => {
     expect(careerTravel(1, gates)).toBe(4);
   });
 });
+
+describe("screen shift", () => {
+  it("puts the figure in the right quarter on the agentic page, centred elsewhere", () => {
+    expect(0.5 + st("agentic").shift).toBeGreaterThanOrEqual(0.75);
+    for (const s of STATIONS.filter((s) => s.id !== "agentic")) expect(s.shift).toBe(0);
+  });
+});
