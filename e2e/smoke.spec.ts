@@ -107,3 +107,15 @@ test("career timeline runs oldest to newest", async ({ page }) => {
   expect(order.every((i) => i >= 0)).toBe(true);
   expect([...order].sort((a, b) => a - b)).toEqual(order);
 });
+
+test("swiss style: white paper, giant type, red numerals, square marks", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/");
+  expect(await page.evaluate(() => getComputedStyle(document.body).backgroundColor)).toBe("rgb(255, 255, 255)");
+  const h2 = page.locator("#skills h2");
+  expect(parseFloat(await h2.evaluate((el) => getComputedStyle(el).fontSize))).toBeGreaterThanOrEqual(64);
+  expect(await page.locator("#skills [data-numeral]").evaluate((el) => getComputedStyle(el).color)).toBe("rgb(225, 6, 0)");
+  const mark = page.locator('#skills [role="img"] > span').first();
+  expect(await mark.evaluate((el) => getComputedStyle(el).borderRadius)).toBe("0px");
+});

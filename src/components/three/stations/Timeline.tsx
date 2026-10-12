@@ -9,7 +9,8 @@ import { STATIONS, stationWeight } from "@/lib/scroll-map";
 import { fade } from "../fade";
 import { useStationOffset } from "../station-offset";
 
-const GLOW = "#2f7bf6";
+const GLOW = "#e10600";
+const INK = "#111111";
 const SPACING = 5;
 const DASHES = 24;
 const timeline = STATIONS.find((s) => s.id === "timeline")!;
@@ -21,18 +22,18 @@ function Car(props: ThreeElements["group"]) {
       <mesh position-y={0.45}>
         <boxGeometry args={[0.8, 0.4, 1.9]} />
         <meshStandardMaterial color="#ffffff" roughness={0.7} />
-        <Edges color={GLOW} />
+        <Edges color={INK} />
       </mesh>
       <mesh position={[0, 0.82, -0.1]}>
         <boxGeometry args={[0.7, 0.34, 1]} />
         <meshStandardMaterial color="#ffffff" roughness={0.7} />
-        <Edges color={GLOW} />
+        <Edges color={INK} />
       </mesh>
       {[-0.65, 0.65].flatMap((z) =>
         [-0.42, 0.42].map((x) => (
           <mesh key={`${x}${z}`} position={[x, 0.2, z]} rotation-z={Math.PI / 2}>
             <cylinderGeometry args={[0.2, 0.2, 0.12, 12]} />
-            <meshStandardMaterial color="#1d1d1f" />
+            <meshStandardMaterial color={INK} />
           </mesh>
         )),
       )}
@@ -68,7 +69,7 @@ export function Timeline({ experience, education }: { experience: Experience[]; 
         {Array.from({ length: DASHES }, (_, i) => (
           <mesh key={i} position-y={0.003} rotation-x={-Math.PI / 2}>
             <planeGeometry args={[0.06, 0.5]} />
-            <meshBasicMaterial color={GLOW} toneMapped={false} />
+            <meshBasicMaterial color={INK} toneMapped={false} />
           </mesh>
         ))}
       </group>

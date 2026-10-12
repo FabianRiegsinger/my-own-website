@@ -139,6 +139,8 @@ agentic:    { intro: string; tools: string[]; workUse: string }
 
 ## 5. Visual style
 
+> **2026-10-12 update (`style/swiss`, alternative to `feat/brutalism` and `style/neon`):** Swiss / editorial restyle: white paper `#FFFFFF`, ink `#111111`, muted `#555555`, one signal red `#E10600` reserved for section numerals, dates and hover; no cards, shadows or radius; Inter Tight with very large tight headlines; 2px hairline rules with red `01`–`05` numerals; timeline as table rows; skill levels as black squares; contact as one giant underlined "Let's talk." email link. 3D: white unlit floor with contact shadow only, no fog or grid, matte white figure, red gates, black/grey props, grey node graph. The values below describe the original Apple-style design.
+
 - Background `#F5F5F7`, text `#1D1D1F`, muted text `#6E6E73` (4.66:1).
 - Accent: `#2563EB` for text and links (4.75:1 on background); `#2F7BF6` only for 3D glow and large
   decorative shapes (3.65:1, fails as text).

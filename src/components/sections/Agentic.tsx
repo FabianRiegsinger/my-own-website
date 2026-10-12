@@ -1,34 +1,36 @@
 import type { CV } from "@/content/types";
 import type { Project } from "@/lib/projects";
-import { Eyebrow, Section } from "./Section";
+import { Eyebrow, Section, Title } from "./Section";
 
 export function Agentic({ cv, projects }: { cv: CV; projects: Project[] }) {
   return (
     <Section id="agentic">
       <div className="max-w-2xl">
-        <Eyebrow>Now</Eyebrow>
-        <h2 className="text-4xl font-semibold tracking-tight sm:text-5xl">Building with AI agents</h2>
-        <p className="mt-6 text-xl leading-relaxed">{cv.agentic.intro}</p>
+        <Eyebrow n={4}>Now</Eyebrow>
+        <Title>Building with AI agents</Title>
+        <p className="mt-8 text-xl leading-snug">{cv.agentic.intro}</p>
         <p className="mt-4 leading-relaxed text-muted">{cv.agentic.workUse}</p>
-        <ul className="mt-6 flex flex-wrap gap-2" aria-label="Tools">
+        <ul className="mt-6 flex flex-wrap gap-x-4 gap-y-1 text-sm font-semibold uppercase tracking-wider" aria-label="Tools">
           {cv.agentic.tools.map((t) => (
-            <li key={t} className="rounded-full bg-ink px-4 py-1.5 text-sm font-medium text-bg">
-              {t}
-            </li>
+            <li key={t}>{t}</li>
           ))}
         </ul>
       </div>
-      <h3 className="mt-16 text-2xl font-semibold">Side projects</h3>
-      <ul className="mt-6 grid max-w-3xl gap-4 sm:grid-cols-2">
+      <h3 className="mt-16 max-w-xl border-t-2 border-ink pt-4 text-sm font-semibold uppercase tracking-[0.2em]">Side projects</h3>
+      <ul className="max-w-xl">
         {projects.map((p) => (
           <li key={p.name}>
             <a
               href={p.homepage ?? p.url}
-              className="block h-full cursor-pointer rounded-3xl bg-white/80 p-6 transition-colors duration-200 hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              className="group grid cursor-pointer gap-1 border-b border-ink/25 py-6 transition-colors duration-200 hover:text-accent sm:grid-cols-[1fr_auto] sm:gap-6"
             >
-              <p className="text-lg font-semibold">{p.name}</p>
-              <p className="mt-2 leading-relaxed text-muted">{p.tagline ?? p.description}</p>
-              <p className="mt-4 text-sm text-muted">
+              <div>
+                <p className="text-2xl font-bold tracking-tight">
+                  {p.name} <span aria-hidden="true">↗</span>
+                </p>
+                <p className="mt-2 leading-relaxed text-muted">{p.tagline ?? p.description}</p>
+              </div>
+              <p className="text-sm font-semibold uppercase tracking-wider text-muted">
                 {[p.language, p.stars > 0 ? `★ ${p.stars}` : null].filter(Boolean).join(" · ")}
               </p>
             </a>

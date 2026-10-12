@@ -1,12 +1,13 @@
 @import "tailwindcss";
 
+/* Swiss / editorial: white paper, near-black ink, one signal red reserved for numbers and active states. */
 @theme inline {
-  --color-bg: #f5f5f7;
-  --color-ink: #1d1d1f;
-  --color-muted: #6e6e73;
-  --color-accent: #2563eb;
-  --color-glow: #2f7bf6;
-  --font-sans: var(--font-inter);
+  --color-bg: #ffffff;
+  --color-ink: #111111;
+  --color-muted: #555555;
+  --color-accent: #e10600;
+  --color-glow: #e10600;
+  --font-sans: var(--font-inter-tight);
 }
 
 html {
@@ -17,4 +18,9 @@ html {
   html {
     scroll-behavior: auto;
   }
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 3px;
 }
