@@ -1,15 +1,20 @@
 "use client";
 
 import { useFrame } from "@react-three/fiber";
-import { useMemo, useRef } from "react";
-import { BufferGeometry, Color, Float32BufferAttribute, type Group, Vector3 } from "three";
+import { useLayoutEffect, useMemo, useRef } from "react";
+import { BufferGeometry, Color, Float32BufferAttribute, type Group, type InstancedMesh, Matrix4, Quaternion, Vector3 } from "three";
 import { STATIONS, stationWeight } from "@/lib/scroll-map";
 import { fade } from "../fade";
 import { useStationOffset } from "../station-offset";
 
-const COUNT = 36;
-const LINK = 0.7;
-export const NETWORK_RADIUS = 0.9;
+/** Vertical field of view of the scene camera (Experience3D). */
+export const FOV_DEG = 35;
+/** Widest screen the sheet must still cover edge to edge. */
+const MAX_ASPECT = 21 / 9;
+/** How far behind the figure the sheet hangs. */
+const BEHIND = 4;
+const COUNT = 170;
+const LINK = 1.6;
 const CYAN = new Color("#22d3ee");
 const VIOLET = new Color("#8b5cf6");
 
@@ -20,47 +25,45 @@ function rand(seed: number) {
 }
 
 /**
- * Where the node cloud floats: screen-left of the figure as seen from the agentic camera and a little behind it,
- * so on screen it fills the gap between the text panel and the figure without ever crossing the model.
+ * A sheet facing the agentic camera, well behind the figure, sized to fill the whole screen at its depth:
+ * widest aspect, plus the desktop view shift that moves the visible window sideways.
  */
-export function networkCenter(): Vector3 {
+export function networkLayout() {
   const s = STATIONS.find((st) => st.id === "agentic")!;
-  const target = new Vector3(...s.target);
-  const forward = target
-    .clone()
-    .sub(new Vector3(...s.camera))
-    .setY(0)
-    .normalize();
-  const right = new Vector3().crossVectors(forward, new Vector3(0, 1, 0)).normalize();
-  return target.addScaledVector(right, -1.25).addScaledVector(forward, 1).setY(1.3);
+  const camera = new Vector3(...s.camera);
+  const forward = new Vector3(...s.target).sub(camera);
+  const depth = forward.length() + BEHIND;
+  forward.normalize();
+  const halfH = Math.tan(((FOV_DEG / 2) * Math.PI) / 180) * depth;
+  return {
+    center: camera.addScaledVector(forward, depth),
+    quaternion: new Quaternion().setFromUnitVectors(new Vector3(0, 0, 1), forward.negate()),
+    width: 2 * halfH * MAX_ASPECT * (1 + 2 * s.shift) * 1.05,
+    height: 2 * halfH * 1.3, // margin for the camera easing in from the neighbouring pages
+  };
 }
 
-/** A glowing node graph of "agents" beside the figure. */
+/** A glowing web of "agents" spanning the screen behind the figure on the agentic page. */
 export function AgentNetwork() {
   const root = useRef<Group>(null);
-  const spin = useRef<Group>(null);
-  const nodes = useRef<Group>(null);
-  const center = useMemo(() => networkCenter(), []);
+  const sway = useRef<Group>(null);
+  const nodes = useRef<InstancedMesh>(null);
   const offset = useStationOffset();
+  const layout = useMemo(() => networkLayout(), []);
+  const m = useMemo(() => new Matrix4(), []);
 
-  const { points, lines } = useMemo(() => {
-    // Even spread inside a ball (cube-root radius), centred on the cloud's own origin.
-    const points = Array.from({ length: COUNT }, (_, i) => {
-      const u = rand(i) * 2 - 1;
-      const a = rand(i + 100) * Math.PI * 2;
-      const r = NETWORK_RADIUS * Math.cbrt(rand(i + 200));
-      const h = Math.sqrt(1 - u * u);
-      return new Vector3(Math.cos(a) * h * r, u * r, Math.sin(a) * h * r);
-    });
+  const { points, lines, colors } = useMemo(() => {
+    const { width, height } = layout;
+    const points = Array.from({ length: COUNT }, (_, i) => new Vector3((rand(i) - 0.5) * width, (rand(i + 500) - 0.5) * height, (rand(i + 900) - 0.5) * 1.6));
+    const tint = (p: Vector3) => CYAN.clone().lerp(VIOLET, p.x / width + 0.5);
     const pos: number[] = [];
     const col: number[] = [];
-    const c = new Color();
     points.forEach((p, i) =>
       points.slice(i + 1).forEach((q) => {
         if (p.distanceTo(q) > LINK) return;
         for (const v of [p, q]) {
+          const c = tint(v);
           pos.push(v.x, v.y, v.z);
-          c.copy(CYAN).lerp(VIOLET, (v.y + NETWORK_RADIUS) / (2 * NETWORK_RADIUS));
           col.push(c.r, c.g, c.b);
         }
       }),
@@ -68,31 +71,36 @@ export function AgentNetwork() {
     const lines = new BufferGeometry();
     lines.setAttribute("position", new Float32BufferAttribute(pos, 3));
     lines.setAttribute("color", new Float32BufferAttribute(col, 3));
-    return { points, lines };
-  }, []);
+    return { points, lines, colors: points.map(tint) };
+  }, [layout]);
 
-  useFrame(({ clock }, dt) => {
-    if (!root.current || !spin.current || !nodes.current) return;
+  useLayoutEffect(() => {
+    colors.forEach((c, i) => nodes.current?.setColorAt(i, c));
+  }, [colors]);
+
+  useFrame(({ clock }) => {
+    if (!root.current || !sway.current || !nodes.current) return;
     fade(root.current, stationWeight(offset.current, "agentic"));
-    spin.current.rotation.y += dt * 0.08; // about the cloud's own centre, never sweeping round the figure
+    if (!root.current.visible) return;
     const t = clock.elapsedTime;
-    nodes.current.children.forEach((n, i) => n.scale.setScalar(1 + 0.35 * Math.sin(t * 2 + i)));
+    sway.current.rotation.z = Math.sin(t * 0.15) * 0.03; // a slow drift, in the sheet's own plane
+    points.forEach((p, i) => {
+      const k = 1 + 0.35 * Math.sin(t * 2 + i); // each node pulses
+      nodes.current!.setMatrixAt(i, m.makeScale(k, k, k).setPosition(p));
+    });
+    nodes.current.instanceMatrix.needsUpdate = true;
   });
 
   return (
-    <group ref={root} position={center}>
-      <group ref={spin}>
+    <group ref={root} position={layout.center} quaternion={layout.quaternion}>
+      <group ref={sway}>
         <lineSegments geometry={lines}>
-          <lineBasicMaterial vertexColors opacity={0.6} toneMapped={false} />
+          <lineBasicMaterial vertexColors opacity={0.4} toneMapped={false} />
         </lineSegments>
-        <group ref={nodes}>
-          {points.map((p, i) => (
-            <mesh key={i} position={p}>
-              <sphereGeometry args={[0.03, 12, 12]} />
-              <meshBasicMaterial color={CYAN.clone().lerp(VIOLET, (p.y + NETWORK_RADIUS) / (2 * NETWORK_RADIUS))} toneMapped={false} />
-            </mesh>
-          ))}
-        </group>
+        <instancedMesh ref={nodes} args={[undefined, undefined, COUNT]}>
+          <sphereGeometry args={[0.05, 10, 10]} />
+          <meshBasicMaterial toneMapped={false} />
+        </instancedMesh>
       </group>
     </group>
   );

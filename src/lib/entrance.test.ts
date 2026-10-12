@@ -27,7 +27,7 @@ describe("entrance", () => {
 
   it("waves for three seconds after turning", () => {
     expect(wave).toBe(3);
-    expect(entrance(walk + turn + wave / 2)).toMatchObject({ wave: 1, hips: 0 });
+    expect(entrance(walk + turn + wave / 2)).toMatchObject({ wave: 1, hips: 0, think: 0 });
   });
 
   it("then rests hands on hips and is done", () => {
@@ -36,10 +36,11 @@ describe("entrance", () => {
 });
 
 describe("poseFor", () => {
-  it("waves at the contact station, walks arms-free, otherwise hands on hips", () => {
-    expect(poseFor("wave")).toEqual({ wave: 1, hips: 0 });
-    expect(poseFor("walk")).toEqual({ wave: 0, hips: 0 });
-    expect(poseFor("idle")).toEqual({ wave: 0, hips: 1 });
-    expect(poseFor("typing")).toEqual({ wave: 0, hips: 1 });
+  it("waves at the contact station, thinks on the about page, walks arms-free, otherwise hands on hips", () => {
+    expect(poseFor("wave")).toEqual({ wave: 1, hips: 0, think: 0 });
+    expect(poseFor("think")).toEqual({ wave: 0, hips: 0, think: 1 });
+    expect(poseFor("walk")).toEqual({ wave: 0, hips: 0, think: 0 });
+    expect(poseFor("idle")).toEqual({ wave: 0, hips: 1, think: 0 });
+    expect(poseFor("typing")).toEqual({ wave: 0, hips: 1, think: 0 });
   });
 });

@@ -55,9 +55,15 @@ describe("scroll-map", () => {
     expect(careerWeight(mid("agentic"))).toBe(0);
   });
 
+  it("on the about page the figure thinks, turned part-way toward the text panel (screen left)", () => {
+    expect(stationAt(mid("about")).clip).toBe("think");
+    expect(heading(mid("about"))).toBeLessThan(-0.2);
+    expect(heading(mid("about"))).toBeGreaterThan(-Math.PI / 4);
+  });
+
   it("figure turns to walk into the distance during the career pages only", () => {
     expect(heading(mid("esas"))).toBeCloseTo(Math.PI);
-    expect(heading(mid("about"))).toBe(0);
+    expect(heading(mid("hero"))).toBe(0);
     expect(heading(mid("skills"))).toBe(0);
   });
 

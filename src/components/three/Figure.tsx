@@ -24,7 +24,7 @@ export function Figure({ shadows }: { shadows: boolean }) {
   const offset = useStationOffset();
   const current = useRef<ClipName | null>(null);
   const intro = useRef<{ start: number | null; done: boolean }>({ start: null, done: false });
-  const pose = useRef({ wave: 0, hips: 0 });
+  const pose = useRef({ wave: 0, hips: 0, think: 0 });
   const arms = useMemo(() => findArms(scene), [scene]);
   const head = useRef<Group | null>(null);
 
@@ -71,7 +71,7 @@ export function Figure({ shadows }: { shadows: boolean }) {
       const s = entrance(clock.elapsedTime - it.start);
       g.position.x = s.x;
       g.rotation.y = s.heading;
-      pose.current = { wave: s.wave, hips: s.hips };
+      pose.current = { wave: s.wave, hips: s.hips, think: s.think };
       clip = s.clip;
       it.done = s.done;
     } else {
@@ -81,6 +81,7 @@ export function Figure({ shadows }: { shadows: boolean }) {
       const p = poseFor(stationAt(offset.current).clip);
       pose.current.wave = MathUtils.damp(pose.current.wave, p.wave, 6, dt);
       pose.current.hips = MathUtils.damp(pose.current.hips, p.hips, 6, dt);
+      pose.current.think = MathUtils.damp(pose.current.think, p.think, 6, dt);
       clip = clipFor(offset.current);
     }
     if (clip !== current.current) {

@@ -1,16 +1,31 @@
 import { describe, expect, it } from "vitest";
-import { NETWORK_RADIUS, networkCenter } from "./AgentNetwork";
+import { Vector3 } from "three";
+import { STATIONS } from "@/lib/scroll-map";
+import { FOV_DEG, networkLayout } from "./AgentNetwork";
 
-describe("networkCenter", () => {
-  it("keeps the whole node cloud clear of the figure", () => {
-    const c = networkCenter();
-    const fromAxis = Math.hypot(c.x, c.z); // figure stands on the y axis
-    expect(fromAxis - NETWORK_RADIUS).toBeGreaterThan(0.5);
+const agentic = STATIONS.find((s) => s.id === "agentic")!;
+const camera = new Vector3(...agentic.camera);
+const target = new Vector3(...agentic.target);
+
+describe("networkLayout", () => {
+  const { center, width, height } = networkLayout();
+  const depth = center.distanceTo(camera);
+  const halfH = Math.tan(((FOV_DEG / 2) * Math.PI) / 180) * depth;
+
+  it("sits well behind the figure, so it stays in the background", () => {
+    expect(depth).toBeGreaterThan(camera.distanceTo(target) + 3);
   });
 
-  it("sits screen-left of the figure, between the text and the figure", () => {
-    // agentic camera looks from (-3, 1.8, 4) at the origin; screen-right is (0.8, 0, 0.6)
-    const c = networkCenter();
-    expect(c.x * 0.8 + c.z * 0.6).toBeLessThan(-1);
+  it("spans the whole screen at its depth, ultra-wide and view shift included", () => {
+    const aspect = 21 / 9;
+    const visibleW = 2 * halfH * aspect * (1 + 2 * agentic.shift);
+    expect(width).toBeGreaterThanOrEqual(visibleW);
+    expect(height).toBeGreaterThanOrEqual(2 * halfH);
+  });
+
+  it("faces the camera", () => {
+    const { quaternion } = networkLayout();
+    const normal = new Vector3(0, 0, 1).applyQuaternion(quaternion);
+    expect(normal.dot(camera.clone().sub(center).normalize())).toBeGreaterThan(0.99);
   });
 });

@@ -14,6 +14,7 @@ export interface EntranceState {
   /** Arm overlay weights, 0..1. */
   wave: number;
   hips: number;
+  think: number;
   done: boolean;
 }
 
@@ -30,12 +31,13 @@ export function entrance(t: number): EntranceState {
   const ramp = 0.3;
   const waving = w <= 0 ? 0 : Math.min(clamp01(w / ramp), clamp01((wave - w) / ramp));
   const hips = ease(clamp01((w - wave) / settle));
-  return { x, heading, clip: t < walk ? "walk" : "idle", wave: waving, hips, done: t >= walk + turn + wave + settle };
+  return { x, heading, clip: t < walk ? "walk" : "idle", wave: waving, hips, think: 0, done: t >= walk + turn + wave + settle };
 }
 
 /** Arm overlay for a station's clip once the landing is over. */
-export function poseFor(clip: ClipName): { wave: number; hips: number } {
-  if (clip === "wave") return { wave: 1, hips: 0 };
-  if (clip === "walk") return { wave: 0, hips: 0 };
-  return { wave: 0, hips: 1 };
+export function poseFor(clip: ClipName): { wave: number; hips: number; think: number } {
+  if (clip === "wave") return { wave: 1, hips: 0, think: 0 };
+  if (clip === "think") return { wave: 0, hips: 0, think: 1 };
+  if (clip === "walk") return { wave: 0, hips: 0, think: 0 };
+  return { wave: 0, hips: 1, think: 0 };
 }

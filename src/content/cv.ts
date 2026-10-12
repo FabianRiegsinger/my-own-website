@@ -6,7 +6,7 @@ export const cv: CV = {
     headline: "Automotive System Integration & Software Engineer",
     location: "Ingolstadt, Germany",
     summary:
-      "Software engineer with 8+ years in automotive, working in C++ and Python on autonomous-driving software. I'm Mobileye's on-site resident at AUDI for the ADAS Level 3 program and keep about 30 development vehicles running. Most of my day is spent between AUDI's engineers and Mobileye R&D. I write much of my code with AI agents.",
+      "I'm a software engineer with over 8 years in automotive. I build autonomous-driving software in C++ and Python. For Mobileye, I work on site at AUDI on the Level 3 ADAS program, where I keep around 30 development vehicles running. Most days I sit between AUDI's engineers and Mobileye's R&D team. I write much of my code with AI agents.",
     links: {
       github: "https://github.com/FabianRiegsinger",
       linkedin: "https://www.linkedin.com/in/fabian-riegsinger-736b78b7/",

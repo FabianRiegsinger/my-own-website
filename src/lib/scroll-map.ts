@@ -1,5 +1,5 @@
 export type StationId = "hero" | "about" | "education" | "esas" | "mobileye" | "skills" | "agentic" | "contact";
-export type ClipName = "idle" | "walk" | "typing" | "wave";
+export type ClipName = "idle" | "walk" | "typing" | "wave" | "think";
 type Vec3 = [number, number, number];
 
 export interface Station {
@@ -21,7 +21,7 @@ const BESIDE_PANEL = (PANEL_EDGE + 1) / 2 - 0.5;
 // Figure stays at the origin; scenery (Task 8 stations) moves past it.
 export const STATIONS: Station[] = [
   { id: "hero", start: 0, end: 0.12, clip: "idle", camera: [0, 1.4, 5], target: [0, 1, 0], shift: BESIDE_PANEL },
-  { id: "about", start: 0.12, end: 0.24, clip: "idle", camera: [3, 1.6, 3.5], target: [0, 1.1, 0], shift: BESIDE_PANEL },
+  { id: "about", start: 0.12, end: 0.24, clip: "think", camera: [3, 1.6, 3.5], target: [0, 1.1, 0], shift: BESIDE_PANEL },
   // Career pages: one walk through the milestones, the camera drifting a little per page.
   { id: "education", start: 0.24, end: 0.36, clip: "walk", camera: [2.4, 1.6, 4.2], target: [0, 1, 0], shift: BESIDE_PANEL },
   { id: "esas", start: 0.36, end: 0.48, clip: "walk", camera: [2.1, 1.5, 4.4], target: [0, 1, 0], shift: BESIDE_PANEL },
@@ -89,7 +89,10 @@ export function careerTravel(offset: number, gates: Partial<Record<StationId, nu
   }, 0);
 }
 
-/** Figure yaw: faces the visitor (0), turns to walk into the distance (π) through the career pages. */
+/** Yaw on the about page: part-way toward the text panel on screen-left, as if reading it (about camera sits front-right). */
+const READ_YAW = -0.25;
+
+/** Figure yaw: faces the visitor (0), reads toward the about text, turns to walk into the distance (π) through the career pages. */
 export function heading(offset: number): number {
-  return Math.PI * careerWeight(offset, 0.03);
+  return Math.PI * careerWeight(offset, 0.03) + READ_YAW * stationWeight(offset, "about", 0.03);
 }
