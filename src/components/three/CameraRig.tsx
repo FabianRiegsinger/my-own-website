@@ -6,7 +6,8 @@ import { MathUtils, Vector3 } from "three";
 import { localProgress, stationAt, STATIONS } from "@/lib/scroll-map";
 import { useStationOffset } from "./station-offset";
 
-const DESKTOP = 768;
+/** Matches the `lg` breakpoint where the glass panels narrow to the left 36vw (GlassPanel). */
+const DESKTOP = 1024;
 
 /** Eases the camera from the current station's pose toward the next one as the section scrolls by. */
 export function CameraRig() {
