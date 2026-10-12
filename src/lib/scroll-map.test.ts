@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { STATIONS, stationAt, localProgress, toStationOffset, stationWeight, heading, careerWeight, careerTravel, PANEL_EDGE } from "./scroll-map";
+import { STATIONS, stationAt, localProgress, toStationOffset, stationWeight, heading, PANEL_EDGE } from "./scroll-map";
 
 const st = (id: string) => STATIONS.find((s) => s.id === id)!;
 const mid = (id: string) => (st(id).start + st(id).end) / 2;
@@ -22,8 +22,11 @@ describe("scroll-map", () => {
     expect(stationAt(1.5).id).toBe("contact");
   });
 
-  it("every career page walks", () => {
-    for (const id of ["education", "esas", "mobileye"]) expect(stationAt(mid(id)).clip).toBe("walk");
+  it("career pages are scenes, not a walk: graduation, team talk, customer fleet", () => {
+    expect(stationAt(mid("education")).clip).toBe("cheer");
+    expect(stationAt(mid("esas")).clip).toBe("laptop");
+    expect(stationAt(mid("mobileye")).clip).toBe("tablet");
+    expect(STATIONS.some((s) => s.clip === "walk")).toBe(false);
   });
 
   it("local progress is relative to the station", () => {
@@ -48,33 +51,22 @@ describe("scroll-map", () => {
     expect(stationWeight(1, "contact")).toBe(1);
   });
 
-  it("career weight spans education through mobileye", () => {
-    expect(careerWeight(mid("education"))).toBe(1);
-    expect(careerWeight(mid("mobileye"))).toBe(1);
-    expect(careerWeight(mid("about"))).toBe(0);
-    expect(careerWeight(mid("agentic"))).toBe(0);
-  });
-
   it("on the about page the figure thinks, turned part-way toward the text panel (screen left)", () => {
     expect(stationAt(mid("about")).clip).toBe("think");
     expect(heading(mid("about"))).toBeLessThan(-0.2);
     expect(heading(mid("about"))).toBeGreaterThan(-Math.PI / 4);
   });
 
-  it("figure turns to walk into the distance during the career pages only", () => {
-    expect(heading(mid("esas"))).toBeCloseTo(Math.PI);
+  it("heading is each page's yaw in the middle of the page, eased in between", () => {
+    for (const st of STATIONS) expect(heading((st.start + st.end) / 2)).toBeCloseTo(st.yaw);
     expect(heading(mid("hero"))).toBe(0);
-    expect(heading(mid("skills"))).toBe(0);
+    const edge = st("esas").end - 0.001;
+    expect(heading(edge)).toBeGreaterThan(Math.min(st("esas").yaw, st("mobileye").yaw) - 1e-9);
+    expect(heading(edge)).toBeLessThan(Math.max(st("esas").yaw, st("mobileye").yaw) + 1e-9);
   });
 
-  it("each career page brings its own milestones to the figure", () => {
-    const gates = { education: 2, esas: 1, mobileye: 1 };
-    expect(careerTravel(st("education").start, gates)).toBe(0);
-    expect(careerTravel(st("education").end, gates)).toBeCloseTo(2); // B.Eng and M.Sc passed
-    expect(careerTravel(mid("esas"), gates)).toBeCloseTo(2.5);
-    expect(careerTravel(st("mobileye").end, gates)).toBeCloseTo(4);
-    expect(careerTravel(0, gates)).toBe(0);
-    expect(careerTravel(1, gates)).toBe(4);
+  it("faces the team on the ESAS page (turned to screen right, where the colleagues stand)", () => {
+    expect(st("esas").yaw).toBeGreaterThan(0.3);
   });
 });
 

@@ -26,8 +26,19 @@ import {
  */
 
 export type Region = "skin" | "shirt" | "trousers" | "shoes";
+/** Region plus "jacket": torso and arms outside the open front of a blazer or gown. */
+export type Garment = Region | "jacket";
+export type Palette = Record<Garment, string>;
 
-const COLORS: Record<Region, string> = { skin: "#f7d6bf", shirt: "#a9c6e8", trousers: "#2f3747", shoes: "#3a2c24" };
+const SKIN = "#f7d6bf";
+const SHIRT = "#a9c6e8";
+/** Outfits by page: everyday, business casual at ESAS, graduation gown on the education page. */
+export const OUTFITS = {
+  casual: { skin: SKIN, shirt: SHIRT, jacket: SHIRT, trousers: "#2f3747", shoes: "#3a2c24" },
+  business: { skin: SKIN, shirt: SHIRT, jacket: "#26324a", trousers: "#c9b38e", shoes: "#3a2c24" },
+  gown: { skin: SKIN, shirt: "#1d1d22", jacket: "#1d1d22", trousers: "#1d1d22", shoes: "#16161a" },
+} satisfies Record<string, Palette>;
+const COLORS = OUTFITS.casual;
 const HAIR = "#6e4b33";
 
 /** Which garment a vertex belongs to, by the bone that moves it most. */
@@ -38,29 +49,62 @@ export function regionOf(bone: string): Region {
   return "shirt"; // spine, shoulders, arms
 }
 
-/** Paints each skinned mesh with per-vertex garment colours; returns the one material they all share. */
-export function paintBody(root: Object3D): Material {
+/** Under a blazer or gown only the open chest strip still shows the shirt. */
+export function garmentOf(region: Region, chestStrip: boolean): Garment {
+  return region === "shirt" && !chestStrip ? "jacket" : region;
+}
+
+/**
+ * Paints each skinned mesh with per-vertex garment colours, precomputing one colour buffer per outfit
+ * (switch with `setOutfit`). Geometry is cloned first, so clones of the same model can wear their own palettes.
+ */
+export function paintBody(root: Object3D, outfits: Record<string, Palette> = OUTFITS, initial = "casual"): Material {
   const material = new MeshStandardMaterial({ vertexColors: true, roughness: 0.75, metalness: 0 });
   const c = new Color();
+  const v = new Vector3();
+  root.updateMatrixWorld(true);
   root.traverse((o) => {
     const mesh = o as SkinnedMesh;
     if (!mesh.isSkinnedMesh) return;
+    mesh.geometry = mesh.geometry.clone();
+    mesh.skeleton.update();
     const g = mesh.geometry;
-    if (!g.getAttribute("color")) {
-      const idx = g.getAttribute("skinIndex");
-      const wt = g.getAttribute("skinWeight");
-      const colors = new Float32Array(idx.count * 3);
-      for (let i = 0; i < idx.count; i++) {
-        let best = 0;
-        for (let k = 1; k < 4; k++) if (wt.getComponent(i, k) > wt.getComponent(i, best)) best = k;
-        c.set(COLORS[regionOf(mesh.skeleton.bones[idx.getComponent(i, best)].name)]);
-        colors.set([c.r, c.g, c.b], i * 3);
-      }
-      g.setAttribute("color", new Float32BufferAttribute(colors, 3));
+    const idx = g.getAttribute("skinIndex");
+    const wt = g.getAttribute("skinWeight");
+    const garments: Garment[] = [];
+    for (let i = 0; i < idx.count; i++) {
+      let best = 0;
+      for (let k = 1; k < 4; k++) if (wt.getComponent(i, k) > wt.getComponent(i, best)) best = k;
+      const region = regionOf(mesh.skeleton.bones[idx.getComponent(i, best)].name);
+      // Model space: the figure faces +z; the strip is a narrow band down the front of the chest.
+      const p = region === "shirt" ? root.worldToLocal(mesh.localToWorld(mesh.getVertexPosition(i, v))) : v.set(1, 0, -1);
+      garments.push(garmentOf(region, Math.abs(p.x) < 0.045 && p.z > 0.02 && p.y > 1.1));
     }
+    mesh.userData.outfits = Object.fromEntries(
+      Object.entries(outfits).map(([name, palette]) => {
+        const colors = new Float32Array(garments.length * 3);
+        garments.forEach((gm, i) => colors.set(c.set(palette[gm]).toArray(), i * 3));
+        return [name, colors];
+      }),
+    );
+    g.setAttribute("color", new Float32BufferAttribute(mesh.userData.outfits[initial], 3));
     mesh.material = material;
   });
+  root.userData.outfit = initial;
   return material;
+}
+
+/** Switches every painted mesh under `root` to one of its precomputed outfits. */
+export function setOutfit(root: Object3D, name: string) {
+  if (root.userData.outfit === name) return;
+  root.userData.outfit = name;
+  root.traverse((o) => {
+    const colors = o.userData.outfits?.[name] as Float32Array | undefined;
+    const attr = (o as SkinnedMesh).geometry?.getAttribute("color");
+    if (!colors || !attr) return;
+    (attr.array as Float32Array).set(colors);
+    attr.needsUpdate = true;
+  });
 }
 
 /** Skull half-extents (m) the face is laid out on; `fitScale` sizes the whole head from these. */
@@ -191,6 +235,7 @@ export function attachHead(root: Object3D): Group | null {
   if (existing) return existing as Group;
 
   const head = buildHead();
+  head.userData.avatarExtra = true;
   const s = fitScale(box.getSize(new Vector3()));
   // Shrink the mannequin's own head deep inside the skull (an oval leaves its box corners, e.g. the jaw, exposed).
   headBone.scale.setScalar(MANNEQUIN_HEAD);
@@ -210,4 +255,14 @@ export function updateAvatar(head: Object3D, t: number) {
   head.parent?.scale.setScalar(MANNEQUIN_HEAD);
   const eyes = head.getObjectByName("eyes");
   if (eyes) eyes.scale.y = t % 4.2 < 0.12 ? 0.1 : 1;
+}
+
+/** Undoes the avatar on a copy of the rig (copies share the loaded scene): drops added parts, restores the head bone. */
+export function stripAvatar(root: Object3D) {
+  const extras: Object3D[] = [];
+  root.traverse((o) => {
+    if (o.userData.avatarExtra) extras.push(o);
+    if (/Head$/.test(o.name)) o.scale.setScalar(1);
+  });
+  extras.forEach((o) => o.removeFromParent());
 }

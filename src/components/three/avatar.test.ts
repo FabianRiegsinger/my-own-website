@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { Box3, Vector3 } from "three";
-import { buildHead, fitScale, regionOf, SKULL } from "./avatar";
+import { buildHead, fitScale, garmentOf, OUTFITS, regionOf, SKULL } from "./avatar";
 
 describe("regionOf", () => {
   it("dresses the body by the bone that moves each vertex", () => {
@@ -35,5 +35,22 @@ describe("fitScale", () => {
     expect(SKULL.y * 2 * s).toBeGreaterThanOrEqual(mannequin.y);
     expect(SKULL.z * 2 * s).toBeGreaterThanOrEqual(mannequin.z);
     expect(Math.max(SKULL.x * 2 * s - mannequin.x, SKULL.y * 2 * s - mannequin.y, SKULL.z * 2 * s - mannequin.z)).toBeLessThan(0.05);
+  });
+});
+
+describe("outfits", () => {
+  it("only the chest strip stays shirt when a jacket is worn", () => {
+    expect(garmentOf("shirt", true)).toBe("shirt");
+    expect(garmentOf("shirt", false)).toBe("jacket");
+    expect(garmentOf("trousers", true)).toBe("trousers");
+    expect(garmentOf("skin", true)).toBe("skin");
+  });
+
+  it("casual is one shirt colour; business adds a navy blazer and chinos; the gown is dark head to toe", () => {
+    expect(OUTFITS.casual.jacket).toBe(OUTFITS.casual.shirt);
+    expect(OUTFITS.business.jacket).not.toBe(OUTFITS.business.shirt);
+    expect(OUTFITS.business.trousers).not.toBe(OUTFITS.casual.trousers);
+    for (const g of ["shirt", "jacket", "trousers"] as const) expect(OUTFITS.gown[g]).toBe(OUTFITS.gown.jacket);
+    expect(OUTFITS.gown.skin).toBe(OUTFITS.casual.skin);
   });
 });

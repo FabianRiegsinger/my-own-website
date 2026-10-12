@@ -6,15 +6,18 @@ import type { ClipName } from "./scroll-map";
  */
 export const ENTRANCE = { walk: 1.8, turn: 0.6, wave: 3, settle: 0.6, startX: 2.2 } as const;
 
+/** Procedural overlays on top of the playing clip (see arm-pose.ts), each weighted 0..1. */
+export const POSES = ["wave", "hips", "think", "cheer", "laptop", "tablet"] as const;
+export type Pose = Record<(typeof POSES)[number], number>;
+
+const restPose = (): Pose => ({ wave: 0, hips: 0, think: 0, cheer: 0, laptop: 0, tablet: 0 });
+
 export interface EntranceState {
   x: number;
   /** Figure rotation.y: -π/2 faces left (walking in), 0 faces the viewer. */
   heading: number;
   clip: ClipName;
-  /** Arm overlay weights, 0..1. */
-  wave: number;
-  hips: number;
-  think: number;
+  pose: Pose;
   done: boolean;
 }
 
@@ -31,13 +34,14 @@ export function entrance(t: number): EntranceState {
   const ramp = 0.3;
   const waving = w <= 0 ? 0 : Math.min(clamp01(w / ramp), clamp01((wave - w) / ramp));
   const hips = ease(clamp01((w - wave) / settle));
-  return { x, heading, clip: t < walk ? "walk" : "idle", wave: waving, hips, think: 0, done: t >= walk + turn + wave + settle };
+  return { x, heading, clip: t < walk ? "walk" : "idle", pose: { ...restPose(), wave: waving, hips }, done: t >= walk + turn + wave + settle };
 }
 
-/** Arm overlay for a station's clip once the landing is over. */
-export function poseFor(clip: ClipName): { wave: number; hips: number; think: number } {
-  if (clip === "wave") return { wave: 1, hips: 0, think: 0 };
-  if (clip === "think") return { wave: 0, hips: 0, think: 1 };
-  if (clip === "walk") return { wave: 0, hips: 0, think: 0 };
-  return { wave: 0, hips: 1, think: 0 };
+/** Overlay for a page's clip once the landing is over: one overlay at full weight, or none while walking. */
+export function poseFor(clip: ClipName): Pose {
+  const pose = restPose();
+  if (clip === "walk") return pose;
+  if (clip === "idle" || clip === "typing") pose.hips = 1; // placeholder model has no typing clip
+  else pose[clip] = 1;
+  return pose;
 }

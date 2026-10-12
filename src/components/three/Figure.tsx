@@ -3,15 +3,17 @@
 import { useAnimations, useGLTF } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
-import { MathUtils, type Group, type Mesh } from "three";
-import { entrance, poseFor } from "@/lib/entrance";
+import { MathUtils, Vector3, type Group, type Mesh, type Object3D } from "three";
+import { capToss } from "@/lib/celebrate";
+import { entrance, POSES, poseFor, type Pose } from "@/lib/entrance";
 import { heading, stationAt, type ClipName } from "@/lib/scroll-map";
 import { applyArms, findArms } from "./arm-pose";
-import { attachHead, paintBody, updateAvatar } from "./avatar";
+import { attachHead, paintBody, setOutfit, updateAvatar } from "./avatar";
+import { buildLaptop, buildMortarboard, buildSkirt, buildTablet } from "./props";
 import { switchClip } from "./clips";
 import { useStationOffset } from "./station-offset";
 
-const MODEL = "/models/figure.glb";
+export const MODEL = "/models/figure.glb";
 const FADE = 0.4;
 /** Scrolling past this many pixels ends the landing entrance so the page never fights the reader. */
 const TOP_PX = 40;
@@ -24,9 +26,10 @@ export function Figure({ shadows }: { shadows: boolean }) {
   const offset = useStationOffset();
   const current = useRef<ClipName | null>(null);
   const intro = useRef<{ start: number | null; done: boolean }>({ start: null, done: false });
-  const pose = useRef({ wave: 0, hips: 0, think: 0 });
+  const pose = useRef<Pose>(poseFor("walk"));
   const arms = useMemo(() => findArms(scene), [scene]);
   const head = useRef<Group | null>(null);
+  const props = useRef<{ laptop: Object3D; tablet: Object3D; skirt: Object3D; cap: Object3D; capScale: number } | null>(null);
 
   useMemo(() => paintBody(scene), [scene]);
   useEffect(() => {
@@ -57,6 +60,14 @@ export function Figure({ shadows }: { shadows: boolean }) {
     current.current = clip;
     // Memoji head over the mannequin's, sized from the posed head so it never pokes through.
     head.current = attachHead(scene);
+    // Page props: laptop (ESAS), tablet (Mobileye), gown skirt + mortarboard (education). Shown by pose weight.
+    if (!props.current && arms) {
+      const p = { laptop: buildLaptop(), tablet: buildTablet(arms.left.side), skirt: buildSkirt(), cap: buildMortarboard() };
+      Object.values(p).forEach((o) => (o.userData.avatarExtra = true)); // so copies of the rig can drop them
+      scene.add(p.laptop, p.tablet, p.skirt);
+      (head.current ?? scene).add(p.cap);
+      props.current = { ...p, capScale: p.cap.parent!.getWorldScale(new Vector3()).y };
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- run once when the animations are bound
   }, [actions, mixer]);
 
@@ -71,17 +82,14 @@ export function Figure({ shadows }: { shadows: boolean }) {
       const s = entrance(clock.elapsedTime - it.start);
       g.position.x = s.x;
       g.rotation.y = s.heading;
-      pose.current = { wave: s.wave, hips: s.hips, think: s.think };
+      pose.current = s.pose;
       clip = s.clip;
       it.done = s.done;
     } else {
       g.position.x = MathUtils.damp(g.position.x, 0, 6, dt);
-      // Walk toward the oncoming milestones (the future), not away from them.
       g.rotation.y = MathUtils.damp(g.rotation.y, heading(offset.current), 4, dt);
       const p = poseFor(stationAt(offset.current).clip);
-      pose.current.wave = MathUtils.damp(pose.current.wave, p.wave, 6, dt);
-      pose.current.hips = MathUtils.damp(pose.current.hips, p.hips, 6, dt);
-      pose.current.think = MathUtils.damp(pose.current.think, p.think, 6, dt);
+      for (const k of POSES) pose.current[k] = MathUtils.damp(pose.current[k], p[k], 6, dt);
       clip = clipFor(offset.current);
     }
     if (clip !== current.current) {
@@ -91,6 +99,19 @@ export function Figure({ shadows }: { shadows: boolean }) {
     // Runs after useAnimations' mixer update (registered first), so the overlay sits on this frame's pose.
     if (arms) applyArms(g, arms, pose.current, clock.elapsedTime);
     if (head.current) updateAvatar(head.current, clock.elapsedTime);
+    const pr = props.current;
+    if (pr) {
+      const p = pose.current;
+      pr.laptop.visible = p.laptop > 0.5;
+      pr.tablet.visible = p.tablet > 0.5;
+      pr.skirt.visible = pr.cap.visible = p.cheer > 0.5;
+      setOutfit(scene, p.cheer > 0.5 ? "gown" : p.laptop > 0.5 ? "business" : "casual");
+      if (pr.cap.visible) {
+        const toss = capToss(clock.elapsedTime);
+        pr.cap.position.y = toss.height / pr.capScale; // metres → head space
+        pr.cap.rotation.y = toss.spin;
+      }
+    }
   });
 
   return <primitive ref={group} object={scene} />;

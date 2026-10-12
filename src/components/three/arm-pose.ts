@@ -1,4 +1,5 @@
 import { Quaternion, Vector3, type Object3D } from "three";
+import type { Pose } from "@/lib/entrance";
 
 /** One arm of a Mixamo rig; `side` is the arm's outward x sign in model space. */
 export interface Arm {
@@ -75,7 +76,7 @@ function bend(root: Object3D, b0: Object3D, dir: Vector3, angle: number) {
 }
 
 /** Overlays the procedural poses on whatever the mixer just played: hands on hips, thinking, and a right-hand wave. */
-export function applyArms(root: Object3D, arms: Rig, pose: { wave: number; hips: number; think: number }, t: number) {
+export function applyArms(root: Object3D, arms: Rig, pose: Pose, t: number) {
   // Thinking/reading: lean in a little, head tipped down and to the side (spread over spine and neck).
   arms.lean.forEach((b, i) => {
     bend(root, b, d.set(1, 0, 0), pose.think * (i === arms.lean.length - 1 ? 0.16 : 0.045));
@@ -94,6 +95,22 @@ export function applyArms(root: Object3D, arms: Rig, pose: { wave: number; hips:
   aim(root, r.fore, r.hand, d.set(-0.3 * r.side, 0.95, -0.05), pose.think);
   aim(root, l.upper, l.fore, d.set(0.2 * l.side, -0.9, 0.35), pose.think);
   aim(root, l.fore, l.hand, d.set(-0.92 * l.side, 0.08, 0.38), pose.think);
+  // Graduation: both arms up in a V, pumping a little.
+  for (const arm of [l, r]) {
+    const pump = 0.12 * Math.sin(t * 5);
+    aim(root, arm.upper, arm.fore, d.set(0.5 * arm.side, 0.85 + pump, 0.12), pose.cheer);
+    aim(root, arm.fore, arm.hand, d.set(0.28 * arm.side, 1, 0.08), pose.cheer);
+  }
+  // Holding an open laptop: elbows at the sides, forearms level and forward under the base.
+  for (const arm of [l, r]) {
+    aim(root, arm.upper, arm.fore, d.set(0.12 * arm.side, -0.95, 0.2), pose.laptop);
+    aim(root, arm.fore, arm.hand, d.set(-0.22 * arm.side, 0.04, 1), pose.laptop);
+  }
+  // Tablet in the left hand at chest height; the right hand opens out to the side, back toward the fleet.
+  aim(root, l.upper, l.fore, d.set(0.1 * l.side, -0.95, 0.25), pose.tablet);
+  aim(root, l.fore, l.hand, d.set(-0.35 * l.side, 0.35, 0.9), pose.tablet);
+  aim(root, r.upper, r.fore, d.set(0.75 * r.side, -0.6 + 0.08 * Math.sin(t * 1.3), -0.15), pose.tablet);
+  aim(root, r.fore, r.hand, d.set(0.8 * r.side, 0.15, -0.3), pose.tablet);
   aim(root, r.upper, r.fore, d.set(0.8 * r.side, 0.5, 0.25), pose.wave);
   aim(root, r.fore, r.hand, d.set(r.side * (0.2 + 0.35 * Math.sin(t * 7)), 1, 0.2), pose.wave);
 }

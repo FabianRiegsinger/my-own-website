@@ -10,8 +10,10 @@ import { Figure } from "./Figure";
 import { ScrollTracker } from "./ScrollTracker";
 import { StationOffset } from "./station-offset";
 import { AgentNetwork } from "./stations/AgentNetwork";
-import { SkillOrbit } from "./stations/SkillOrbit";
-import { Timeline } from "./stations/Timeline";
+import { Fireworks } from "./stations/Fireworks";
+import { Fleet } from "./stations/Fleet";
+import { SkillCloud } from "./stations/SkillCloud";
+import { Team } from "./stations/Team";
 
 /** Fixed full-screen 3D world behind natively scrolling text; scroll position drives camera, figure and stations. */
 export function Experience3D({ cv, projects, lowPower: initialLowPower, onFail }: ExperienceProps) {
@@ -42,8 +44,12 @@ export function Experience3D({ cv, projects, lowPower: initialLowPower, onFail }
           <Suspense fallback={null}>
             <Figure shadows={!lowPower} />
           </Suspense>
-          <Timeline experience={cv.experience} education={cv.education} />
-          <SkillOrbit skills={cv.skills} />
+          <Fireworks />
+          <Suspense fallback={null}>
+            <Team />
+            <Fleet />
+          </Suspense>
+          <SkillCloud skills={cv.skills} />
           <AgentNetwork />
           <ContactShadows position={[0, 0, 0]} opacity={0.35} scale={10} blur={2.5} far={4} frames={lowPower ? 1 : Infinity} />
         </Canvas>
