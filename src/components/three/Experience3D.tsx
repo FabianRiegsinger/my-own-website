@@ -10,7 +10,6 @@ import { Figure } from "./Figure";
 import { ScrollTracker } from "./ScrollTracker";
 import { StationOffset } from "./station-offset";
 import { AgentNetwork } from "./stations/AgentNetwork";
-import { Hero } from "./stations/Hero";
 import { SkillOrbit } from "./stations/SkillOrbit";
 import { Timeline } from "./stations/Timeline";
 
@@ -29,9 +28,7 @@ export function Experience3D({ cv, projects, lowPower: initialLowPower, onFail }
           camera={{ position: [0, 1.4, 5], fov: 35 }}
           onCreated={({ gl }) => gl.domElement.addEventListener("webglcontextlost", onFail)}
         >
-          <color attach="background" args={["#f5f5f7"]} />
-          {/* Fog in the background colour dissolves the floor edge into an endless studio. */}
-          <fog attach="fog" args={["#f5f5f7", 7, 20]} />
+          {/* Transparent canvas: the page's soft colour field shows through, which the glass panels need to read as glass. */}
           <PerformanceMonitor onDecline={() => setLowPower(true)} />
           <Environment resolution={256}>
             <Lightformer intensity={2} position={[0, 5, -2]} scale={[10, 2, 1]} rotation-x={Math.PI / 2} />
@@ -45,7 +42,6 @@ export function Experience3D({ cv, projects, lowPower: initialLowPower, onFail }
           <Suspense fallback={null}>
             <Figure shadows={!lowPower} />
           </Suspense>
-          <Hero lowPower={lowPower} />
           <Timeline experience={cv.experience} education={cv.education} />
           <SkillOrbit skills={cv.skills} />
           <AgentNetwork />

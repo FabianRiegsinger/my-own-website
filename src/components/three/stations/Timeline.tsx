@@ -79,7 +79,7 @@ export function Timeline({ experience, education }: { experience: Experience[]; 
               <torusGeometry args={[1.2, 0.012, 8, 64]} />
               <meshBasicMaterial color={GLOW} toneMapped={false} />
             </mesh>
-            {isJob && <Car position={[-2.6, 0, 0]} rotation-y={0.3} />}
+            {isJob && <Car position={[2.6, 0, 0]} rotation-y={-0.3} />}
           </group>
         ))}
       </group>

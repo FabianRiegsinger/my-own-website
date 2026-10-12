@@ -139,6 +139,8 @@ agentic:    { intro: string; tools: string[]; workUse: string }
 
 ## 5. Visual style
 
+> **2026-10-12 update (`style/apple-glass`, evolves the Apple style below):** figure centred on every screen (no desktop view offset); text in one liquid-glass panel per section (translucent white gradient, `backdrop-filter: blur(28px) saturate(180%)`, bright rim, radius 2rem), limited to the left 36vw from 1024px up and floating over the figure below that; inner cards as lighter glass. Page background is `#F5F5F7` with soft blue/violet/peach radial blobs; the 3D canvas is transparent (no floor plane, no fog, contact shadow only). Landing entrance at scrollY < 40px: walks in from the right (2.5s), turns to face the viewer (0.6s), waves (3s), settles into hands on hips (0.6s); scrolling ends it early. Wave and hands-on-hips are procedural Mixamo arm-bone overlays (`arm-pose.ts`) on the idle clip: hips at every idle station, wave at contact. Timeline cars moved to the right of the path.
+
 - Background `#F5F5F7`, text `#1D1D1F`, muted text `#6E6E73` (4.66:1).
 - Accent: `#2563EB` for text and links (4.75:1 on background); `#2F7BF6` only for 3D glow and large
   decorative shapes (3.65:1, fails as text).

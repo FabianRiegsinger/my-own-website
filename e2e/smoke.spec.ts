@@ -107,3 +107,17 @@ test("career timeline runs oldest to newest", async ({ page }) => {
   expect(order.every((i) => i >= 0)).toBe(true);
   expect([...order].sort((a, b) => a - b)).toEqual(order);
 });
+
+test("apple glass: every text panel is frosted glass left of the centred figure", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/");
+  await expect(page.locator("canvas")).toBeAttached({ timeout: 10_000 });
+  const panels = page.locator("[data-glass]");
+  expect(await panels.count()).toBe(6);
+  for (const p of await panels.all()) {
+    const box = (await p.boundingBox())!;
+    expect(box.x + box.width).toBeLessThanOrEqual(1440 * 0.42);
+    expect(await p.evaluate((el) => getComputedStyle(el).backdropFilter)).toContain("blur");
+    expect(parseFloat(await p.evaluate((el) => getComputedStyle(el).borderRadius))).toBeGreaterThanOrEqual(24);
+  }
+});

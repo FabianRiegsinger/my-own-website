@@ -6,9 +6,9 @@ export function Skills({ cv }: { cv: CV }) {
     <Section id="skills">
       <Eyebrow>Skills</Eyebrow>
       <h2 className="text-4xl font-semibold tracking-tight sm:text-5xl">What I work with</h2>
-      <div className="mt-12 grid max-w-3xl gap-4 sm:grid-cols-2">
+      <div className="mt-10 grid gap-3 2xl:grid-cols-2">
         {cv.skills.map((g) => (
-          <div key={g.group} className="rounded-3xl bg-white/80 p-6">
+          <div key={g.group} className="rounded-2xl bg-white/45 p-5 ring-1 ring-white/70">
             <h3 className="text-lg font-semibold">{g.group}</h3>
             <ul className="mt-4 space-y-3">
               {g.items.map((i) => (
