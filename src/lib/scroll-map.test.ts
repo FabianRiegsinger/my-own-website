@@ -73,8 +73,8 @@ describe("scroll-map", () => {
 });
 
 describe("screen shift", () => {
-  it("puts the figure in the right quarter on the agentic page, centred elsewhere", () => {
-    expect(0.5 + st("agentic").shift).toBeGreaterThanOrEqual(0.75);
-    for (const s of STATIONS.filter((s) => s.id !== "agentic")) expect(s.shift).toBe(0);
+  it("stands the figure at three quarters of the screen width, further right on the agentic page", () => {
+    for (const s of STATIONS) expect(0.5 + s.shift).toBeGreaterThanOrEqual(0.75);
+    expect(st("agentic").shift).toBeGreaterThan(st("hero").shift);
   });
 });

@@ -45,6 +45,12 @@ html {
   }
 }
 
+/* The static page's still of the figure only shows once the page has settled on static (no WebGL, reduced motion,
+   3D failure); while the 3D upgrade loads it would flash in the hero panel before the 3D figure walks in. */
+html:not([data-experience="static"]) .fallback-figure {
+  display: none;
+}
+
 /* Soft colour field behind everything (like an iOS wallpaper): liquid glass only reads with colour to refract. */
 body {
   background:

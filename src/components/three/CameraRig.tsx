@@ -11,7 +11,7 @@ const DESKTOP = 768;
 /** Eases the camera from the current station's pose toward the next one as the section scrolls by. */
 export function CameraRig() {
   const offset = useStationOffset();
-  const shift = useRef(0);
+  const shift = useRef<number | null>(null);
 
   const [pos, look, goalPos, goalLook] = useMemo(() => [new Vector3(), new Vector3(), new Vector3(), new Vector3()], []);
   useFrame(({ camera, size }, dt) => {
@@ -25,7 +25,9 @@ export function CameraRig() {
     look.lerp(goalLook, k);
     camera.lookAt(look);
     // Shift the projection (not the camera) so a station can stand the figure off-centre, clear of its scenery.
-    shift.current = MathUtils.lerp(shift.current, MathUtils.lerp(s.shift, next.shift, t), k);
+    const goalShift = MathUtils.lerp(s.shift, next.shift, t);
+    // First frame starts at the goal, so the figure never slides sideways on load.
+    shift.current = shift.current === null ? goalShift : MathUtils.lerp(shift.current, goalShift, k);
     if (!("setViewOffset" in camera)) return;
     if (size.width >= DESKTOP && Math.abs(shift.current) > 1e-4) {
       camera.setViewOffset(size.width, size.height, -shift.current * size.width, 0, size.width, size.height);

@@ -152,3 +152,17 @@ test("glass panel tilts toward the mouse and settles when it leaves", async ({ p
   await page.mouse.move(5, 5);
   await expect.poll(() => panel.evaluate((el) => el.style.transform)).toBe("");
 });
+
+test("hero fallback figure never flashes before the page decides between 3D and static", async ({ page }) => {
+  // First paint = server HTML before any script runs: the still must already be hidden there.
+  await page.route(/\/_next\/static\/chunks\/.*\.js(\?.*)?$/, (r) => r.abort());
+  await page.goto("/");
+  await expect(page.locator('img[src="/fallback.webp"]')).toBeAttached();
+  await expect(page.locator('img[src="/fallback.webp"]')).toBeHidden();
+});
+
+test("static page still shows the fallback figure", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/");
+  await expect(page.locator('img[src="/fallback.webp"]')).toBeVisible();
+});

@@ -1,7 +1,10 @@
 import type { ClipName } from "./scroll-map";
 
-/** Landing choreography timings (seconds) and the off-screen start position (world units, camera at z = 5). */
-export const ENTRANCE = { walk: 2.5, turn: 0.6, wave: 3, settle: 0.6, startX: 3.6 } as const;
+/**
+ * Landing choreography timings (seconds) and the start position (world units, camera at z = 5): just past the right
+ * screen edge with the figure at three quarters of the width (edge ≈ 1.3) and on phones (edge ≈ 0.7).
+ */
+export const ENTRANCE = { walk: 1.8, turn: 0.6, wave: 3, settle: 0.6, startX: 2.2 } as const;
 
 export interface EntranceState {
   x: number;
