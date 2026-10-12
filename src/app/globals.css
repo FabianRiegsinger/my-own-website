@@ -1,12 +1,25 @@
 @import "tailwindcss";
 
+/* Bento: Apple-grey page, white rounded tiles, one warm orange. */
 @theme inline {
   --color-bg: #f5f5f7;
   --color-ink: #1d1d1f;
   --color-muted: #6e6e73;
-  --color-accent: #2563eb;
-  --color-glow: #2f7bf6;
-  --font-sans: var(--font-inter);
+  /* orange-700: text-safe on white (5.2:1); --color-glow is for fills and 3D only. */
+  --color-accent: #c2410c;
+  --color-glow: #ff6a00;
+  --font-sans: var(--font-geist);
+}
+
+@utility tile {
+  border-radius: 1.75rem;
+  background-color: #ffffff;
+  padding: 1.5rem;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.04), 0 8px 24px rgb(0 0 0 / 0.05);
+  /* Mobile: tiles sit over the figure, so let it show through a little. */
+  @media (width < 48rem) {
+    background-color: rgb(255 255 255 / 0.88);
+  }
 }
 
 html {
@@ -17,4 +30,9 @@ html {
   html {
     scroll-behavior: auto;
   }
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 3px;
 }

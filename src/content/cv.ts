@@ -7,6 +7,11 @@ export const cv: CV = {
     location: "Ingolstadt, Germany",
     summary:
       "Software engineer with 8+ years in automotive, working in C++ and Python on autonomous-driving software. I'm Mobileye's on-site resident at AUDI for the ADAS Level 3 program and keep about 30 development vehicles running. Most of my day is spent between AUDI's engineers and Mobileye R&D. I write much of my code with AI agents.",
+    stats: [
+      { value: "8+", label: "years in automotive" },
+      { value: "~30", label: "development vehicles kept running" },
+      { value: "Level 3", label: "ADAS program at AUDI" },
+    ],
     links: {
       github: "https://github.com/FabianRiegsinger",
       linkedin: "https://www.linkedin.com/in/fabian-riegsinger-736b78b7/",

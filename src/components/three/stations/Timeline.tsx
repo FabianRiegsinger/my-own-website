@@ -9,7 +9,7 @@ import { STATIONS, stationWeight } from "@/lib/scroll-map";
 import { fade } from "../fade";
 import { useStationOffset } from "../station-offset";
 
-const GLOW = "#2f7bf6";
+const GLOW = "#ff6a00";
 const SPACING = 5;
 const DASHES = 24;
 const timeline = STATIONS.find((s) => s.id === "timeline")!;

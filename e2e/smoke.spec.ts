@@ -107,3 +107,16 @@ test("career timeline runs oldest to newest", async ({ page }) => {
   expect(order.every((i) => i >= 0)).toBe(true);
   expect([...order].sort((a, b) => a - b)).toEqual(order);
 });
+
+test("bento style: grey page, rounded white tiles, orange accent", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/");
+  expect(await page.evaluate(() => getComputedStyle(document.body).backgroundColor)).toBe("rgb(245, 245, 247)");
+  const tiles = page.locator("#about [data-tile]");
+  expect(await tiles.count()).toBeGreaterThanOrEqual(4);
+  const tile = tiles.first();
+  expect(await tile.evaluate((el) => getComputedStyle(el).backgroundColor)).toBe("rgb(255, 255, 255)");
+  expect(parseFloat(await tile.evaluate((el) => getComputedStyle(el).borderRadius))).toBeGreaterThanOrEqual(24);
+  expect(await page.locator("#skills [data-accent]").first().evaluate((el) => getComputedStyle(el).backgroundColor)).toBe("rgb(255, 106, 0)");
+});

@@ -139,6 +139,8 @@ agentic:    { intro: string; tools: string[]; workUse: string }
 
 ## 5. Visual style
 
+> **2026-10-12 update (`style/bento`, alternative to `feat/brutalism`, `style/neon`, `style/swiss`):** bento restyle: page `#F5F5F7`, white tiles (radius 1.75rem, soft shadow, 88% opaque below 768px), ink `#1D1D1F`, muted `#6E6E73`; orange `#C2410C` for text, `#FF6A00` for fills and 3D; Geist. Each section is an uneven 6-column tile grid in the left 60% on desktop: hero name + dark tagline tile, about summary + stat tiles (`profile.stats`, each value must appear in the summary), one tile per degree/job with the current job dark, skill groups 3+3+2+2+2. 3D unchanged apart from orange gates, skill spheres and agent graph. The values below describe the original Apple-style design.
+
 - Background `#F5F5F7`, text `#1D1D1F`, muted text `#6E6E73` (4.66:1).
 - Accent: `#2563EB` for text and links (4.75:1 on background); `#2F7BF6` only for 3D glow and large
   decorative shapes (3.65:1, fails as text).

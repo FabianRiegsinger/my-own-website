@@ -32,7 +32,7 @@ export function SkillOrbit({ skills }: { skills: SkillGroup[] }) {
                 return (
                   <mesh key={item.name} position={[Math.cos(a) * radius, 0, Math.sin(a) * radius]}>
                     <sphereGeometry args={[0.04 + 0.022 * item.level, 24, 24]} />
-                    <meshStandardMaterial color={item.level >= 4 ? "#2f7bf6" : "#d6d6db"} emissive={item.level >= 4 ? "#2f7bf6" : "#000000"} emissiveIntensity={0.35} roughness={0.4} />
+                    <meshStandardMaterial color={item.level >= 4 ? "#ff6a00" : "#e4e4ea"} emissive={item.level >= 4 ? "#ff6a00" : "#000000"} emissiveIntensity={0.35} roughness={0.4} />
                   </mesh>
                 );
               })}

@@ -36,4 +36,9 @@ describe("cv", () => {
   it("agentic tools", () => {
     expect(cv.agentic.tools).toEqual(["Claude Code", "Cursor"]);
   });
+
+  it("stat tiles only restate facts from the summary", () => {
+    expect(cv.profile.stats.length).toBeGreaterThan(0);
+    for (const s of cv.profile.stats) expect(cv.profile.summary).toContain(s.value.replace(/^~/, ""));
+  });
 });

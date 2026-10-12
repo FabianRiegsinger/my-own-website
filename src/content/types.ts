@@ -6,6 +6,8 @@ export interface Profile {
   headline: string;
   location: string;
   summary: string;
+  /** Short facts for the bento stat tiles; each value must appear in `summary`. */
+  stats: { value: string; label: string }[];
   links: { github: string; linkedin: string; xing: string; email: { user: string; domain: string } };
 }
 
