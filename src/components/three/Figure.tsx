@@ -3,10 +3,11 @@
 import { useAnimations, useGLTF } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
-import { MathUtils, MeshStandardMaterial, type Group, type Mesh } from "three";
+import { MathUtils, type Group, type Mesh } from "three";
 import { entrance, poseFor } from "@/lib/entrance";
 import { heading, stationAt, type ClipName } from "@/lib/scroll-map";
 import { applyArms, findArms } from "./arm-pose";
+import { attachHead, paintBody, updateAvatar } from "./avatar";
 import { switchClip } from "./clips";
 import { useStationOffset } from "./station-offset";
 
@@ -25,16 +26,14 @@ export function Figure({ shadows }: { shadows: boolean }) {
   const intro = useRef<{ start: number | null; done: boolean }>({ start: null, done: false });
   const pose = useRef({ wave: 0, hips: 0 });
   const arms = useMemo(() => findArms(scene), [scene]);
-  const material = useMemo(() => new MeshStandardMaterial({ color: "#f2f2f2", roughness: 0.6, metalness: 0 }), []);
+  const head = useRef<Group | null>(null);
 
+  useMemo(() => paintBody(scene), [scene]);
   useEffect(() => {
     scene.traverse((o) => {
-      if ((o as Mesh).isMesh) {
-        (o as Mesh).material = material;
-        o.castShadow = shadows;
-      }
+      if ((o as Mesh).isMesh) o.castShadow = shadows;
     });
-  }, [scene, material, shadows]);
+  }, [scene, shadows]);
 
   const clipFor = (offset: number): ClipName => {
     const wanted = stationAt(offset).clip;
@@ -56,6 +55,8 @@ export function Figure({ shadows }: { shadows: boolean }) {
     switchClip(actions, null, clip, FADE);
     mixer.update(0);
     current.current = clip;
+    // Memoji head over the mannequin's, sized from the posed head so it never pokes through.
+    head.current = attachHead(scene);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- run once when the animations are bound
   }, [actions, mixer]);
 
@@ -88,6 +89,7 @@ export function Figure({ shadows }: { shadows: boolean }) {
     }
     // Runs after useAnimations' mixer update (registered first), so the overlay sits on this frame's pose.
     if (arms) applyArms(g, arms, pose.current, clock.elapsedTime);
+    if (head.current) updateAvatar(head.current, clock.elapsedTime);
   });
 
   return <primitive ref={group} object={scene} />;
