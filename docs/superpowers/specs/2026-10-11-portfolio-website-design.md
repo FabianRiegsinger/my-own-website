@@ -56,7 +56,7 @@ shift and figure yaw. The camera and yaw ease to the next station over the secon
 
 | Station | Pose | 3D scene | HTML content |
 |---|---|---|---|
-| hero | walk-in, wave, hands on hips | figure only | Name, headline, "Automotive engineer → agentic builder" |
+| hero | walk-in, wave, hands on hips | figure only | Name, headline, "Automotive engineer → agentic builder", "See my story" scroll cue |
 | about | thinking/reading, turned toward the text | figure only | Summary, location |
 | education | rings the graduation bell | grey wall with round niche, bronze bell, terrazzo floor | B.Eng. and M.Sc. |
 | esas | holds an open laptop | four colleagues around him | ESAS role, highlights, tags |
@@ -194,6 +194,7 @@ job is added without a page.
   bright rim and top highlight, radius 2rem; inner cards as lighter glass.
 - From 1024 px up the panel sits in the left 36vw (keep `GlassPanel` and `PANEL_EDGE` in sync);
   below that it spans the width and floats over the frosted figure.
+- Panels taller than the screen (agentic, skills) pin their heading at the top while they scroll.
 - The panel's face tilts up to 4° toward the mouse (`perspective(1400px)`), mouse pointers only, off
   with reduced motion.
 
@@ -213,18 +214,23 @@ job is added without a page.
 
 ### Scenes
 
-- **Education:** light grey wall set piece with a round niche; a bronze bell that swings when he tugs
-  its handle; dark terrazzo floor slab. No university marks.
-- **ESAS:** open unbadged laptop; four colleagues at his sides and behind him, never nearer the
-  camera than him, idling out of step, one gesturing.
-- **Mobileye:** tablet in hand; a customer in a dark suit facing him; an unbadged white test fleet
-  with roof sensor racks in two diagonal rows behind (slightly under life size). No AUDI marks.
+- **Education:** light grey wall set piece with a round niche shaded like a recess; a bronze bell
+  that swings when he tugs its handle; dark terrazzo floor. Wall and floor fade out at their edges
+  (canvas alpha maps), so no hard edge shows. No university marks.
+- **ESAS:** open unbadged laptop; four colleagues in a tight half circle around him and the laptop,
+  never nearer the camera than him, idling out of step, one gesturing.
+- **Mobileye:** tablet in hand; a customer in a dark suit facing him; four unbadged white test cars
+  (rounded body, glass cabin, rims, roof sensor rack) parked at an angle behind, staggered in depth,
+  slightly under life size. Standard materials only (a clearcoat shader stalled the first view). No
+  AUDI marks.
 - **Agentic:** ~170 instanced nodes and links on a sheet facing the camera, 4 units behind the
-  figure, sized for 21:9 plus the view shift, drifting slowly in its own plane (cyan → violet).
+  figure, sized for 21:9 plus the view shift, drifting slowly in its own plane, coloured along the
+  site palette like the word cloud.
 - **Skills:** the skill names as a static word cloud 1.6 m behind him: extruded, bevelled Inter Bold
   words facing the camera, inside a cartoon-cloud outline (flat base, five puffs) centred right behind
   his head as the camera sees it; its right edge stays on screen, its left edge reaches the frosted
-  panel, and he stands in front of it. Shuffled, mostly horizontal (only names
+  panel, and he stands in front of it. A face-sized spot behind his head stays free. Hidden below
+  1024 px, where the full-width panel covers it. Shuffled, mostly horizontal (only names
   under 10 characters may run vertically), sizes by level times a random factor, each word its own
   shade along the site palette (`#2563EB` → `#2F7BF6` → `#8B5CF6` → `#FFA878`).
 
@@ -288,4 +294,3 @@ Blog, CMS, contact form, analytics, multi-language (English only), dark mode.
 - Impressum and privacy details.
 - A licensed replacement for `figure.glb` (Mixamo FBX Binary 7.4 export, or a CC0 rig).
 - Register `eng-fabian-riegsinger.de` and set up DNS.
-- Refresh `public/fallback.webp`: it still shows the bare grey mannequin, not the avatar.
