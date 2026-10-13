@@ -20,12 +20,12 @@ const at = (x: number, z: number, palette: Palette, pose: Partial<Pose>, phase: 
 
 const look = (shirt: string, trousers: string, skin: string, jacket = shirt): Palette => ({ skin, shirt, jacket, trousers, shoes: "#2b2b30" });
 
-/** Colleagues at his sides and behind him, never nearer the camera than Fabian, so he stays the focus. */
+/** Colleagues in a tight half circle around him and the laptop, never nearer the camera than Fabian. */
 export const TEAM = [
-  at(-1.4, 0.1, look("#d9d4c7", "#3d4350", "#e8c4a6"), { think: 1 }, 0.3),
-  at(1.45, 0.15, look("#9aa5b1", "#2b2f36", "#c99a74"), { hips: 1 }, 1.1),
-  at(1.1, -1.1, look("#e6e6ea", "#30343c", "#a8775a", "#5a5f6b"), { wave: 0.35 }, 1.9),
-  at(-0.9, -1.25, look("#b7c9b3", "#4a4038", "#f0cfb5"), {}, 2.6),
+  at(-1.05, -0.25, look("#d9d4c7", "#3d4350", "#e8c4a6"), { think: 1 }, 0.3),
+  at(1.1, -0.2, look("#9aa5b1", "#2b2f36", "#c99a74"), { hips: 1 }, 1.1),
+  at(0.6, -1.05, look("#e6e6ea", "#30343c", "#a8775a", "#5a5f6b"), { wave: 0.35 }, 1.9),
+  at(-0.55, -1.1, look("#b7c9b3", "#4a4038", "#f0cfb5"), {}, 2.6),
 ];
 
 /** ESAS: talking a technical point through with the team, laptop in hand. */
