@@ -1,14 +1,14 @@
 # Portfolio Website — Design Spec
 
-Date: 2026-10-11
-Status: Draft, awaiting review
+Date: 2026-10-11 (revised 2026-10-13 to match the site as built on `style/apple-glass`, PR #7)
+Status: Approved; in development
 
 ## 1. Goal
 
 A public personal website for Fabian Riegsinger that tells one story: an experienced automotive
 system-integration and software engineer (8+ years, ADAS/AD) who is quickly adapting to the agentic
-AI world. The CV is presented graphically as a scroll-driven 3D journey, with a smooth, faceless,
-Apple-style 3D figure at the center.
+AI world. The CV is presented as a scroll-driven 3D journey, with a Memoji-style 3D avatar of Fabian
+acting out each chapter.
 
 ### Success criteria
 
@@ -22,60 +22,87 @@ Apple-style 3D figure at the center.
 
 | Topic | Decision |
 |---|---|
-| Tech stack | Next.js (App Router) + React + TypeScript |
-| 3D approach | Full 3D scroll world: one `<Canvas>` with drei `ScrollControls`, HTML in `<Scroll html>` |
-| Figure | Smooth abstract matte mannequin (faceless, Apple product-video style), not a likeness |
+| Tech stack | Next.js (App Router) + React + TypeScript, Tailwind CSS |
+| 3D approach | One fixed full-screen `<Canvas>` behind natively scrolling HTML; scroll position drives the 3D |
+| Figure | Memoji-style avatar of Fabian on a rigged mannequin (procedural head and clothes), not a photo likeness |
+| Style | Apple-style light theme with liquid-glass text panels (chosen over brutalism, neon, swiss and bento prototypes) |
 | CV source | `curriculum-vitae-ats-nophoto.pdf` (Sept 2026), transcribed into `src/content/cv.ts` |
 | Agentic evidence | Daily work with Claude Code and Cursor; side projects on GitHub (first: `snap-notes`) |
-| Projects | Fetched from GitHub by topic `portfolio`, revalidated hourly |
-| Look | Modern, clean, light theme |
+| Projects | Fetched from GitHub by topic `portfolio`, refreshed hourly |
+| Brands | Employer and university colours tint the page; no logos, badges or crests anywhere |
+| Domain | `www.eng-fabian-riegsinger.de` at launch (apex redirects to www) |
 
 ## 2. Architecture
 
-- **Framework:** Next.js App Router, TypeScript, Tailwind CSS, `next/font` (Inter).
+- **Framework:** Next.js App Router (`cacheComponents`), TypeScript, Tailwind CSS v4, `next/font` (Inter).
 - **3D:** `three`, `@react-three/fiber`, `@react-three/drei`.
-- **Hosting:** Vercel; `main` deploys to production, PRs get preview deploys.
-- **Single route:** `/`, plus `/impressum` and `/privacy`.
+- **Hosting:** Vercel; `main` deploys to production, PRs get preview deploys. Production stays behind
+  Vercel Authentication until launch.
+- **Routes:** `/`, plus `/impressum` and `/privacy`.
 
-`app/page.tsx` is a server component. It loads `cv` and `getProjects()` and passes them to the
-client. The 3D experience is loaded with `next/dynamic` (`ssr: false`) behind a minimal loader
-(name + progress bar). Users without WebGL or with `prefers-reduced-motion` get `<StaticPage>`
-instead, which renders the same section components with a still image of the figure.
+`app/page.tsx` is a server component. It loads `cv` and the cached projects and renders
+`<ExperienceGate>` around the server-rendered `<StaticPage>`. On the client, the gate upgrades to the
+3D experience (`React.lazy`, with the static page as the Suspense fallback) only when WebGL is
+available and `prefers-reduced-motion` is off. Any 3D error falls back to the static page. The
+static page's still of the figure stays hidden until the page has settled on static
+(`html[data-experience="static"]`), so it never flashes before the 3D figure walks in.
 
 ### Scroll journey
 
-One `<Canvas>`, `ScrollControls` with ~6 pages. Scroll offset 0..1 drives the camera spline, the
-figure's animation clip, and the visible station. All mapping lives in `lib/scroll-map.ts`.
+The canvas is fixed behind eight full-screen sections. `ScrollTracker` maps the viewport centre onto
+a 0..1 station offset using the measured section rects, so 3D stays in sync with text of any height.
+`lib/scroll-map.ts` holds one station per section: range, pose clip, camera, look-at target, screen
+shift and figure yaw. The camera and yaw ease to the next station over the second half of each page.
 
-| Range | Station | Figure | 3D set piece | HTML content |
-|---|---|---|---|---|
-| 0.00–0.15 | Hero | idle | Reflective floor, soft studio light | Name, headline "Automotive engineer → agentic builder" |
-| 0.15–0.30 | About | turns to visitor | Camera orbit | Summary: 8+ years, Ingolstadt, OEM ↔ engineering bridge |
-| 0.30–0.60 | Career timeline | walk | Glowing path, low-poly unbranded car silhouette, floating milestones | Education, ESAS 2018–2024, Mobileye 2024–now |
-| 0.60–0.75 | Skills | idle | Skill clusters orbiting the figure, size = level | Skill groups |
-| 0.75–0.90 | Agentic shift | typing | Network of glowing nodes and lines | Claude Code, Cursor, how used at work; GitHub project cards |
-| 0.90–1.00 | Contact | wave | Calm close-up | GitHub, LinkedIn, Xing, obfuscated email link |
+| Station | Pose | 3D scene | HTML content |
+|---|---|---|---|
+| hero | walk-in, wave, hands on hips | figure only | Name, headline, "Automotive engineer → agentic builder" |
+| about | thinking/reading, turned toward the text | figure only | Summary, location |
+| education | rings the graduation bell | grey wall with round niche, bronze bell, terrazzo floor | B.Eng. and M.Sc. |
+| esas | holds an open laptop | four colleagues around him | ESAS role, highlights, tags |
+| mobileye | holds a tablet, gestures to the fleet | customer, unbadged test fleet | Mobileye role, highlights, tags |
+| agentic | hands on hips | screen-filling network of nodes | Claude Code, Cursor, how used; GitHub project cards |
+| skills | hands on hips | word cloud of the skill names | Skill groups with level dots |
+| contact | wave | figure only | GitHub, LinkedIn, Xing, obfuscated email link |
+
+**Landing entrance** (only when the page loads at the top): the figure walks in from just past the
+right edge (1.8 s), turns to the viewer (0.6 s), waves (3 s) and settles into hands on hips (0.6 s).
+Entrance time advances by frame time capped at 50 ms, so a first-frame shader-compile stall pauses
+the walk instead of skipping it. Scrolling ends the entrance early.
+
+**Figure position:** on desktop (>= 1024 px) the projection is shifted so the figure stands midway
+between the glass panel's right edge (`PANEL_EDGE` = 0.39 of the width: 3vw gutter + 36vw panel) and
+the screen edge. The agentic page shifts further (0.32) to make room for the network. Below 1024 px
+the figure is centred behind the panels.
+
+**Page transitions:** `scroll-snap-type: y proximity`; each glass panel rises and fades in, then
+drifts out, through a CSS view-timeline animation (`translate`/`opacity`, off with reduced motion,
+absent in browsers without view timelines).
 
 ## 3. Components
 
 | File | Responsibility |
 |---|---|
-| `src/app/page.tsx` | Server: load `cv` + `getProjects()`, choose `Experience3D` or `StaticPage` |
-| `src/app/layout.tsx` | Fonts, metadata, Open Graph, JSON-LD `Person` |
+| `src/app/page.tsx` | Server: load `cv` + projects, render `ExperienceGate` around `StaticPage` |
+| `src/app/layout.tsx` | Fonts, metadata, Open Graph, JSON-LD `Person`, preload of `figure.glb` |
 | `src/app/impressum/page.tsx`, `src/app/privacy/page.tsx` | Legal templates, details filled by the owner |
-| `src/components/three/Experience3D.tsx` | Client: `<Canvas>`, `ScrollControls`, lights, environment, assembles stations |
-| `src/components/three/Figure.tsx` | Loads `figure.glb`, cross-fades animation clips by scroll offset |
-| `src/components/three/CameraRig.tsx` | Moves camera along a spline by scroll offset |
-| `src/components/three/stations/Hero.tsx` | Hero set piece |
-| `src/components/three/stations/Timeline.tsx` | Path, milestones, car silhouette |
-| `src/components/three/stations/SkillOrbit.tsx` | Orbiting skill clusters |
-| `src/components/three/stations/AgentNetwork.tsx` | Node/line network |
-| `src/components/sections/*.tsx` | HTML text per section; used in `<Scroll html>` and in `StaticPage` |
-| `src/components/StaticPage.tsx` | Fallback page: same sections + `public/fallback.webp` |
-| `src/lib/scroll-map.ts` | Scroll ranges → station, clip, camera key |
-| `src/lib/projects.ts` | GitHub fetch, filter, override merge |
-| `src/content/cv.ts` | All CV content, typed |
-| `src/content/project-overrides.ts` | Optional per-repo blurb/image/tagline |
+| `src/components/ExperienceGate.tsx` | Capability check, lazy 3D upgrade, error fallback, `data-experience` |
+| `src/components/StaticPage.tsx` | The eight sections (+ `ActivePage`); with the figure still when static |
+| `src/components/ActivePage.tsx` | Sets `<html data-page>` to the section being read (drives page tints) |
+| `src/components/sections/*.tsx` | HTML per section; `GlassPanel` (glass + mouse tilt), `Timeline` (three career sections) |
+| `src/components/three/Experience3D.tsx` | Canvas, lights, environment, contact shadows, all scenes |
+| `src/components/three/ScrollTracker.tsx`, `CameraRig.tsx` | Scroll → station offset; camera pose and screen shift |
+| `src/components/three/Figure.tsx` | Avatar: clips, entrance, yaw, pose overlays, outfits, props |
+| `src/components/three/arm-pose.ts` | Procedural arm and spine overlays on the playing clip |
+| `src/components/three/avatar.ts` | Memoji head, per-vertex outfits, `stripAvatar` for rig copies |
+| `src/components/three/props.ts` | Laptop and tablet |
+| `src/components/three/Person.tsx` | Generic faceless person (rig copy in its own clothes) |
+| `src/components/three/stations/*.tsx` | `Graduation`, `Team`, `Fleet`, `AgentNetwork`, `SkillCloud` |
+| `src/lib/scroll-map.ts` | Stations, `stationAt`, `toStationOffset`, `stationWeight`, `heading` |
+| `src/lib/entrance.ts` | Entrance timeline, `introStep`, `poseFor` |
+| `src/lib/projects.ts`, `projects-cache.ts` | GitHub fetch, filter, override merge; hourly cache |
+| `src/content/cv.ts`, `project-overrides.ts` | All CV content, typed; optional per-repo blurbs |
+| `scripts/build-figure.mjs`, `scripts/make-typeface.mjs` | Rebuild `figure.glb`; convert a font to typeface JSON |
 
 ## 4. Data model
 
@@ -84,12 +111,16 @@ figure's animation clip, and the visible station. All mapping lives in `lib/scro
 ```ts
 type Level = 1 | 2 | 3 | 4 | 5;
 
-profile:    { name, headline, location, summary, links: { github, xing, linkedin, email } }
+profile:    { name, headline, location, summary, links: { github, xing, linkedin, email: { user, domain } } }
 experience: { company, role, start, end: string | null, location, highlights: string[], tags: string[] }[]
 education:  { degree, school, end, note }[]
 skills:     { group: "Languages" | "Automotive" | "Tooling" | "Leadership" | "AI"; items: { name: string; level: Level }[] }[]
 agentic:    { intro: string; tools: string[]; workUse: string }
+additional: { title, year }[]
 ```
+
+Each job maps to its own page, oldest first (`JOB_STATIONS` = `esas`, `mobileye`); a test fails if a
+job is added without a page.
 
 ### Content (from the CV, typos corrected)
 
@@ -113,10 +144,10 @@ agentic:    { intro: string; tools: string[]; workUse: string }
   with AUDI AG on trajectory-planning evaluation metrics, 1.0). B.Eng. same field, THM, Sep 2016
   (thesis with FAS GmbH on Kalman/particle-filter indoor localization, 1.1).
 - **Additional:** C++/OOP tutor at THM, 2017.
-- **Agentic:** Uses Claude Code and Cursor daily, including building the Python fleet-rollout
-  tooling. Side projects on GitHub.
+- **Agentic:** Uses Claude Code and Cursor every day, at work and on side projects; this website was
+  built with Claude Code.
 
-### Skill levels (initial estimate, owner to adjust)
+### Skill levels
 
 | Group | Items (level) |
 |---|---|
@@ -128,64 +159,123 @@ agentic:    { intro: string; tools: string[]; workUse: string }
 
 ### Projects (`src/lib/projects.ts`)
 
-- `GET https://api.github.com/users/FabianRiegsinger/repos?per_page=100`, fetched server-side with
-  `next: { revalidate: 3600 }`. No token.
+- `GET https://api.github.com/users/FabianRiegsinger/repos?per_page=100`, server-side, cached for an
+  hour (`"use cache"` + `cacheLife("hours")`). Optional `GITHUB_TOKEN` (Vercel env only, never in
+  code) raises the rate limit.
 - Keep repos where `!fork && !private && topics.includes("portfolio")`.
 - Map to `{ name, description, language, stars, url, homepage, updatedAt }`, sorted by `updatedAt` desc.
 - Merge `project-overrides.ts` by repo name (override wins per field).
-- On fetch error or non-200: return projects built from the overrides list only, never throw.
-  Next's ISR keeps serving the last good page between successful revalidations.
+- On fetch error, non-200 or an empty result: return projects built from the overrides list only,
+  never throw.
 - Owner action: add topic `portfolio` to `snap-notes` (and future repos).
 
 ## 5. Visual style
 
-> **2026-10-12 update (`style/apple-glass`, evolves the Apple style below):** figure centred on every screen (no desktop view offset); text in one liquid-glass panel per section (translucent white gradient, `backdrop-filter: blur(28px) saturate(180%)`, bright rim, radius 2rem), limited to the left 36vw from 1024px up and floating over the figure below that; inner cards as lighter glass. Page background is `#F5F5F7` with soft blue/violet/peach radial blobs; the 3D canvas is transparent (no floor plane, no fog, contact shadow only). Career pages (2026-10-12, evening): the ring-and-car walk is gone; each career page is its own scene with a per-page `yaw` and pose overlay. Education (after the graduation photo, 2026-10-13): a light grey wall set piece with a round niche and a bronze bell that swings when he tugs its handle, dark terrazzo floor slab, no university marks; `ring` overlay (right hand on the bell handle, left hand on the hip), grey polo + beige chinos (`polo` outfit). While the education page is read, the background blobs cross-fade (typed CSS colour properties, `data-page` set by ActivePage) to THM green #80BA24 plus a light and a dark grey. Likewise per brand: ESAS page coral #F25544, light grey #E2E2E2, faint near-black #1A1A1A (esas-automotive.com Elementor global colours); Mobileye page brand blue #1E2EB8, periwinkle #CACAE7, soft pink #F2CAD4 (mobileye.com CSS). Page order: "Now building with AI" comes before Skills. Landing entrance time advances by frame time capped at 50 ms, so a first-frame stall pauses the walk-in instead of skipping it; the figure model is preloaded with the HTML. ESAS: navy blazer over the shirt and beige chinos (`business` outfit), open unbadged laptop, four generic colleagues (rig copies in their own clothes, faceless) at his sides and behind him. Mobileye: tablet in hand, a customer in a dark suit, an unbadged white test fleet with roof sensor racks parked in two diagonal rows behind (no AUDI marks). Skills (2026-10-13): the skill names form a static word cloud 1.6 m behind the figure: a cartoon-cloud outline (flat base, five puffs, ~5.8:2.2 unit, scaled 0.84 to the ~4.9 m beside the glass panel), centred at 1.6 m height, with a gap kept free over his silhouette; extruded, bevelled Inter Bold words facing the camera, shrunk together until all fit inside the outline (typeface JSON for printable ASCII from scripts/make-typeface.mjs, OFL), shuffled, mostly horizontal (only names under 10 characters may run vertically, reading bottom to top), sizes by level times a random factor, spiral-packed without overlaps, each word its own shade along the site palette (accent #2563EB, glow #2F7BF6, blob violet #8B5CF6, blob peach #FFA878); skills camera (0, 2.2, 6.4) looking at (0, 1.2, 0). Background blobs were made about 1.7x more intense on every page. Landing entrance at scrollY < 40px: walks in from the right (starts just past the right edge, x = 2.2, 1.8s), turns to face the viewer (0.6s), waves (3s), settles into hands on hips (0.6s); scrolling ends it early. Wave and hands-on-hips are procedural Mixamo arm-bone overlays (`arm-pose.ts`) on the idle clip: hips at every idle station, wave at contact. Timeline cars moved to the right of the path. Avatar: the placeholder mannequin is dressed as a Memoji-style Fabian (`avatar.ts`): per-vertex garment colours by dominant bone (light-blue shirt, dark trousers, brown shoes, skin hands) and a procedural head on the head bone (oval skull fitted to the mannequin head, short swept brown hair, thin round metal glasses, blue-grey eyes that blink, small smile); the mannequin head bone is shrunk to 0.6 inside it. Later the same day: career split into three pages (`education`, `esas`, `mobileye`), giving eight pages/stations; each career page walks past its own milestone gates (`careerTravel`). Pages snap (`scroll-snap-type: y proximity`), panels rise/fade in and drift out with a CSS view-timeline animation (`translate`/`opacity`), and glass panels tilt up to 4° toward the mouse (`perspective(1400px)`, mouse pointers only, off with reduced motion). On desktop (≥1024px) the figure stands midway between the glass panel's right edge (`PANEL_EDGE` 0.39 = 3vw + 36vw) and the screen edge on every page (shift ≈ 0.195, desktop view offset, first frame starts there), 0.32 on the agentic page. The agent network is a screen-filling sheet of ~170 instanced nodes facing the agentic camera 4 units behind the figure (sized for 21:9 plus the view shift), drifting slowly in its own plane. On the about page the figure takes a thinking/reading pose (`think` overlay: slight spine and neck lean, head tilt, right hand to chin, left forearm across the waist) turned 0.25 rad toward the text panel.
+### Page
 
-- Background `#F5F5F7`, text `#1D1D1F`, muted text `#6E6E73` (4.66:1).
-- Accent: `#2563EB` for text and links (4.75:1 on background); `#2F7BF6` only for 3D glow and large
-  decorative shapes (3.65:1, fails as text).
-- Agentic section adds a cyan–violet glow (`#22d3ee` → `#8b5cf6`), 3D/decoration only, never text
-  (1.66:1 and 3.89:1).
-- Light theme only. Inter, large tight headlines, quiet body text.
-- Figure: matte white/ceramic material, faceless. Studio lighting: environment map + one key light,
-  subtle reflective floor, contact shadows.
-- Automotive and agent elements: thin lines, low-poly, never photoreal, no brand logos.
-- Motion: eased, slow camera moves; text fades/slides in per section. At most 1–2 animated elements
-  per view (the figure plus one set piece); no other decorative animation.
-- Interaction: visible focus rings on all links and buttons, `cursor-pointer` on clickable
-  elements, touch targets >= 44×44 px.
-- Icons: SVG only (Simple Icons for GitHub, LinkedIn, Xing); no emoji.
+- Background `#F5F5F7` with three soft radial colour blobs (blue `#2F7BF6`, violet `#8B5CF6`, peach
+  `#FFA878`), behind a transparent canvas (no floor plane, no fog; contact shadows only).
+- **Per-page tints:** while a page is read, the blobs cross-fade (typed CSS colour properties,
+  `data-page`) to that page's palette. Colours only, never logos.
 
-### Figure asset
+  | Page | Blob colours | Source |
+  |---|---|---|
+  | education | THM green `#80BA24`, light grey, dark grey | THM brand green, the graduation photo |
+  | esas | coral `#F25544`, light grey `#E2E2E2`, near-black `#1A1A1A` | esas-automotive.com theme |
+  | mobileye | brand blue `#1E2EB8`, periwinkle `#CACAE7`, soft pink `#F2CAD4` | mobileye.com CSS |
 
-- Rigged base mannequin (e.g. Mixamo "Y Bot") with clips idle, walk, typing, wave, combined into
-  `public/models/figure.glb`, Draco-compressed, target < 3 MB.
-- Mixamo license terms must be verified before launch. If they do not permit this use, swap in a
-  CC0 rigged mannequin; `Figure.tsx` only depends on the four clip names.
+- Text `#1D1D1F`, muted `#6E6E73` (4.66:1). Accent `#2563EB` for text and links (4.75:1);
+  `#2F7BF6` only for 3D glow and large decorative shapes (fails as text).
+- Inter, large tight headlines, quiet body text. Light theme only.
+
+### Liquid-glass panels
+
+- One panel per page: translucent white gradient, `backdrop-filter: blur(28px) saturate(180%)`,
+  bright rim and top highlight, radius 2rem; inner cards as lighter glass.
+- From 1024 px up the panel sits in the left 36vw (keep `GlassPanel` and `PANEL_EDGE` in sync);
+  below that it spans the width and floats over the frosted figure.
+- The panel's face tilts up to 4° toward the mouse (`perspective(1400px)`), mouse pointers only, off
+  with reduced motion.
+
+### Avatar
+
+- Rig: placeholder mannequin `figure.glb` (Mixamo-derived Xbot; clips `idle`, `walk`).
+- Head: Memoji-style, procedural, on the head bone and fitted to the mannequin head (which shrinks to
+  0.6 inside it): oval skull, short swept brown hair, thin round metal glasses, blue-grey eyes that
+  blink, small smile.
+- Outfits are per-vertex colours by dominant bone, swapped per page: `casual` (light-blue shirt, dark
+  trousers), `business` on ESAS (navy blazer over the shirt, beige chinos), `polo` on education (grey
+  polo, beige chinos, after the graduation photo).
+- Poses are procedural overlays on the idle clip (`arm-pose.ts`): `wave`, `hips`, `think` (spine
+  and neck lean, hand to chin), `ring` (right hand on the bell handle, left on the hip), `laptop`,
+  `tablet`. Hands on hips is the rest pose.
+- Other people are copies of the rig with the avatar stripped: faceless, in their own clothes.
+
+### Scenes
+
+- **Education:** light grey wall set piece with a round niche; a bronze bell that swings when he tugs
+  its handle; dark terrazzo floor slab. No university marks.
+- **ESAS:** open unbadged laptop; four colleagues at his sides and behind him, never nearer the
+  camera than him, idling out of step, one gesturing.
+- **Mobileye:** tablet in hand; a customer in a dark suit facing him; an unbadged white test fleet
+  with roof sensor racks in two diagonal rows behind (slightly under life size). No AUDI marks.
+- **Agentic:** ~170 instanced nodes and links on a sheet facing the camera, 4 units behind the
+  figure, sized for 21:9 plus the view shift, drifting slowly in its own plane (cyan → violet).
+- **Skills:** the skill names as a static word cloud 1.6 m behind him: extruded, bevelled Inter Bold
+  words facing the camera, inside a cartoon-cloud outline (flat base, five puffs) sized to the space
+  beside the glass panel, with his silhouette kept free. Shuffled, mostly horizontal (only names
+  under 10 characters may run vertically), sizes by level times a random factor, each word its own
+  shade along the site palette (`#2563EB` → `#2F7BF6` → `#8B5CF6` → `#FFA878`).
+
+### Motion and interaction
+
+- Eased camera moves between stations; panel fades per page; the bell swings, nodes pulse, eyes
+  blink. No other decorative animation.
+- Visible focus rings on all links and buttons, `cursor-pointer` on clickable elements, touch
+  targets >= 44×44 px.
+- Icons: SVG only (Simple Icons for GitHub and Xing, the standard LinkedIn mark); no emoji.
+
+### Assets and licences
+
+- `figure.glb` is a placeholder (three.js `Xbot.glb`, Mixamo-derived; terms unverified for this use).
+  Replace before launch; see `public/models/LICENSE.md`. The site needs the `idle` and `walk`
+  clips; `typing` and `wave` clips are optional (poses are procedural).
+- Word-cloud font: `public/fonts/inter-700.typeface.json` (Inter Bold, printable ASCII, made with
+  `scripts/make-typeface.mjs`), SIL Open Font License (`public/fonts/LICENSE-Inter.txt`).
 
 ## 6. Performance and fallbacks
 
 - Budget: first 3D frame < 3 s mid-range laptop; initial JS < 1 MB; ~60 fps desktop, >= 30 fps mobile.
-- DPR capped at `[1, 1.5]`; drei `<PerformanceMonitor>` drops shadows/effects when fps falls.
-- Mobile: 3D with reduced effects. No WebGL or `prefers-reduced-motion`: `StaticPage`.
+- DPR capped at `[1, 1.5]`; drei `<PerformanceMonitor>` drops shadows when fps falls.
+- `figure.glb` is preloaded with the HTML. Everything that loads inside the canvas (models, fonts)
+  suspends inside it, so the page never falls back to the static version once 3D is up.
+- Mobile: 3D with reduced effects. No WebGL or `prefers-reduced-motion`: static page.
+- Watch on real phones: `backdrop-filter` over a live canvas, the rig copies, the fleet and the
+  word cloud all cost GPU time.
 
 ## 7. Testing
 
-- **Vitest:** `getProjects()` filters by topic, excludes forks/private, merges overrides, survives
-  GitHub error and empty response. `scroll-map` ranges are contiguous and cover 0..1. `cv.ts` data
-  satisfies its types and has no empty required fields.
-- **Playwright smoke:** page loads and canvas mounts; with reduced motion emulated, the static
-  fallback renders; CV headings and company names are present in the DOM.
-- No visual/snapshot tests of the 3D scene.
+- **Vitest (unit):** projects filter/merge/fallback; scroll-map stations, offsets, weights and yaw;
+  entrance timeline and `introStep`; pose mapping; CV data and job pages; outfits and props; scene
+  layouts (team, fleet, bell reach, network size, word-cloud packing and colours); tilt; active page.
+- **Playwright (smoke):** page loads and canvas mounts; static page with reduced motion and on model
+  failure; CV text, JSON-LD, metadata and legal pages; no phone number; 360 px without horizontal
+  scroll; 44 px contact targets and focus rings; eight pages in order; glass panels, snap,
+  view-timeline fade and tilt; per-page blob colours; no fallback-still flash and no static page
+  flashing back after the 3D upgrade.
+- No visual/snapshot tests of the 3D scene; scenes are checked by screenshot during development.
 
 ## 8. Deployment and launch checklist
 
-- Vercel project connected to the GitHub repo. Default `*.vercel.app` domain until a custom domain
-  is chosen.
+- Vercel project connected to the GitHub repo; previews are protected by Vercel Authentication.
+- Custom domain `www.eng-fabian-riegsinger.de` (apex redirects to www); set
+  `NEXT_PUBLIC_SITE_URL=https://www.eng-fabian-riegsinger.de` for production.
 - Metadata, Open Graph image, JSON-LD `Person`.
 - `/impressum` (§5 DDG) and `/privacy` (GDPR; Vercel processes visitor IPs) as templates. The owner
   fills in and checks the legal details; this is not legal advice.
+- Replace the placeholder `figure.glb`.
 - Email shown only as an obfuscated mailto link; phone number never published.
+- Turn off Vercel Authentication for production only after the steps above.
 - Lighthouse SEO and Accessibility >= 90.
 
 ## 9. Out of scope (v1)
@@ -194,6 +284,7 @@ Blog, CMS, contact form, analytics, multi-language (English only), dark mode.
 
 ## 10. Open items for the owner
 
-- Confirm or adjust skill levels in section 4.
-- Custom domain (optional).
 - Impressum and privacy details.
+- A licensed replacement for `figure.glb` (Mixamo FBX Binary 7.4 export, or a CC0 rig).
+- Register `eng-fabian-riegsinger.de` and set up DNS.
+- Refresh `public/fallback.webp`: it still shows the bare grey mannequin, not the avatar.
