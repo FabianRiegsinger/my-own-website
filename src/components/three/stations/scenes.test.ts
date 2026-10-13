@@ -3,7 +3,7 @@ import { Vector3 } from "three";
 import { BELL, HANDLE, NICHE, WALL } from "./Graduation";
 import { TEAM } from "./Team";
 import { CUSTOMER, FLEET } from "./Fleet";
-import { cloudColors, cloudWords, packCloud, SITE_COLORS } from "./SkillCloud";
+import { cloudColors, cloudShape, cloudWords, packCloud, SITE_COLORS } from "./SkillCloud";
 
 const facing = (yaw: number) => new Vector3(Math.sin(yaw), 0, Math.cos(yaw));
 
@@ -72,6 +72,25 @@ describe("skill word cloud", () => {
     rects.forEach((a, i) => {
       expect(apart(a, figure)).toBe(true);
       rects.slice(i + 1).forEach((b) => expect(apart(a, b)).toBe(true));
+    });
+  });
+
+  it("cloud outline: puffy, much wider than tall", () => {
+    const inside = cloudShape(1);
+    expect(inside(0, 0)).toBe(true);
+    expect(inside(2.3, 0)).toBe(true); // reaches far sideways
+    expect(inside(0, 1.4)).toBe(false); // but not far up
+    expect(inside(0, -1.2)).toBe(false);
+    expect(inside(3.5, 0)).toBe(false);
+  });
+
+  it("keeps every word inside the cloud outline when one is given", () => {
+    const inside = cloudShape(1.6);
+    const small = boxes.map((b) => ({ w: b.w * 0.6, h: b.h * 0.6 }));
+    const at = packCloud(small, { inside });
+    at.forEach((p, i) => {
+      const { w, h } = small[i];
+      for (const [dx, dy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) expect(inside(p.x + (dx * w) / 2, p.y + (dy * h) / 2)).toBe(true);
     });
   });
 

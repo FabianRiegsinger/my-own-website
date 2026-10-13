@@ -12,9 +12,20 @@ import { useStationOffset } from "../station-offset";
 
 /** Inter Bold, printable ASCII (scripts/make-typeface.mjs, OFL). */
 const FONT = "/fonts/inter-700.typeface.json";
-/** The word wall stands just behind Fabian, a little right of him (away from the text panel), on the floor. */
-const CLOUD_X = 0.2;
+/**
+ * The word cloud hangs just behind Fabian at CLOUD_Y, centred on him. CLOUD_SCALE sizes the outline (unit cloud ~5.8
+ * wide) to the ~4.9 m between the glass panel and the screen edge at the cloud's depth (desktop). Words shrink to fit.
+ */
+const CLOUD_X = 0;
+const CLOUD_SCALE = 0.84;
+const CLOUD_Y = 1.6;
 const CLOUD_Z = -1.6;
+/**
+ * Gap kept free where Fabian stands, in cloud coordinates: his silhouette as the skills camera sees it, projected onto
+ * the cloud (1.25x larger at z -1.6), floor to just above his head, plus a margin.
+ */
+const FIGURE_GAP = { x: -CLOUD_X, y: 2.05 / 2 - CLOUD_Y, w: 0.95, h: 2.05 };
+
 /** Longest a word may run across the floor (metres); longer names get a smaller font. */
 const MAX_LENGTH = 3.6;
 
@@ -46,7 +57,10 @@ export function cloudWords<T extends { name: string; level: Level }>(items: T[])
  * Word-cloud layout: biggest boxes first, each at the first free spot along an outward elliptical spiral, so nothing
  * overlaps another word or a `reserved` area and the heavy words gather in the middle. Centres in input order.
  */
-export function packCloud(boxes: Box[], { pad = 0.05, reserved = [] as Rect[] } = {}): { x: number; y: number }[] {
+export function packCloud(
+  boxes: Box[],
+  { pad = 0.03, reserved = [] as Rect[], inside = undefined as ((x: number, y: number) => boolean) | undefined } = {},
+): { x: number; y: number }[] {
   const order = boxes.map((_, i) => i).sort((a, b) => boxes[b].w * boxes[b].h - boxes[a].w * boxes[a].h);
   const placed: Rect[] = [...reserved];
   const out: { x: number; y: number }[] = new Array(boxes.length);
@@ -55,9 +69,10 @@ export function packCloud(boxes: Box[], { pad = 0.05, reserved = [] as Rect[] } 
     let done = false;
     // Bounded search: a box that never fits throws instead of spinning forever.
     for (let t = 0; t < 600 && !done; t += 0.03) {
-      const x = 0.07 * t * Math.cos(t) * 1.3; // a little wider than tall, like the space beside the text panel
+      const x = 0.07 * t * Math.cos(t) * 2.4; // wide and low, like a cloud
       const y = 0.07 * t * Math.sin(t);
-      if (placed.every((p) => Math.abs(p.x - x) * 2 >= p.w + w + pad || Math.abs(p.y - y) * 2 >= p.h + h + pad)) {
+      const fits = !inside || [-1, 1].every((sx) => [-1, 1].every((sy) => inside(x + (sx * w) / 2, y + (sy * h) / 2)));
+      if (fits && placed.every((p) => Math.abs(p.x - x) * 2 >= p.w + w + pad || Math.abs(p.y - y) * 2 >= p.h + h + pad)) {
         placed.push({ x, y, w, h });
         out[i] = { x, y };
         done = true;
@@ -67,6 +82,29 @@ export function packCloud(boxes: Box[], { pad = 0.05, reserved = [] as Rect[] } 
   }
   return out;
 }
+
+/** Cartoon-cloud outline at `scale` (unit cloud ~5.8 wide, ~2.2 tall): a flat base under five rounded puffs. */
+const PUFFS = [
+  [-2, -0.05, 0.85],
+  [-0.95, 0.35, 1],
+  [0.1, 0.3, 1],
+  [1.3, 0.25, 0.95],
+  [2.2, -0.1, 0.75],
+];
+export function cloudShape(scale: number): (x: number, y: number) => boolean {
+  return (x, y) => {
+    const [u, v] = [x / scale, y / scale];
+    return (Math.abs(u) <= 2.6 && v >= -0.85 && v <= -0.1) || PUFFS.some(([cx, cy, r]) => (u - cx) ** 2 + (v - cy) ** 2 <= r * r);
+  };
+}
+
+/** Area of the unit cloud outline (sampled), to size the outline to the words it must hold. */
+const UNIT_CLOUD_AREA = (() => {
+  const inside = cloudShape(1);
+  let n = 0;
+  for (let x = -3; x <= 3; x += 0.05) for (let y = -1; y <= 1.4; y += 0.05) if (inside(x, y)) n++;
+  return n * 0.05 * 0.05;
+})();
 
 /** The site's own colours: accent blue, glow blue, then the violet and peach of the background blobs. */
 export const SITE_COLORS = ["#2563eb", "#2f7bf6", "#8b5cf6", "#ffa878"];
@@ -81,7 +119,7 @@ export function cloudColors(n: number): string[] {
   });
 }
 
-/** Skills page: the skill names as an upright wall of extruded words behind Fabian, every word its own colour. */
+/** Skills page: the skill names as a cloud of extruded words behind Fabian, with a gap where he stands. */
 export function SkillCloud({ skills }: { skills: SkillGroup[] }) {
   const root = useRef<Group>(null);
   const offset = useStationOffset();
@@ -107,10 +145,22 @@ export function SkillCloud({ skills }: { skills: SkillGroup[] }) {
       const [len, height] = [b.max.x - b.min.x, b.max.y - b.min.y];
       return { ...it, geometry, box: it.vertical ? { w: height, h: len } : { w: len, h: height } };
     });
-    const at = packCloud(built.map((w) => w.box));
-    // Stand the wall on the floor: lift it so its lowest word just clears the ground.
-    const lift = 0.04 - Math.min(...at.map((p, i) => p.y - built[i].box.h / 2));
-    return built.map((w, i) => ({ ...w, x: at[i].x, y: at[i].y + lift, material: new MeshStandardMaterial({ color: colors[i], roughness: 0.45 }) }));
+    // Fit the words into the fixed outline: start from a size that would fill ~half of it, shrink until all fit.
+    const inside = cloudShape(CLOUD_SCALE);
+    const free = UNIT_CLOUD_AREA * CLOUD_SCALE ** 2 - FIGURE_GAP.w * FIGURE_GAP.h * 0.5;
+    let k = Math.sqrt((0.5 * free) / built.reduce((a, w) => a + w.box.w * w.box.h, 0));
+    let at: { x: number; y: number }[] | null = null;
+    for (let tries = 0; !at; tries++, k *= 0.92) {
+      try {
+        at = packCloud(
+          built.map((w) => ({ w: w.box.w * k, h: w.box.h * k })),
+          { reserved: [FIGURE_GAP], inside },
+        );
+      } catch (e) {
+        if (tries > 15) throw e;
+      }
+    }
+    return built.map((w, i) => ({ ...w, ...at[i], scale: k, material: new MeshStandardMaterial({ color: colors[i], roughness: 0.45 }) }));
   }, [skills, font]);
 
   useFrame(() => {
@@ -119,9 +169,9 @@ export function SkillCloud({ skills }: { skills: SkillGroup[] }) {
 
   // Upright, facing the camera, extruded toward it; vertical words turned a quarter to read bottom to top.
   return (
-    <group ref={root} position={[CLOUD_X, 0, CLOUD_Z]}>
+    <group ref={root} position={[CLOUD_X, CLOUD_Y, CLOUD_Z]}>
       {words.map((w) => (
-        <mesh key={w.name} geometry={w.geometry} material={w.material} position={[w.x, w.y, 0]} rotation-z={w.vertical ? Math.PI / 2 : 0} castShadow receiveShadow />
+        <mesh key={w.name} geometry={w.geometry} material={w.material} position={[w.x, w.y, 0]} rotation-z={w.vertical ? Math.PI / 2 : 0} scale={w.scale} castShadow receiveShadow />
       ))}
     </group>
   );
