@@ -24,7 +24,7 @@ export function Hero({ cv, showFigure = false }: { cv: CV; showFigure?: boolean 
         </div>
         {showFigure && (
           // eslint-disable-next-line @next/next/no-img-element -- static still, no optimization needed
-          <img src="/fallback.webp" alt="Smooth white 3D mannequin figure standing on a reflective floor" className="fallback-figure mt-8 w-full max-w-xs rounded-3xl" />
+          <img src="/fallback.webp" alt="Memoji-style 3D avatar of Fabian with glasses, standing with hands on hips" className="fallback-figure mt-8 w-full max-w-xs rounded-3xl" />
         )}
       </div>
     </Section>
