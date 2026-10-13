@@ -18,12 +18,15 @@ const FONT = "/fonts/inter-700.typeface.json";
  * outline's visual centre sits at (0.15, 0.2), so the group is offset by that. CLOUD_SCALE keeps the right edge on
  * screen; the left part runs behind the frosted panel. Words shrink together until all fit inside the outline.
  */
-const CLOUD_SCALE = 1.05;
+const CLOUD_SCALE = 0.98;
 const CLOUD_X = -0.15 * CLOUD_SCALE;
 const CLOUD_Y = 1.5 - 0.2 * CLOUD_SCALE;
 const CLOUD_Z = -1.6;
-/** His face as the camera sees it on the cloud plane, kept free so no word runs right behind it. */
-const HEAD_SPOT = { x: -CLOUD_X, y: 1.5 - CLOUD_Y, w: 0.45, h: 0.5 };
+/**
+ * His face as the camera sees it on the cloud plane, kept free so no word runs right behind it. The Memoji head's
+ * centre is ~1.72 m high; the camera ray through it meets the cloud plane at ~1.6 m (1.25x farther than the head).
+ */
+const HEAD_SPOT = { x: -CLOUD_X, y: 1.5 - CLOUD_Y, w: 0.55, h: 0.85 }; // head and neck
 
 /** Longest a word may run across the floor (metres); longer names get a smaller font. */
 const MAX_LENGTH = 3.6;

@@ -229,7 +229,7 @@ job is added without a page.
 - **Skills:** the skill names as a static word cloud 1.6 m behind him: extruded, bevelled Inter Bold
   words facing the camera, inside a cartoon-cloud outline (flat base, five puffs) centred right behind
   his head as the camera sees it; its right edge stays on screen, its left edge reaches the frosted
-  panel, and he stands in front of it. A face-sized spot behind his head stays free. Hidden below
+  panel, and he stands in front of it. A spot behind his head and neck stays free. Hidden below
   1024 px, where the full-width panel covers it. Shuffled, mostly horizontal (only names
   under 10 characters may run vertically), sizes by level times a random factor, each word its own
   shade along the site palette (`#2563EB` → `#2F7BF6` → `#8B5CF6` → `#FFA878`).
