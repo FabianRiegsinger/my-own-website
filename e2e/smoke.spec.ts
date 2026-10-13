@@ -150,9 +150,13 @@ test("glass panel tilts toward the mouse and settles when it leaves", async ({ p
   await page.goto("/");
   await expect(page.locator("canvas")).toBeAttached({ timeout: 10_000 }); // tilt the final (3D) DOM, not the static one it replaces
   const panel = page.locator("#hero [data-glass]");
-  const box = (await panel.boundingBox())!;
-  await page.mouse.move(box.x + box.width - 4, box.y + box.height / 2);
-  await expect.poll(() => panel.evaluate((el) => el.style.transform)).toContain("rotateY(");
+  // Re-measure and re-hover until the tilt shows: under load a single early pointer event can be dropped.
+  await expect(async () => {
+    const box = (await panel.boundingBox())!;
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.move(box.x + box.width - 4, box.y + box.height / 2, { steps: 4 });
+    expect(await panel.evaluate((el) => el.style.transform)).toContain("rotateY(");
+  }).toPass({ timeout: 10_000 });
   const ry = await panel.evaluate((el) => parseFloat(/rotateY\((-?[\d.]+)deg\)/.exec(el.style.transform)![1]));
   expect(ry).toBeGreaterThan(2);
   await page.mouse.move(5, 5);
