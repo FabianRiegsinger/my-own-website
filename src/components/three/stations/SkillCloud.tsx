@@ -13,13 +13,14 @@ import { useStationOffset } from "../station-offset";
 /** Inter Bold, printable ASCII (scripts/make-typeface.mjs, OFL). */
 const FONT = "/fonts/inter-700.typeface.json";
 /**
- * The word cloud hangs just behind Fabian at CLOUD_Y. CLOUD_SCALE sizes the outline (unit cloud ~5.8 wide) wider than
- * the space beside the glass panel: CLOUD_X keeps its right edge on screen and lets its left part run behind the
- * frosted panel. Words shrink together until all fit inside the outline.
+ * The word cloud hangs 1.6 m behind Fabian, its centre right behind his head as the skills camera sees it: the ray
+ * from the camera (0, 2.2, 6.4) through his head (0, 1.65, 0) meets the cloud plane at about (0, 1.5). The unit
+ * outline's visual centre sits at (0.15, 0.2), so the group is offset by that. CLOUD_SCALE keeps the right edge on
+ * screen; the left part runs behind the frosted panel. Words shrink together until all fit inside the outline.
  */
-const CLOUD_X = -0.75;
-const CLOUD_SCALE = 1.1;
-const CLOUD_Y = 1.45;
+const CLOUD_SCALE = 1.05;
+const CLOUD_X = -0.15 * CLOUD_SCALE;
+const CLOUD_Y = 1.5 - 0.2 * CLOUD_SCALE;
 const CLOUD_Z = -1.6;
 
 /** Longest a word may run across the floor (metres); longer names get a smaller font. */
