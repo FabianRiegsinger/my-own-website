@@ -10,7 +10,7 @@ import { Figure } from "./Figure";
 import { ScrollTracker } from "./ScrollTracker";
 import { StationOffset } from "./station-offset";
 import { AgentNetwork } from "./stations/AgentNetwork";
-import { Fireworks } from "./stations/Fireworks";
+import { Graduation } from "./stations/Graduation";
 import { Fleet } from "./stations/Fleet";
 import { SkillCloud } from "./stations/SkillCloud";
 import { Team } from "./stations/Team";
@@ -44,12 +44,14 @@ export function Experience3D({ cv, projects, lowPower: initialLowPower, onFail }
           <Suspense fallback={null}>
             <Figure shadows={!lowPower} />
           </Suspense>
-          <Fireworks />
+          <Graduation />
+          {/* Anything that loads (models, the label font) suspends here, inside the canvas; uncaught it would
+              bubble up to the page's fallback and flash the static page back in. */}
           <Suspense fallback={null}>
             <Team />
             <Fleet />
+            <SkillCloud skills={cv.skills} />
           </Suspense>
-          <SkillCloud skills={cv.skills} />
           <AgentNetwork />
           <ContactShadows position={[0, 0, 0]} opacity={0.35} scale={10} blur={2.5} far={4} frames={lowPower ? 1 : Infinity} />
         </Canvas>

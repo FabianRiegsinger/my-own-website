@@ -1,26 +1,28 @@
 import { describe, expect, it } from "vitest";
 import { Vector3 } from "three";
-import { burst, BURSTS } from "./Fireworks";
+import { BELL, HANDLE, NICHE, WALL } from "./Graduation";
 import { TEAM } from "./Team";
 import { CUSTOMER, FLEET } from "./Fleet";
 import { labelPosition } from "./SkillCloud";
 
 const facing = (yaw: number) => new Vector3(Math.sin(yaw), 0, Math.cos(yaw));
 
-describe("fireworks", () => {
-  it("bursts high in the sky behind the figure and fade out within their life", () => {
-    for (let k = 0; k < BURSTS; k++)
-      for (const t of [0, 0.7, 1.9, 5.3, 11.1]) {
-        const b = burst(k, t);
-        expect(b.center.y).toBeGreaterThan(3);
-        expect(b.center.z).toBeLessThan(-6);
-        expect(b.age).toBeGreaterThanOrEqual(0);
-        if (b.alive) expect(b.age).toBeLessThan(b.life);
-      }
+describe("graduation wall", () => {
+  // Mixamo rigs face +z, so the right hand is on -x; shoulder roughly at (-0.18, 1.42, 0).
+  const shoulder = new Vector3(-0.18, 1.42, 0);
+
+  it("hangs the bell in the round niche on Fabian's right, handle within arm's reach", () => {
+    const handle = new Vector3(...HANDLE);
+    expect(handle.x).toBeLessThan(0);
+    expect(handle.distanceTo(shoulder)).toBeGreaterThan(0.35);
+    expect(handle.distanceTo(shoulder)).toBeLessThan(0.62);
+    expect(Math.hypot(BELL[0] - NICHE.center[0], BELL[1] - NICHE.center[1])).toBeLessThan(NICHE.radius);
   });
 
-  it("keeps firing: some burst is always alive", () => {
-    for (let t = 0; t < 12; t += 0.25) expect([...Array(BURSTS).keys()].some((k) => burst(k, t).alive)).toBe(true);
+  it("the wall stands behind him and is a set piece, not a full backdrop (the colour field stays visible)", () => {
+    expect(WALL.z).toBeLessThan(-0.2);
+    expect(WALL.width).toBeLessThan(4);
+    expect(NICHE.center[0] + NICHE.radius).toBeLessThan(0); // niche beside him, not behind his head
   });
 });
 

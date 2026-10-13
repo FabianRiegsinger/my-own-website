@@ -3,13 +3,12 @@
 import { useAnimations, useGLTF } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
-import { MathUtils, Vector3, type Group, type Mesh, type Object3D } from "three";
-import { capToss } from "@/lib/celebrate";
+import { MathUtils, type Group, type Mesh, type Object3D } from "three";
 import { entrance, POSES, poseFor, type Pose } from "@/lib/entrance";
 import { heading, stationAt, type ClipName } from "@/lib/scroll-map";
 import { applyArms, findArms } from "./arm-pose";
 import { attachHead, paintBody, setOutfit, updateAvatar } from "./avatar";
-import { buildLaptop, buildMortarboard, buildSkirt, buildTablet } from "./props";
+import { buildLaptop, buildTablet } from "./props";
 import { switchClip } from "./clips";
 import { useStationOffset } from "./station-offset";
 
@@ -29,7 +28,7 @@ export function Figure({ shadows }: { shadows: boolean }) {
   const pose = useRef<Pose>(poseFor("walk"));
   const arms = useMemo(() => findArms(scene), [scene]);
   const head = useRef<Group | null>(null);
-  const props = useRef<{ laptop: Object3D; tablet: Object3D; skirt: Object3D; cap: Object3D; capScale: number } | null>(null);
+  const props = useRef<{ laptop: Object3D; tablet: Object3D } | null>(null);
 
   useMemo(() => paintBody(scene), [scene]);
   useEffect(() => {
@@ -60,13 +59,12 @@ export function Figure({ shadows }: { shadows: boolean }) {
     current.current = clip;
     // Memoji head over the mannequin's, sized from the posed head so it never pokes through.
     head.current = attachHead(scene);
-    // Page props: laptop (ESAS), tablet (Mobileye), gown skirt + mortarboard (education). Shown by pose weight.
+    // Page props: laptop (ESAS), tablet (Mobileye). Shown by pose weight.
     if (!props.current && arms) {
-      const p = { laptop: buildLaptop(), tablet: buildTablet(arms.left.side), skirt: buildSkirt(), cap: buildMortarboard() };
+      const p = { laptop: buildLaptop(), tablet: buildTablet(arms.left.side) };
       Object.values(p).forEach((o) => (o.userData.avatarExtra = true)); // so copies of the rig can drop them
-      scene.add(p.laptop, p.tablet, p.skirt);
-      (head.current ?? scene).add(p.cap);
-      props.current = { ...p, capScale: p.cap.parent!.getWorldScale(new Vector3()).y };
+      scene.add(p.laptop, p.tablet);
+      props.current = p;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- run once when the animations are bound
   }, [actions, mixer]);
@@ -104,13 +102,7 @@ export function Figure({ shadows }: { shadows: boolean }) {
       const p = pose.current;
       pr.laptop.visible = p.laptop > 0.5;
       pr.tablet.visible = p.tablet > 0.5;
-      pr.skirt.visible = pr.cap.visible = p.cheer > 0.5;
-      setOutfit(scene, p.cheer > 0.5 ? "gown" : p.laptop > 0.5 ? "business" : "casual");
-      if (pr.cap.visible) {
-        const toss = capToss(clock.elapsedTime);
-        pr.cap.position.y = toss.height / pr.capScale; // metres → head space
-        pr.cap.rotation.y = toss.spin;
-      }
+      setOutfit(scene, p.ring > 0.5 ? "polo" : p.laptop > 0.5 ? "business" : "casual");
     }
   });
 

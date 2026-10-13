@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { Box3, Vector3 } from "three";
-import { buildLaptop, buildMortarboard, buildSkirt, buildTablet } from "./props";
-import { SKULL } from "./avatar";
+import { buildLaptop, buildTablet } from "./props";
 
 const normalOf = (o: import("three").Object3D) => {
   o.updateWorldMatrix(true, true);
@@ -23,15 +22,4 @@ describe("props", () => {
     expect(n.z).toBeLessThan(0);
   });
 
-  it("gown skirt flares out from waist to ankles", () => {
-    const box = new Box3().setFromObject(buildSkirt());
-    expect(box.max.y).toBeLessThan(1.1);
-    expect(box.min.y).toBeGreaterThan(0.1);
-    expect(box.max.x).toBeGreaterThan(0.3);
-  });
-
-  it("mortarboard sits on top of the head", () => {
-    const box = new Box3().setFromObject(buildMortarboard());
-    expect(box.min.y).toBeGreaterThan(SKULL.y * 0.6);
-  });
 });

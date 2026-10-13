@@ -1,5 +1,5 @@
 export type StationId = "hero" | "about" | "education" | "esas" | "mobileye" | "skills" | "agentic" | "contact";
-export type ClipName = "idle" | "walk" | "typing" | "wave" | "think" | "cheer" | "laptop" | "tablet";
+export type ClipName = "idle" | "walk" | "typing" | "wave" | "think" | "ring" | "laptop" | "tablet";
 type Vec3 = [number, number, number];
 
 export interface Station {
@@ -25,12 +25,12 @@ export const STATIONS: Station[] = [
   { id: "hero", start: 0, end: 0.12, clip: "idle", camera: [0, 1.4, 5], target: [0, 1, 0], shift: BESIDE_PANEL, yaw: 0 },
   // Reading the about text: turned part-way toward the panel on screen-left (camera sits front-right).
   { id: "about", start: 0.12, end: 0.24, clip: "think", camera: [3, 1.6, 3.5], target: [0, 1.1, 0], shift: BESIDE_PANEL, yaw: -0.25 },
-  // Career pages are scenes (see stations/): graduation, a team talk at ESAS, the AUDI test fleet at Mobileye.
-  { id: "education", start: 0.24, end: 0.36, clip: "cheer", camera: [0.4, 1.4, 5.4], target: [0, 1.5, 0], shift: BESIDE_PANEL, yaw: 0 },
+  // Career pages are scenes (see stations/): ringing the bell at graduation, a team talk at ESAS, the AUDI test fleet at Mobileye.
+  { id: "education", start: 0.24, end: 0.36, clip: "ring", camera: [0.4, 1.4, 5.4], target: [0, 1.5, 0], shift: BESIDE_PANEL, yaw: 0 },
   { id: "esas", start: 0.36, end: 0.48, clip: "laptop", camera: [0.3, 1.9, 5.8], target: [0.1, 1.1, 0], shift: BESIDE_PANEL, yaw: 0.35 },
   { id: "mobileye", start: 0.48, end: 0.6, clip: "tablet", camera: [1.6, 2.3, 6.2], target: [0, 1.3, -2], shift: BESIDE_PANEL, yaw: -0.3 },
-  { id: "skills", start: 0.6, end: 0.72, clip: "idle", camera: [0, 2.2, 6], target: [0, 1, 0], shift: BESIDE_PANEL, yaw: 0 },
-  { id: "agentic", start: 0.72, end: 0.86, clip: "typing", camera: [-3, 1.8, 4], target: [0, 1, 0], shift: 0.32, yaw: 0 },
+  { id: "agentic", start: 0.6, end: 0.74, clip: "typing", camera: [-3, 1.8, 4], target: [0, 1, 0], shift: 0.32, yaw: 0 },
+  { id: "skills", start: 0.74, end: 0.86, clip: "idle", camera: [0, 2.2, 6], target: [0, 1, 0], shift: BESIDE_PANEL, yaw: 0 },
   { id: "contact", start: 0.86, end: 1, clip: "wave", camera: [0, 1.3, 6], target: [0, 1, 0], shift: BESIDE_PANEL, yaw: 0 },
 ];
 

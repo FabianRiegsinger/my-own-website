@@ -41,12 +41,12 @@ describe("poseFor", () => {
   it("maps each page's clip onto exactly one arm overlay at full weight", () => {
     expect(poseFor("wave")).toMatchObject({ wave: 1, hips: 0 });
     expect(poseFor("think")).toMatchObject({ think: 1, hips: 0 });
-    expect(poseFor("cheer")).toMatchObject({ cheer: 1, hips: 0 });
+    expect(poseFor("ring")).toMatchObject({ ring: 1, hips: 0 });
     expect(poseFor("laptop")).toMatchObject({ laptop: 1, hips: 0 });
     expect(poseFor("tablet")).toMatchObject({ tablet: 1, hips: 0 });
     expect(poseFor("idle")).toMatchObject({ hips: 1, wave: 0 });
     expect(poseFor("typing")).toMatchObject({ hips: 1 });
     expect(Object.values(poseFor("walk")).every((w) => w === 0)).toBe(true);
-    for (const c of ["wave", "think", "cheer", "laptop", "tablet", "idle"] as const) expect(Object.values(poseFor(c)).reduce((a, b) => a + b)).toBe(1);
+    for (const c of ["wave", "think", "ring", "laptop", "tablet", "idle"] as const) expect(Object.values(poseFor(c)).reduce((a, b) => a + b)).toBe(1);
   });
 });

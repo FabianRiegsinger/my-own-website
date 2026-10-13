@@ -26,17 +26,17 @@ import {
  */
 
 export type Region = "skin" | "shirt" | "trousers" | "shoes";
-/** Region plus "jacket": torso and arms outside the open front of a blazer or gown. */
+/** Region plus "jacket": torso and arms outside the open front of a blazer. */
 export type Garment = Region | "jacket";
 export type Palette = Record<Garment, string>;
 
 const SKIN = "#f7d6bf";
 const SHIRT = "#a9c6e8";
-/** Outfits by page: everyday, business casual at ESAS, graduation gown on the education page. */
+/** Outfits by page: everyday, business casual at ESAS, the grey polo and chinos from the graduation photo. */
 export const OUTFITS = {
   casual: { skin: SKIN, shirt: SHIRT, jacket: SHIRT, trousers: "#2f3747", shoes: "#3a2c24" },
   business: { skin: SKIN, shirt: SHIRT, jacket: "#26324a", trousers: "#c9b38e", shoes: "#3a2c24" },
-  gown: { skin: SKIN, shirt: "#1d1d22", jacket: "#1d1d22", trousers: "#1d1d22", shoes: "#16161a" },
+  polo: { skin: SKIN, shirt: "#9ea2a8", jacket: "#9ea2a8", trousers: "#c9b38e", shoes: "#2b2d33" },
 } satisfies Record<string, Palette>;
 const COLORS = OUTFITS.casual;
 const HAIR = "#6e4b33";
@@ -49,7 +49,7 @@ export function regionOf(bone: string): Region {
   return "shirt"; // spine, shoulders, arms
 }
 
-/** Under a blazer or gown only the open chest strip still shows the shirt. */
+/** Under a blazer only the open chest strip still shows the shirt. */
 export function garmentOf(region: Region, chestStrip: boolean): Garment {
   return region === "shirt" && !chestStrip ? "jacket" : region;
 }

@@ -46,11 +46,13 @@ describe("outfits", () => {
     expect(garmentOf("skin", true)).toBe("skin");
   });
 
-  it("casual is one shirt colour; business adds a navy blazer and chinos; the gown is dark head to toe", () => {
+  it("casual is one shirt colour; business adds a navy blazer and chinos; graduation day is a grey polo with chinos", () => {
     expect(OUTFITS.casual.jacket).toBe(OUTFITS.casual.shirt);
     expect(OUTFITS.business.jacket).not.toBe(OUTFITS.business.shirt);
     expect(OUTFITS.business.trousers).not.toBe(OUTFITS.casual.trousers);
-    for (const g of ["shirt", "jacket", "trousers"] as const) expect(OUTFITS.gown[g]).toBe(OUTFITS.gown.jacket);
-    expect(OUTFITS.gown.skin).toBe(OUTFITS.casual.skin);
+    expect(OUTFITS.polo.shirt).toBe(OUTFITS.polo.jacket);
+    expect(OUTFITS.polo.shirt).not.toBe(OUTFITS.casual.shirt);
+    expect(OUTFITS.polo.trousers).toBe(OUTFITS.business.trousers);
+    expect("gown" in OUTFITS).toBe(false);
   });
 });

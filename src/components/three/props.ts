@@ -1,4 +1,4 @@
-import { BoxGeometry, CylinderGeometry, DoubleSide, Group, Mesh, MeshStandardMaterial, PlaneGeometry, SphereGeometry, type Material, type BufferGeometry } from "three";
+import { BoxGeometry, Group, Mesh, MeshStandardMaterial, PlaneGeometry, type Material, type BufferGeometry } from "three";
 
 /** Things the avatar holds or wears on some pages, in the figure's model space (metres, facing +z). */
 
@@ -48,28 +48,4 @@ export function buildTablet(side: number): Group {
   screen.rotation.y = Math.PI;
   tablet.add(screen);
   return tablet;
-}
-
-const gownCloth = new MeshStandardMaterial({ color: "#1d1d22", roughness: 0.85, side: DoubleSide });
-
-/** Flared skirt of the graduation gown, from the waist to just above the shoes. */
-export function buildSkirt(): Mesh {
-  return mesh("skirt", new CylinderGeometry(0.19, 0.34, 0.8, 32, 1, true), gownCloth, [0, 0.58, 0]);
-}
-
-/** Mortarboard in avatar-head space (see avatar.ts SKULL): skull cap, square board turned to a diamond, gold tassel. */
-export function buildMortarboard(): Group {
-  const black = new MeshStandardMaterial({ color: "#16161a", roughness: 0.7 });
-  const gold = new MeshStandardMaterial({ color: "#d4a93a", metalness: 0.4, roughness: 0.4 });
-  const cap = new Group();
-  cap.name = "mortarboard";
-  const skull = mesh("cap", new CylinderGeometry(0.1, 0.098, 0.05, 32), black, [0, 0.112, 0]);
-  const board = mesh("board", new BoxGeometry(0.28, 0.012, 0.28), black, [0, 0.141, 0]);
-  board.rotation.y = Math.PI / 4;
-  const button = mesh("button", new CylinderGeometry(0.01, 0.01, 0.008, 12), gold, [0, 0.151, 0]);
-  const tassel = mesh("tassel", new CylinderGeometry(0.004, 0.012, 0.07, 8), gold, [0.135, 0.11, 0.0]);
-  const knot = mesh("knot", new SphereGeometry(0.008, 8, 8), gold, [0.135, 0.147, 0]);
-  cap.add(skull, board, button, tassel, knot);
-  cap.rotation.x = -0.12; // tipped back a little, the way it sits on most heads
-  return cap;
 }

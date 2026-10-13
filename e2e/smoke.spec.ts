@@ -112,20 +112,25 @@ test("apple glass: every text panel is frosted glass left of the centred figure"
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/");
   await expect(page.locator("canvas")).toBeAttached({ timeout: 10_000 });
-  const panels = page.locator("[data-glass]");
-  expect(await panels.count()).toBe(8);
-  for (const p of await panels.all()) {
-    const box = (await p.boundingBox())!;
-    expect(box.x + box.width).toBeLessThanOrEqual(1440 * 0.42);
-    expect(await p.evaluate((el) => getComputedStyle(el).backdropFilter)).toContain("blur");
-    expect(parseFloat(await p.evaluate((el) => getComputedStyle(el).borderRadius))).toBeGreaterThanOrEqual(24);
+  // Read every panel in one go: the 3D upgrade replaces the DOM, so per-element handles can go stale.
+  const panels = await page.evaluate(() =>
+    [...document.querySelectorAll("[data-glass]")].map((el) => {
+      const s = getComputedStyle(el);
+      return { right: el.getBoundingClientRect().right, backdrop: s.backdropFilter, radius: parseFloat(s.borderRadius) };
+    }),
+  );
+  expect(panels).toHaveLength(8);
+  for (const p of panels) {
+    expect(p.right).toBeLessThanOrEqual(1440 * 0.42);
+    expect(p.backdrop).toContain("blur");
+    expect(p.radius).toBeGreaterThanOrEqual(24);
   }
 });
 
 test("eight pages in order, each its own glass panel", async ({ page }) => {
   await page.goto("/");
   const ids = await page.locator("main section").evaluateAll((els) => els.map((e) => e.id));
-  expect(ids).toEqual(["hero", "about", "education", "esas", "mobileye", "skills", "agentic", "contact"]);
+  expect(ids).toEqual(["hero", "about", "education", "esas", "mobileye", "agentic", "skills", "contact"]);
   await expect(page.locator("#education")).toContainText("B.Eng.");
   await expect(page.locator("#education")).toContainText("M.Sc.");
   await expect(page.locator("#esas h2")).toHaveText("ESAS Automotive GmbH");
@@ -143,6 +148,7 @@ test("pages snap and panels fade in with scroll", async ({ page }) => {
 test("glass panel tilts toward the mouse and settles when it leaves", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/");
+  await expect(page.locator("canvas")).toBeAttached({ timeout: 10_000 }); // tilt the final (3D) DOM, not the static one it replaces
   const panel = page.locator("#hero [data-glass]");
   const box = (await panel.boundingBox())!;
   await page.mouse.move(box.x + box.width - 4, box.y + box.height / 2);
@@ -165,4 +171,25 @@ test("static page still shows the fallback figure", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/");
   await expect(page.locator('img[src="/fallback.webp"]')).toBeVisible();
+});
+
+test("background blobs turn THM green and grey on the education page", async ({ page }) => {
+  await page.goto("/");
+  const blob = () => page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--blob-a"));
+  expect(await blob()).not.toContain("128, 186, 36");
+  await page.locator("#education").scrollIntoViewIfNeeded();
+  await page.evaluate(() => {
+    const el = document.getElementById("education")!;
+    window.scrollTo({ top: el.offsetTop + el.offsetHeight / 2 - innerHeight / 2, behavior: "instant" });
+  });
+  await expect.poll(blob, { timeout: 5000 }).toContain("128, 186, 36");
+});
+
+test("once the 3D page is up, the static page never flashes back in", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.locator("canvas")).toBeAttached({ timeout: 10_000 });
+  for (let i = 0; i < 20; i++) {
+    expect(await page.locator("section#hero").count()).toBe(1);
+    await page.waitForTimeout(100);
+  }
 });

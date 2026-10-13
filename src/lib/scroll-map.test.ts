@@ -6,7 +6,7 @@ const mid = (id: string) => (st(id).start + st(id).end) / 2;
 
 describe("scroll-map", () => {
   it("has one station per page, in page order", () => {
-    expect(STATIONS.map((s) => s.id)).toEqual(["hero", "about", "education", "esas", "mobileye", "skills", "agentic", "contact"]);
+    expect(STATIONS.map((s) => s.id)).toEqual(["hero", "about", "education", "esas", "mobileye", "agentic", "skills", "contact"]);
   });
 
   it("ranges are contiguous and cover 0..1", () => {
@@ -22,8 +22,8 @@ describe("scroll-map", () => {
     expect(stationAt(1.5).id).toBe("contact");
   });
 
-  it("career pages are scenes, not a walk: graduation, team talk, customer fleet", () => {
-    expect(stationAt(mid("education")).clip).toBe("cheer");
+  it("career pages are scenes, not a walk: ringing the graduation bell, team talk, customer fleet", () => {
+    expect(stationAt(mid("education")).clip).toBe("ring");
     expect(stationAt(mid("esas")).clip).toBe("laptop");
     expect(stationAt(mid("mobileye")).clip).toBe("tablet");
     expect(STATIONS.some((s) => s.clip === "walk")).toBe(false);

@@ -7,10 +7,10 @@ import type { ClipName } from "./scroll-map";
 export const ENTRANCE = { walk: 1.8, turn: 0.6, wave: 3, settle: 0.6, startX: 2.2 } as const;
 
 /** Procedural overlays on top of the playing clip (see arm-pose.ts), each weighted 0..1. */
-export const POSES = ["wave", "hips", "think", "cheer", "laptop", "tablet"] as const;
+export const POSES = ["wave", "hips", "think", "ring", "laptop", "tablet"] as const;
 export type Pose = Record<(typeof POSES)[number], number>;
 
-const restPose = (): Pose => ({ wave: 0, hips: 0, think: 0, cheer: 0, laptop: 0, tablet: 0 });
+const restPose = (): Pose => ({ wave: 0, hips: 0, think: 0, ring: 0, laptop: 0, tablet: 0 });
 
 export interface EntranceState {
   x: number;
