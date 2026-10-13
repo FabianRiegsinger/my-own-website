@@ -22,6 +22,8 @@ const CLOUD_SCALE = 1.05;
 const CLOUD_X = -0.15 * CLOUD_SCALE;
 const CLOUD_Y = 1.5 - 0.2 * CLOUD_SCALE;
 const CLOUD_Z = -1.6;
+/** His face as the camera sees it on the cloud plane, kept free so no word runs right behind it. */
+const HEAD_SPOT = { x: -CLOUD_X, y: 1.5 - CLOUD_Y, w: 0.45, h: 0.5 };
 
 /** Longest a word may run across the floor (metres); longer names get a smaller font. */
 const MAX_LENGTH = 3.6;
@@ -106,14 +108,17 @@ const UNIT_CLOUD_AREA = (() => {
 /** The site's own colours: accent blue, glow blue, then the violet and peach of the background blobs. */
 export const SITE_COLORS = ["#2563eb", "#2f7bf6", "#8b5cf6", "#ffa878"];
 
+/** The site palette at `u` in 0..1 (first to last colour). */
+export function sitePalette(u: number): Color {
+  const stops = SITE_COLORS.map((c) => new Color(c));
+  const t = Math.min(1, Math.max(0, u)) * (stops.length - 1);
+  const k = Math.min(Math.floor(t), stops.length - 2);
+  return stops[k].clone().lerp(stops[k + 1], t - k);
+}
+
 /** `n` shades along the site palette, first to last colour, one per word. */
 export function cloudColors(n: number): string[] {
-  const stops = SITE_COLORS.map((c) => new Color(c));
-  return Array.from({ length: n }, (_, i) => {
-    const t = n === 1 ? 0 : (i / (n - 1)) * (stops.length - 1);
-    const k = Math.min(Math.floor(t), stops.length - 2);
-    return `#${stops[k].clone().lerp(stops[k + 1], t - k).getHexString()}`;
-  });
+  return Array.from({ length: n }, (_, i) => `#${sitePalette(n === 1 ? 0 : i / (n - 1)).getHexString()}`);
 }
 
 /** Skills page: the skill names as a cloud of extruded words behind Fabian. */
@@ -151,7 +156,7 @@ export function SkillCloud({ skills }: { skills: SkillGroup[] }) {
       try {
         at = packCloud(
           built.map((w) => ({ w: w.box.w * k, h: w.box.h * k })),
-          { inside },
+          { inside, reserved: [HEAD_SPOT] },
         );
       } catch (e) {
         if (tries > 15) throw e;
@@ -160,8 +165,11 @@ export function SkillCloud({ skills }: { skills: SkillGroup[] }) {
     return built.map((w, i) => ({ ...w, ...at[i], scale: k, material: new MeshStandardMaterial({ color: colors[i], roughness: 0.45 }) }));
   }, [skills, font]);
 
-  useFrame(() => {
-    if (root.current) fade(root.current, stationWeight(offset.current, "skills"));
+  useFrame(({ size }) => {
+    if (!root.current) return;
+    fade(root.current, stationWeight(offset.current, "skills"));
+    // Below the lg breakpoint the full-width panel covers the cloud; only stray letters would peek out at its edges.
+    if (size.width < 1024) root.current.visible = false;
   });
 
   // Upright, facing the camera, extruded toward it; vertical words turned a quarter to read bottom to top.

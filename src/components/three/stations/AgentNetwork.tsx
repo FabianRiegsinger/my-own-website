@@ -2,9 +2,10 @@
 
 import { useFrame } from "@react-three/fiber";
 import { useLayoutEffect, useMemo, useRef } from "react";
-import { BufferGeometry, Color, Float32BufferAttribute, type Group, type InstancedMesh, Matrix4, Quaternion, Vector3 } from "three";
+import { BufferGeometry, Float32BufferAttribute, type Group, type InstancedMesh, Matrix4, Quaternion, Vector3 } from "three";
 import { STATIONS, stationWeight } from "@/lib/scroll-map";
 import { fade } from "../fade";
+import { sitePalette } from "./SkillCloud";
 import { useStationOffset } from "../station-offset";
 
 /** Vertical field of view of the scene camera (Experience3D). */
@@ -15,8 +16,6 @@ const MAX_ASPECT = 21 / 9;
 const BEHIND = 4;
 const COUNT = 170;
 const LINK = 1.6;
-const CYAN = new Color("#22d3ee");
-const VIOLET = new Color("#8b5cf6");
 
 /** Deterministic pseudo-random so server/client and every visit look the same. */
 function rand(seed: number) {
@@ -55,7 +54,7 @@ export function AgentNetwork() {
   const { points, lines, colors } = useMemo(() => {
     const { width, height } = layout;
     const points = Array.from({ length: COUNT }, (_, i) => new Vector3((rand(i) - 0.5) * width, (rand(i + 500) - 0.5) * height, (rand(i + 900) - 0.5) * 1.6));
-    const tint = (p: Vector3) => CYAN.clone().lerp(VIOLET, p.x / width + 0.5);
+    const tint = (p: Vector3) => sitePalette(p.x / width + 0.5); // same palette as the skills word cloud
     const pos: number[] = [];
     const col: number[] = [];
     points.forEach((p, i) =>
