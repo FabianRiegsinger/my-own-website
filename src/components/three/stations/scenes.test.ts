@@ -3,7 +3,7 @@ import { Vector3 } from "three";
 import { BELL, HANDLE, NICHE, WALL } from "./Graduation";
 import { TEAM } from "./Team";
 import { CUSTOMER, FLEET } from "./Fleet";
-import { cloudColors, cloudWords, packCloud } from "./SkillCloud";
+import { cloudColors, cloudWords, packCloud, SITE_COLORS } from "./SkillCloud";
 
 const facing = (yaw: number) => new Vector3(Math.sin(yaw), 0, Math.cos(yaw));
 
@@ -81,18 +81,26 @@ describe("skill word cloud", () => {
     expect(dist(order[0])).toBeLessThan(dist(order.at(-1)!));
   });
 
-  it("mixes horizontal and vertical words, in a shuffled order, with varied sizes", () => {
-    const words = cloudWords([3, 5, 2, 4, 1, 5, 3, 2, 4, 3, 1, 2, 5, 4, 3, 2, 1, 3, 4, 2].map((level, i) => ({ name: `skill${i}`, level: level as 1 | 2 | 3 | 4 | 5 })));
+  it("mostly horizontal: only names shorter than 10 characters may run vertically", () => {
+    const names = ["Git", "Linux", "C++", "Python", "Jenkins", "Cursor", "CMake/Conan", "Sensor fusion", "ADAS/AD integration", "Jira/Confluence", "Team coordination", "Vector CANoe", "HTML/CSS", "Claude Code"];
+    const words = cloudWords(names.map((name, i) => ({ name, level: ((i % 5) + 1) as 1 | 2 | 3 | 4 | 5 })));
+    for (const w of words) if (w.name.length >= 10) expect(w.vertical).toBe(false);
     const vertical = words.filter((w) => w.vertical).length;
-    expect(vertical).toBeGreaterThan(3);
-    expect(vertical).toBeLessThan(words.length - 3);
-    expect(words.map((w) => w.name)).not.toEqual(words.map((w) => w.name).sort((a, b) => Number(a.slice(5)) - Number(b.slice(5))));
-    const sameLevel = words.filter((w) => w.level === 3).map((w) => w.size);
-    expect(new Set(sameLevel).size).toBeGreaterThan(1); // size varies even within a level
-    expect(cloudWords(words)).toEqual(cloudWords(words)); // deterministic
+    expect(vertical).toBeGreaterThan(0);
+    expect(vertical).toBeLessThan(words.length / 2);
   });
 
-  it("gives every word its own colour", () => {
-    expect(new Set(cloudColors(20)).size).toBe(20);
+  it("shuffles the order and varies sizes, deterministically", () => {
+    const words = cloudWords([3, 5, 2, 4, 1, 5, 3, 2, 4, 3, 1, 2, 5, 4, 3, 2, 1, 3, 4, 2].map((level, i) => ({ name: `skill${i}`, level: level as 1 | 2 | 3 | 4 | 5 })));
+    expect(words.map((w) => w.name)).not.toEqual(words.map((w) => w.name).sort((a, b) => Number(a.slice(5)) - Number(b.slice(5))));
+    expect(new Set(words.filter((w) => w.level === 3).map((w) => w.size)).size).toBeGreaterThan(1);
+    expect(cloudWords(words)).toEqual(cloudWords(words));
+  });
+
+  it("colours every word in its own shade between the site's colours", () => {
+    const colors = cloudColors(20);
+    expect(new Set(colors).size).toBe(20);
+    expect(colors[0]).toBe(SITE_COLORS[0]);
+    expect(colors.at(-1)).toBe(SITE_COLORS.at(-1));
   });
 });

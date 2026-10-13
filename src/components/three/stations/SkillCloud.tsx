@@ -13,10 +13,10 @@ import { useStationOffset } from "../station-offset";
 /** Inter Bold, printable ASCII (scripts/make-typeface.mjs, OFL). */
 const FONT = "/fonts/inter-700.typeface.json";
 /** The word wall stands just behind Fabian, a little right of him (away from the text panel), on the floor. */
-const CLOUD_X = 0.25;
+const CLOUD_X = 0.2;
 const CLOUD_Z = -1.6;
 /** Longest a word may run across the floor (metres); longer names get a smaller font. */
-const MAX_LENGTH = 3;
+const MAX_LENGTH = 3.6;
 
 type Box = { w: number; h: number };
 type Rect = Box & { x: number; y: number };
@@ -36,8 +36,9 @@ export function cloudWords<T extends { name: string; level: Level }>(items: T[])
   }
   return order.map((k, i) => {
     const item = items[k];
-    const size = (0.07 + 0.028 * item.level) * (0.75 + rand(i + 31) * 0.6);
-    return { ...item, size: Math.min(size, MAX_LENGTH / (item.name.length * 0.6)), vertical: rand(i + 77) < 0.4 };
+    const size = (0.09 + 0.036 * item.level) * (0.75 + rand(i + 31) * 0.6);
+    // Mostly horizontal: only short names may run vertically, and only some of them.
+    return { ...item, size: Math.min(size, MAX_LENGTH / (item.name.length * 0.6)), vertical: item.name.length < 10 && rand(i + 77) < 0.45 };
   });
 }
 
@@ -54,7 +55,7 @@ export function packCloud(boxes: Box[], { pad = 0.05, reserved = [] as Rect[] } 
     let done = false;
     // Bounded search: a box that never fits throws instead of spinning forever.
     for (let t = 0; t < 600 && !done; t += 0.03) {
-      const x = 0.07 * t * Math.cos(t) * 1.7; // wider than tall, like the space beside the text panel
+      const x = 0.07 * t * Math.cos(t) * 1.3; // a little wider than tall, like the space beside the text panel
       const y = 0.07 * t * Math.sin(t);
       if (placed.every((p) => Math.abs(p.x - x) * 2 >= p.w + w + pad || Math.abs(p.y - y) * 2 >= p.h + h + pad)) {
         placed.push({ x, y, w, h });
@@ -67,9 +68,17 @@ export function packCloud(boxes: Box[], { pad = 0.05, reserved = [] as Rect[] } 
   return out;
 }
 
-/** `n` clearly different colours (golden-angle hues), dark enough to read on the light page. */
+/** The site's own colours: accent blue, glow blue, then the violet and peach of the background blobs. */
+export const SITE_COLORS = ["#2563eb", "#2f7bf6", "#8b5cf6", "#ffa878"];
+
+/** `n` shades along the site palette, first to last colour, one per word. */
 export function cloudColors(n: number): string[] {
-  return Array.from({ length: n }, (_, i) => `#${new Color().setHSL(((i * 137.508) % 360) / 360, 0.75, 0.45).getHexString()}`);
+  const stops = SITE_COLORS.map((c) => new Color(c));
+  return Array.from({ length: n }, (_, i) => {
+    const t = n === 1 ? 0 : (i / (n - 1)) * (stops.length - 1);
+    const k = Math.min(Math.floor(t), stops.length - 2);
+    return `#${stops[k].clone().lerp(stops[k + 1], t - k).getHexString()}`;
+  });
 }
 
 /** Skills page: the skill names as an upright wall of extruded words behind Fabian, every word its own colour. */
