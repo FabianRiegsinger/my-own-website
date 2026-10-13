@@ -12,10 +12,9 @@ import { useStationOffset } from "../station-offset";
 
 /** Inter Bold, printable ASCII (scripts/make-typeface.mjs, OFL). */
 const FONT = "/fonts/inter-700.typeface.json";
-/** The cloud sits a little right of Fabian, away from the text panel on the left. */
+/** The word wall stands just behind Fabian, a little right of him (away from the text panel), on the floor. */
 const CLOUD_X = 0.25;
-/** Floor space kept free around Fabian's feet (cloud coordinates: x right, y toward the far side). */
-const FIGURE_SPOT = { x: -CLOUD_X, y: 0, w: 0.9, h: 0.7 };
+const CLOUD_Z = -1.6;
 /** Longest a word may run across the floor (metres); longer names get a smaller font. */
 const MAX_LENGTH = 3;
 
@@ -37,7 +36,7 @@ export function cloudWords<T extends { name: string; level: Level }>(items: T[])
   }
   return order.map((k, i) => {
     const item = items[k];
-    const size = (0.065 + 0.026 * item.level) * (0.75 + rand(i + 31) * 0.6);
+    const size = (0.07 + 0.028 * item.level) * (0.75 + rand(i + 31) * 0.6);
     return { ...item, size: Math.min(size, MAX_LENGTH / (item.name.length * 0.6)), vertical: rand(i + 77) < 0.4 };
   });
 }
@@ -55,7 +54,7 @@ export function packCloud(boxes: Box[], { pad = 0.05, reserved = [] as Rect[] } 
     let done = false;
     // Bounded search: a box that never fits throws instead of spinning forever.
     for (let t = 0; t < 600 && !done; t += 0.03) {
-      const x = 0.07 * t * Math.cos(t) * 1.2; // a little wider than deep, like the floor in view
+      const x = 0.07 * t * Math.cos(t) * 1.7; // wider than tall, like the space beside the text panel
       const y = 0.07 * t * Math.sin(t);
       if (placed.every((p) => Math.abs(p.x - x) * 2 >= p.w + w + pad || Math.abs(p.y - y) * 2 >= p.h + h + pad)) {
         placed.push({ x, y, w, h });
@@ -73,7 +72,7 @@ export function cloudColors(n: number): string[] {
   return Array.from({ length: n }, (_, i) => `#${new Color().setHSL(((i * 137.508) % 360) / 360, 0.75, 0.45).getHexString()}`);
 }
 
-/** Skills page: the skill names as extruded words lying on the floor around Fabian, every word its own colour. */
+/** Skills page: the skill names as an upright wall of extruded words behind Fabian, every word its own colour. */
 export function SkillCloud({ skills }: { skills: SkillGroup[] }) {
   const root = useRef<Group>(null);
   const offset = useStationOffset();
@@ -99,24 +98,21 @@ export function SkillCloud({ skills }: { skills: SkillGroup[] }) {
       const [len, height] = [b.max.x - b.min.x, b.max.y - b.min.y];
       return { ...it, geometry, box: it.vertical ? { w: height, h: len } : { w: len, h: height } };
     });
-    const at = packCloud(
-      built.map((w) => w.box),
-      { reserved: [FIGURE_SPOT] },
-    );
-    return built.map((w, i) => ({ ...w, ...at[i], material: new MeshStandardMaterial({ color: colors[i], roughness: 0.45 }) }));
+    const at = packCloud(built.map((w) => w.box));
+    // Stand the wall on the floor: lift it so its lowest word just clears the ground.
+    const lift = 0.04 - Math.min(...at.map((p, i) => p.y - built[i].box.h / 2));
+    return built.map((w, i) => ({ ...w, x: at[i].x, y: at[i].y + lift, material: new MeshStandardMaterial({ color: colors[i], roughness: 0.45 }) }));
   }, [skills, font]);
 
   useFrame(() => {
     if (root.current) fade(root.current, stationWeight(offset.current, "skills"));
   });
 
-  // Lying flat on the floor (text up = away from the camera), extruded upward; vertical words turned a quarter.
+  // Upright, facing the camera, extruded toward it; vertical words turned a quarter to read bottom to top.
   return (
-    <group ref={root} position-x={CLOUD_X}>
+    <group ref={root} position={[CLOUD_X, 0, CLOUD_Z]}>
       {words.map((w) => (
-        <group key={w.name} position={[w.x, 0.001, -w.y]} rotation-y={w.vertical ? Math.PI / 2 : 0}>
-          <mesh geometry={w.geometry} material={w.material} rotation-x={-Math.PI / 2} castShadow receiveShadow />
-        </group>
+        <mesh key={w.name} geometry={w.geometry} material={w.material} position={[w.x, w.y, 0]} rotation-z={w.vertical ? Math.PI / 2 : 0} castShadow receiveShadow />
       ))}
     </group>
   );

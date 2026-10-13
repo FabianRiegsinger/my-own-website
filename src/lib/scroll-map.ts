@@ -30,7 +30,7 @@ export const STATIONS: Station[] = [
   { id: "esas", start: 0.36, end: 0.48, clip: "laptop", camera: [0.3, 1.9, 5.8], target: [0.1, 1.1, 0], shift: BESIDE_PANEL, yaw: 0.35 },
   { id: "mobileye", start: 0.48, end: 0.6, clip: "tablet", camera: [1.6, 2.3, 6.2], target: [0, 1.3, -2], shift: BESIDE_PANEL, yaw: -0.3 },
   { id: "agentic", start: 0.6, end: 0.74, clip: "typing", camera: [-3, 1.8, 4], target: [0, 1, 0], shift: 0.32, yaw: 0 },
-  { id: "skills", start: 0.74, end: 0.86, clip: "idle", camera: [0, 3.4, 5.6], target: [0, 0.7, -0.3], shift: BESIDE_PANEL, yaw: 0 },
+  { id: "skills", start: 0.74, end: 0.86, clip: "idle", camera: [0, 2.2, 6], target: [0, 1, 0], shift: BESIDE_PANEL, yaw: 0 },
   { id: "contact", start: 0.86, end: 1, clip: "wave", camera: [0, 1.3, 6], target: [0, 1, 0], shift: BESIDE_PANEL, yaw: 0 },
 ];
 
