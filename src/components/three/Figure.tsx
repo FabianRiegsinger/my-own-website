@@ -4,7 +4,7 @@ import { useAnimations, useGLTF } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import { MathUtils, type Group, type Mesh, type Object3D } from "three";
-import { entrance, POSES, poseFor, type Pose } from "@/lib/entrance";
+import { entrance, introStep, POSES, poseFor, type Pose } from "@/lib/entrance";
 import { heading, stationAt, type ClipName } from "@/lib/scroll-map";
 import { applyArms, findArms } from "./arm-pose";
 import { attachHead, paintBody, setOutfit, updateAvatar } from "./avatar";
@@ -24,7 +24,7 @@ export function Figure({ shadows }: { shadows: boolean }) {
   const { actions, mixer } = useAnimations(animations, group);
   const offset = useStationOffset();
   const current = useRef<ClipName | null>(null);
-  const intro = useRef<{ start: number | null; done: boolean }>({ start: null, done: false });
+  const intro = useRef({ t: 0, done: false });
   const pose = useRef<Pose>(poseFor("walk"));
   const arms = useMemo(() => findArms(scene), [scene]);
   const head = useRef<Group | null>(null);
@@ -76,8 +76,8 @@ export function Figure({ shadows }: { shadows: boolean }) {
     if (!it.done && !atTop()) it.done = true;
     let clip: ClipName;
     if (!it.done) {
-      it.start ??= clock.elapsedTime;
-      const s = entrance(clock.elapsedTime - it.start);
+      it.t = introStep(it.t, dt); // frame time, not wall time: a first-frame stall must not skip the walk-in
+      const s = entrance(it.t);
       g.position.x = s.x;
       g.rotation.y = s.heading;
       pose.current = s.pose;

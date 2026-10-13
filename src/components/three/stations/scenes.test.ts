@@ -4,6 +4,7 @@ import { BELL, HANDLE, NICHE, WALL } from "./Graduation";
 import { TEAM } from "./Team";
 import { CUSTOMER, FLEET } from "./Fleet";
 import { labelPosition } from "./SkillCloud";
+import { layoutLetters, LETTER_COLORS, WORD } from "./ClaudeWord";
 
 const facing = (yaw: number) => new Vector3(Math.sin(yaw), 0, Math.cos(yaw));
 
@@ -70,5 +71,20 @@ describe("skill cloud", () => {
         expect(p.y).toBeLessThan(2.3);
       }
     expect(labelPosition(3, 20, 0).distanceTo(labelPosition(3, 20, 4))).toBeGreaterThan(0.1);
+  });
+});
+
+describe("Claude word", () => {
+  it("lays the letters out left to right, centred on the word's origin", () => {
+    const xs = layoutLetters([1, 0.4, 0.8], 0.1);
+    expect(xs[0]).toBeLessThan(xs[1]);
+    expect(xs[1]).toBeLessThan(xs[2]);
+    const right = xs[2] + 0.8;
+    expect(xs[0] + right).toBeCloseTo(0); // left edge = -right edge
+  });
+
+  it("gives every letter of C-l-a-u-d-e its own colour", () => {
+    expect(WORD).toBe("Claude");
+    expect(new Set(LETTER_COLORS).size).toBe(WORD.length);
   });
 });

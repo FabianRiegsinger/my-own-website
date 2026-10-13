@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ENTRANCE, entrance, poseFor } from "./entrance";
+import { ENTRANCE, entrance, introStep, poseFor } from "./entrance";
 
 const { walk, turn, wave, settle, startX } = ENTRANCE;
 
@@ -48,5 +48,16 @@ describe("poseFor", () => {
     expect(poseFor("typing")).toMatchObject({ hips: 1 });
     expect(Object.values(poseFor("walk")).every((w) => w === 0)).toBe(true);
     for (const c of ["wave", "think", "ring", "laptop", "tablet", "idle"] as const) expect(Object.values(poseFor(c)).reduce((a, b) => a + b)).toBe(1);
+  });
+});
+
+describe("introStep", () => {
+  it("advances with smooth frames", () => {
+    expect(introStep(1, 1 / 60)).toBeCloseTo(1 + 1 / 60);
+  });
+
+  it("a long stall (first-frame shader compile) pauses the walk instead of skipping it", () => {
+    expect(introStep(0, 1.8)).toBeLessThanOrEqual(0.05);
+    expect(entrance(introStep(0, 1.8)).x).toBeGreaterThan(ENTRANCE.startX * 0.9); // still off to the right, walking in
   });
 });

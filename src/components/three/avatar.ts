@@ -63,11 +63,13 @@ export function paintBody(root: Object3D, outfits: Record<string, Palette> = OUT
   const c = new Color();
   const v = new Vector3();
   root.updateMatrixWorld(true);
+  // Finding the chest strip needs skinned vertex positions (slow); only a palette with a jacket over the shirt needs it.
+  const needsStrip = Object.values(outfits).some((p) => p.jacket !== p.shirt);
   root.traverse((o) => {
     const mesh = o as SkinnedMesh;
     if (!mesh.isSkinnedMesh) return;
     mesh.geometry = mesh.geometry.clone();
-    mesh.skeleton.update();
+    if (needsStrip) mesh.skeleton.update();
     const g = mesh.geometry;
     const idx = g.getAttribute("skinIndex");
     const wt = g.getAttribute("skinWeight");
@@ -77,7 +79,7 @@ export function paintBody(root: Object3D, outfits: Record<string, Palette> = OUT
       for (let k = 1; k < 4; k++) if (wt.getComponent(i, k) > wt.getComponent(i, best)) best = k;
       const region = regionOf(mesh.skeleton.bones[idx.getComponent(i, best)].name);
       // Model space: the figure faces +z; the strip is a narrow band down the front of the chest.
-      const p = region === "shirt" ? root.worldToLocal(mesh.localToWorld(mesh.getVertexPosition(i, v))) : v.set(1, 0, -1);
+      const p = region === "shirt" && needsStrip ? root.worldToLocal(mesh.localToWorld(mesh.getVertexPosition(i, v))) : v.set(1, 0, -1);
       garments.push(garmentOf(region, Math.abs(p.x) < 0.045 && p.z > 0.02 && p.y > 1.1));
     }
     mesh.userData.outfits = Object.fromEntries(

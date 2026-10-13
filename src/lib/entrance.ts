@@ -45,3 +45,11 @@ export function poseFor(clip: ClipName): Pose {
   else pose[clip] = 1;
   return pose;
 }
+
+/** Longest frame the landing counts: a stall (first-frame shader compile) pauses the walk instead of skipping it. */
+const MAX_STEP = 0.05;
+
+/** Landing time after a frame of `dt` seconds. */
+export function introStep(t: number, dt: number): number {
+  return t + Math.min(dt, MAX_STEP);
+}
