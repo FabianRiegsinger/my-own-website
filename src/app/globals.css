@@ -56,17 +56,17 @@ html:not([data-experience="static"]) .fallback-figure {
 @property --blob-a {
   syntax: "<color>";
   inherits: true;
-  initial-value: rgb(47 123 246 / 0.28);
+  initial-value: rgb(47 123 246 / 0.5);
 }
 @property --blob-b {
   syntax: "<color>";
   inherits: true;
-  initial-value: rgb(139 92 246 / 0.24);
+  initial-value: rgb(139 92 246 / 0.42);
 }
 @property --blob-c {
   syntax: "<color>";
   inherits: true;
-  initial-value: rgb(255 168 120 / 0.3);
+  initial-value: rgb(255 168 120 / 0.5);
 }
 
 html {
@@ -78,30 +78,30 @@ html {
 
 /* Education: THM green (#80ba24) with the light and dark greys of the graduation photo. */
 html[data-page="education"] {
-  --blob-a: rgb(128 186 36 / 0.32);
-  --blob-b: rgb(196 198 202 / 0.5);
-  --blob-c: rgb(104 108 114 / 0.28);
+  --blob-a: rgb(128 186 36 / 0.55);
+  --blob-b: rgb(196 198 202 / 0.75);
+  --blob-c: rgb(104 108 114 / 0.45);
 }
 
 /* ESAS automotive (esas-automotive.com theme): coral accent #F25544, light grey #E2E2E2, near-black #1A1A1A. */
 html[data-page="esas"] {
-  --blob-a: rgb(242 85 68 / 0.3);
-  --blob-b: rgb(226 226 226 / 0.6);
-  --blob-c: rgb(26 26 26 / 0.12);
+  --blob-a: rgb(242 85 68 / 0.5);
+  --blob-b: rgb(214 214 214 / 0.8);
+  --blob-c: rgb(26 26 26 / 0.2);
 }
 
 /* Mobileye (mobileye.com): brand blue #1E2EB8, periwinkle #CACAE7, soft pink #F2CAD4. */
 html[data-page="mobileye"] {
-  --blob-a: rgb(30 46 184 / 0.26);
-  --blob-b: rgb(202 202 231 / 0.6);
-  --blob-c: rgb(242 202 212 / 0.5);
+  --blob-a: rgb(30 46 184 / 0.45);
+  --blob-b: rgb(202 202 231 / 0.85);
+  --blob-c: rgb(242 202 212 / 0.75);
 }
 
 body {
   background:
-    radial-gradient(42vmax 42vmax at 12% 18%, var(--blob-a), transparent 70%),
-    radial-gradient(38vmax 38vmax at 88% 26%, var(--blob-b), transparent 70%),
-    radial-gradient(46vmax 46vmax at 62% 96%, var(--blob-c), transparent 70%),
+    radial-gradient(42vmax 42vmax at 12% 18%, var(--blob-a), transparent 75%),
+    radial-gradient(38vmax 38vmax at 88% 26%, var(--blob-b), transparent 75%),
+    radial-gradient(46vmax 46vmax at 62% 96%, var(--blob-c), transparent 75%),
     #f5f5f7;
   background-attachment: fixed;
 }

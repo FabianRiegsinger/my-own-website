@@ -3,8 +3,7 @@ import { Vector3 } from "three";
 import { BELL, HANDLE, NICHE, WALL } from "./Graduation";
 import { TEAM } from "./Team";
 import { CUSTOMER, FLEET } from "./Fleet";
-import { labelPosition } from "./SkillCloud";
-import { layoutLetters, LETTER_COLORS, WORD } from "./ClaudeWord";
+import { cloudColors, packCloud } from "./SkillCloud";
 
 const facing = (yaw: number) => new Vector3(Math.sin(yaw), 0, Math.cos(yaw));
 
@@ -60,31 +59,29 @@ describe("Mobileye fleet", () => {
   });
 });
 
-describe("skill cloud", () => {
-  it("labels drift around the figure, never through it, and keep moving", () => {
-    for (let i = 0; i < 20; i++)
-      for (const t of [0, 3, 9]) {
-        const p = labelPosition(i, 20, t);
-        expect(Math.hypot(p.x, p.z)).toBeGreaterThan(0.75);
-        expect(Math.hypot(p.x, p.z)).toBeLessThan(1.9);
-        expect(p.y).toBeGreaterThan(0.25);
-        expect(p.y).toBeLessThan(2.3);
-      }
-    expect(labelPosition(3, 20, 0).distanceTo(labelPosition(3, 20, 4))).toBeGreaterThan(0.1);
-  });
-});
+describe("skill word cloud", () => {
+  const boxes = [3, 5, 2, 4, 1, 5, 3, 2, 4, 3, 1, 2, 5, 4, 3, 2, 1, 3, 4, 2].map((level, i) => ({ w: 0.25 * (4 + (i % 7)) * (0.5 + level / 5), h: 0.12 + 0.05 * level }));
+  const placed = packCloud(boxes);
 
-describe("Claude word", () => {
-  it("lays the letters out left to right, centred on the word's origin", () => {
-    const xs = layoutLetters([1, 0.4, 0.8], 0.1);
-    expect(xs[0]).toBeLessThan(xs[1]);
-    expect(xs[1]).toBeLessThan(xs[2]);
-    const right = xs[2] + 0.8;
-    expect(xs[0] + right).toBeCloseTo(0); // left edge = -right edge
+  it("places every word without overlapping another", () => {
+    expect(placed).toHaveLength(boxes.length);
+    placed.forEach((a, i) =>
+      placed.slice(i + 1).forEach((b, k) => {
+        const j = i + 1 + k;
+        const apart = Math.abs(a.x - b.x) * 2 >= boxes[i].w + boxes[j].w - 1e-9 || Math.abs(a.y - b.y) * 2 >= boxes[i].h + boxes[j].h - 1e-9;
+        expect(apart).toBe(true);
+      }),
+    );
   });
 
-  it("gives every letter of C-l-a-u-d-e its own colour", () => {
-    expect(WORD).toBe("Claude");
-    expect(new Set(LETTER_COLORS).size).toBe(WORD.length);
+  it("packs the biggest words nearest the middle", () => {
+    const dist = (i: number) => Math.hypot(placed[i].x, placed[i].y);
+    const order = boxes.map((b, i) => i).sort((a, b) => boxes[b].w * boxes[b].h - boxes[a].w * boxes[a].h);
+    expect(dist(order[0])).toBeLessThan(dist(order.at(-1)!));
+  });
+
+  it("gives every word its own colour", () => {
+    const colors = cloudColors(20);
+    expect(new Set(colors).size).toBe(20);
   });
 });

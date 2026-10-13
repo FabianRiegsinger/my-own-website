@@ -1,77 +1,86 @@
 "use client";
 
 import { Text } from "@react-three/drei";
-import { useFrame, useThree } from "@react-three/fiber";
-import { useEffect, useMemo, useRef } from "react";
-import { type Group, Vector3 } from "three";
+import { useFrame } from "@react-three/fiber";
+import { useMemo, useRef } from "react";
+import { Color, type Group } from "three";
 import type { SkillGroup } from "@/content/types";
 import { stationWeight } from "@/lib/scroll-map";
-import { contentRight, duckScale } from "../duck";
 import { fade } from "../fade";
 import { useStationOffset } from "../station-offset";
 
 const FONT = "/fonts/inter-600.woff"; // self-hosted: troika would otherwise fetch a font from a CDN
+/** Rough text box per character and per line, as a fraction of the font size (Inter SemiBold). */
+const CHAR_W = 0.56;
+const LINE_H = 1.25;
 
-/** Deterministic pseudo-random so every visit looks the same. */
-function rand(seed: number) {
-  const x = Math.sin(seed * 9301 + 49297) * 233280;
-  return x - Math.floor(x);
+type Box = { w: number; h: number };
+
+/**
+ * Word-cloud layout: biggest words first, each placed at the first free spot along an outward elliptical spiral,
+ * so nothing overlaps and the heavy words gather in the middle. Returns centres in the input order.
+ */
+export function packCloud(boxes: Box[], pad = 0.04): { x: number; y: number }[] {
+  const order = boxes.map((_, i) => i).sort((a, b) => boxes[b].w * boxes[b].h - boxes[a].w * boxes[a].h);
+  const placed: { x: number; y: number; w: number; h: number }[] = [];
+  const out: { x: number; y: number }[] = new Array(boxes.length);
+  for (const i of order) {
+    const { w, h } = boxes[i];
+    for (let t = 0; ; t += 0.04) {
+      const x = 0.09 * t * Math.cos(t) * 1.8; // wider than tall, like the space beside the text panel
+      const y = 0.09 * t * Math.sin(t);
+      const free = placed.every((p) => Math.abs(p.x - x) * 2 >= p.w + w + pad || Math.abs(p.y - y) * 2 >= p.h + h + pad);
+      if (free) {
+        placed.push({ x, y, w, h });
+        out[i] = { x, y };
+        break;
+      }
+    }
+  }
+  return out;
 }
 
-/** Where skill label `i` of `n` floats at time `t`: its own slow orbit and bob around the figure, spread over its height. */
-export function labelPosition(i: number, n: number, t: number, out = new Vector3()): Vector3 {
-  const r = 1 + rand(i + 300) * 0.85;
-  const a = (i / n) * Math.PI * 2 + rand(i) * 0.8 + t * (0.06 + rand(i + 50) * 0.06) * (i % 2 ? 1 : -1);
-  const y = 0.45 + ((i * 7) % n) / n * 1.6 + 0.12 * Math.sin(t * 0.6 + i);
-  return out.set(Math.cos(a) * r, y, Math.sin(a) * r);
+/** `n` clearly different colours (golden-angle hues), dark enough to read on the light page. */
+export function cloudColors(n: number): string[] {
+  return Array.from({ length: n }, (_, i) => `#${new Color().setHSL(((i * 137.508) % 360) / 360, 0.85, 0.36).getHexString()}`);
 }
 
-/** Skill names floating around the figure, gently tilting in 3D; stronger skills are larger and blue. */
+/** Skills page: the skill names as a colourful word cloud behind the figure, each word swaying a little in 3D. */
 export function SkillCloud({ skills }: { skills: SkillGroup[] }) {
   const root = useRef<Group>(null);
-  const labels = useRef<Group>(null);
+  const words = useRef<Group>(null);
   const offset = useStationOffset();
-  const width = useThree((s) => s.size.width);
-  const textEdge = useRef<number | null>(null);
-  const items = useMemo(() => skills.flatMap((g) => g.items), [skills]);
-  const v = useMemo(() => new Vector3(), []);
 
-  // Desktop only: where the skills text ends on screen. Mobile text sits on its own backdrop.
-  useEffect(() => {
-    const section = document.getElementById("skills");
-    if (!section) return;
-    const measure = () => (textEdge.current = window.innerWidth >= 768 ? contentRight(section) : null);
-    const ro = new ResizeObserver(measure);
-    ro.observe(section);
-    return () => ro.disconnect();
-  }, []);
+  const layout = useMemo(() => {
+    const items = skills.flatMap((g) => g.items).map((item) => ({ ...item, size: 0.115 + 0.045 * item.level }));
+    const at = packCloud(items.map((it) => ({ w: it.name.length * it.size * CHAR_W, h: it.size * LINE_H })));
+    const colors = cloudColors(items.length);
+    return items.map((it, i) => ({ ...it, ...at[i], color: colors[i] }));
+  }, [skills]);
 
-  useFrame(({ camera, clock }) => {
-    if (!root.current || !labels.current) return;
+  useFrame(({ clock }) => {
+    if (!root.current || !words.current) return;
     fade(root.current, stationWeight(offset.current, "skills"));
     if (!root.current.visible) return;
     const t = clock.elapsedTime;
-    labels.current.children.forEach((label, i) => {
-      labelPosition(i, items.length, t, label.position);
-      // Face the camera, then tilt a little in 3D so the words feel like objects, not stickers.
-      label.quaternion.copy(camera.quaternion);
-      label.rotateY(0.35 * Math.sin(t * 0.8 + i));
-      label.rotateX(0.15 * Math.sin(t * 0.6 + i * 1.7));
-      // Words drifting over the skills text shrink away there.
-      const px = ((label.getWorldPosition(v).project(camera).x + 1) / 2) * width;
-      const s = duckScale(px, textEdge.current);
-      label.visible = s > 0;
-      label.scale.setScalar(s);
+    words.current.children.forEach((w, i) => {
+      w.rotation.y = 0.18 * Math.sin(t * 0.7 + i);
+      w.rotation.x = 0.06 * Math.sin(t * 0.5 + i * 1.3);
+      w.position.z = 0.06 * Math.sin(t * 0.9 + i * 0.8);
     });
   });
 
+  // Behind the figure, turned a little, centred in the space right of the text panel. z = -5.6 keeps it outside the
+  // floor's contact-shadow capture (10 x 10 around the origin), which would smear it into a grey band.
   return (
-    <group ref={root}>
-      <group ref={labels}>
-        {items.map((item) => (
-          <Text key={item.name} font={FONT} fontSize={0.035 + 0.012 * item.level} color={item.level >= 4 ? "#2563eb" : "#1d1d1f"} anchorX="center" anchorY="middle">
-            {item.name}
-          </Text>
+    <group ref={root} position={[0.3, 1.35, -5.6]} rotation={[0, 0.15, 0.03]}>
+      <group ref={words}>
+        {layout.map((w) => (
+          <group key={w.name} position={[w.x, w.y, 0]}>
+            <Text font={FONT} fontSize={w.size} color={w.color} anchorX="center" anchorY="middle" material-toneMapped={false}>
+              {w.name}
+            </Text>
+          </group>
         ))}
       </group>
     </group>
