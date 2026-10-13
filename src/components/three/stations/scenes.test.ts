@@ -44,7 +44,8 @@ describe("ESAS team", () => {
 
 describe("Mobileye fleet", () => {
   it("parks the cars well behind Fabian and the customer, without overlapping", () => {
-    expect(FLEET.length).toBeGreaterThanOrEqual(6);
+    expect(FLEET.length).toBeGreaterThanOrEqual(3);
+    expect(FLEET.length).toBeLessThanOrEqual(4); // a few cars read as a fleet without crowding the scene
     for (const c of FLEET) {
       const pos = new Vector3(...c.position);
       expect(pos.z).toBeLessThan(-3);
