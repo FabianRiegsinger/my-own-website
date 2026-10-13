@@ -198,3 +198,18 @@ test("once the 3D page is up, the static page never flashes back in", async ({ p
     await page.waitForTimeout(100);
   }
 });
+
+for (const id of ["agentic", "skills"]) {
+  test(`${id} heading stays in view while its tall panel scrolls`, async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto("/");
+    await page.evaluate((id) => {
+      const el = document.getElementById(id)!;
+      window.scrollTo({ top: el.offsetTop + el.offsetHeight / 2 - innerHeight / 2, behavior: "instant" });
+    }, id);
+    const box = (await page.locator(`#${id} h2`).boundingBox())!;
+    expect(box.y).toBeGreaterThanOrEqual(0);
+    expect(box.y + box.height).toBeLessThanOrEqual(800);
+  });
+}
+

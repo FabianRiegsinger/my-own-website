@@ -1,14 +1,16 @@
 import type { CV } from "@/content/types";
 import type { Project } from "@/lib/projects";
-import { Eyebrow, Section } from "./Section";
+import { Eyebrow, Section, StickyHeader } from "./Section";
 
 export function Agentic({ cv, projects }: { cv: CV; projects: Project[] }) {
   return (
     <Section id="agentic">
-      <div className="max-w-2xl">
+      <StickyHeader>
         <Eyebrow>Now</Eyebrow>
         <h2 className="text-4xl font-semibold tracking-tight sm:text-5xl">Building with AI agents</h2>
-        <p className="mt-6 text-xl leading-relaxed">{cv.agentic.intro}</p>
+      </StickyHeader>
+      <div className="max-w-2xl">
+        <p className="mt-4 text-xl leading-relaxed">{cv.agentic.intro}</p>
         <p className="mt-4 leading-relaxed text-muted">{cv.agentic.workUse}</p>
         <ul className="mt-6 flex flex-wrap gap-2" aria-label="Tools">
           {cv.agentic.tools.map((t) => (

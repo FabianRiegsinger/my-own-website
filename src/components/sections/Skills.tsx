@@ -1,12 +1,14 @@
 import type { CV } from "@/content/types";
-import { Eyebrow, Section } from "./Section";
+import { Eyebrow, Section, StickyHeader } from "./Section";
 
 export function Skills({ cv }: { cv: CV }) {
   return (
     <Section id="skills">
-      <Eyebrow>Skills</Eyebrow>
-      <h2 className="text-4xl font-semibold tracking-tight sm:text-5xl">What I work with</h2>
-      <div className="mt-10 grid gap-3 2xl:grid-cols-2">
+      <StickyHeader>
+        <Eyebrow>Skills</Eyebrow>
+        <h2 className="text-4xl font-semibold tracking-tight sm:text-5xl">What I work with</h2>
+      </StickyHeader>
+      <div className="mt-8 grid gap-3 2xl:grid-cols-2">
         {cv.skills.map((g) => (
           <div key={g.group} className="rounded-2xl bg-white/45 p-5 ring-1 ring-white/70">
             <h3 className="text-lg font-semibold">{g.group}</h3>
