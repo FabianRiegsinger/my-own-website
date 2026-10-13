@@ -173,17 +173,22 @@ test("static page still shows the fallback figure", async ({ page }) => {
   await expect(page.locator('img[src="/fallback.webp"]')).toBeVisible();
 });
 
-test("background blobs turn THM green and grey on the education page", async ({ page }) => {
-  await page.goto("/");
-  const blob = () => page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--blob-a"));
-  expect(await blob()).not.toContain("128, 186, 36");
-  await page.locator("#education").scrollIntoViewIfNeeded();
-  await page.evaluate(() => {
-    const el = document.getElementById("education")!;
-    window.scrollTo({ top: el.offsetTop + el.offsetHeight / 2 - innerHeight / 2, behavior: "instant" });
+for (const [id, rgb, brand] of [
+  ["education", "128, 186, 36", "THM green"],
+  ["esas", "242, 85, 68", "ESAS coral"],
+  ["mobileye", "30, 46, 184", "Mobileye blue"],
+] as const) {
+  test(`background blobs take ${brand} on the ${id} page`, async ({ page }) => {
+    await page.goto("/");
+    const blob = () => page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--blob-a"));
+    expect(await blob()).not.toContain(rgb);
+    await page.evaluate((id) => {
+      const el = document.getElementById(id)!;
+      window.scrollTo({ top: el.offsetTop + el.offsetHeight / 2 - innerHeight / 2, behavior: "instant" });
+    }, id);
+    await expect.poll(blob, { timeout: 5000 }).toContain(rgb);
   });
-  await expect.poll(blob, { timeout: 5000 }).toContain("128, 186, 36");
-});
+}
 
 test("once the 3D page is up, the static page never flashes back in", async ({ page }) => {
   await page.goto("/");

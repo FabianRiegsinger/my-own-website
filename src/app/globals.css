@@ -83,6 +83,20 @@ html[data-page="education"] {
   --blob-c: rgb(104 108 114 / 0.28);
 }
 
+/* ESAS automotive (esas-automotive.com theme): coral accent #F25544, light grey #E2E2E2, near-black #1A1A1A. */
+html[data-page="esas"] {
+  --blob-a: rgb(242 85 68 / 0.3);
+  --blob-b: rgb(226 226 226 / 0.6);
+  --blob-c: rgb(26 26 26 / 0.12);
+}
+
+/* Mobileye (mobileye.com): brand blue #1E2EB8, periwinkle #CACAE7, soft pink #F2CAD4. */
+html[data-page="mobileye"] {
+  --blob-a: rgb(30 46 184 / 0.26);
+  --blob-b: rgb(202 202 231 / 0.6);
+  --blob-c: rgb(242 202 212 / 0.5);
+}
+
 body {
   background:
     radial-gradient(42vmax 42vmax at 12% 18%, var(--blob-a), transparent 70%),
