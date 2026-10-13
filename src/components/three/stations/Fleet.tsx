@@ -2,7 +2,7 @@
 
 import { useFrame } from "@react-three/fiber";
 import { useMemo, useRef } from "react";
-import { BoxGeometry, CylinderGeometry, type Group, MeshPhysicalMaterial, MeshStandardMaterial } from "three";
+import { BoxGeometry, CylinderGeometry, type Group, MeshStandardMaterial } from "three";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import { stationWeight } from "@/lib/scroll-map";
 import { fade } from "../fade";
@@ -65,8 +65,9 @@ function useParts() {
         rim: new CylinderGeometry(0.2, 0.2, 0.01, 20),
       },
       m: {
-        paint: new MeshPhysicalMaterial({ color: "#f4f5f7", roughness: 0.35, clearcoat: 0.8, clearcoatRoughness: 0.2 }),
-        glass: new MeshPhysicalMaterial({ color: "#8fa3b8", roughness: 0.08, metalness: 0.2, clearcoat: 1 }),
+        paint: new MeshStandardMaterial({ color: "#f4f5f7", roughness: 0.3 }),
+        // Standard materials only: a clearcoat shader compiles on first sight and stalls the scroll.
+        glass: new MeshStandardMaterial({ color: "#8fa3b8", roughness: 0.1, metalness: 0.35 }),
         sensor: new MeshStandardMaterial({ color: "#2a2c31", roughness: 0.5 }),
         accent: new MeshStandardMaterial({ color: "#2563eb", emissive: "#2563eb", emissiveIntensity: 0.4 }),
         tyre: new MeshStandardMaterial({ color: "#1d1d1f", roughness: 0.9 }),
