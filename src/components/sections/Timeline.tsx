@@ -11,7 +11,7 @@ export function Timeline({ cv }: { cv: CV }) {
   return (
     <>
       <Section id="education">
-        <Eyebrow>Career · Education</Eyebrow>
+        <Eyebrow>Career · Studies</Eyebrow>
         <h2 className={title}>Education</h2>
         <ol className="mt-10 space-y-10 border-l border-ink/15 pl-6">
           {[...cv.education].reverse().map((e) => (

@@ -213,3 +213,11 @@ for (const id of ["agentic", "skills"]) {
   });
 }
 
+test("landing page invites scrolling with a cue that jumps to the about page", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.locator("canvas")).toBeAttached({ timeout: 10_000 }); // check the final (3D) DOM, not the static one it replaces
+  const cue = page.locator('#hero a[href="#about"]');
+  await expect(cue).toBeVisible();
+  const box = (await cue.boundingBox())!;
+  expect(box.height).toBeGreaterThanOrEqual(44);
+});
