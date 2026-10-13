@@ -3,7 +3,7 @@ import { Vector3 } from "three";
 import { BELL, HANDLE, NICHE, WALL } from "./Graduation";
 import { TEAM } from "./Team";
 import { CUSTOMER, FLEET } from "./Fleet";
-import { cloudColors, packCloud } from "./SkillCloud";
+import { cloudColors, cloudWords, packCloud } from "./SkillCloud";
 
 const facing = (yaw: number) => new Vector3(Math.sin(yaw), 0, Math.cos(yaw));
 
@@ -61,17 +61,18 @@ describe("Mobileye fleet", () => {
 
 describe("skill word cloud", () => {
   const boxes = [3, 5, 2, 4, 1, 5, 3, 2, 4, 3, 1, 2, 5, 4, 3, 2, 1, 3, 4, 2].map((level, i) => ({ w: 0.25 * (4 + (i % 7)) * (0.5 + level / 5), h: 0.12 + 0.05 * level }));
-  const placed = packCloud(boxes);
+  const figure = { x: 0, y: 0, w: 0.9, h: 0.6 };
+  const placed = packCloud(boxes, { reserved: [figure] });
+  const apart = (a: { x: number; y: number; w: number; h: number }, b: { x: number; y: number; w: number; h: number }) =>
+    Math.abs(a.x - b.x) * 2 >= a.w + b.w - 1e-9 || Math.abs(a.y - b.y) * 2 >= a.h + b.h - 1e-9;
 
-  it("places every word without overlapping another", () => {
+  it("places every word without overlapping another or the spot where Fabian stands", () => {
     expect(placed).toHaveLength(boxes.length);
-    placed.forEach((a, i) =>
-      placed.slice(i + 1).forEach((b, k) => {
-        const j = i + 1 + k;
-        const apart = Math.abs(a.x - b.x) * 2 >= boxes[i].w + boxes[j].w - 1e-9 || Math.abs(a.y - b.y) * 2 >= boxes[i].h + boxes[j].h - 1e-9;
-        expect(apart).toBe(true);
-      }),
-    );
+    const rects = placed.map((p, i) => ({ ...p, ...boxes[i] }));
+    rects.forEach((a, i) => {
+      expect(apart(a, figure)).toBe(true);
+      rects.slice(i + 1).forEach((b) => expect(apart(a, b)).toBe(true));
+    });
   });
 
   it("packs the biggest words nearest the middle", () => {
@@ -80,8 +81,18 @@ describe("skill word cloud", () => {
     expect(dist(order[0])).toBeLessThan(dist(order.at(-1)!));
   });
 
+  it("mixes horizontal and vertical words, in a shuffled order, with varied sizes", () => {
+    const words = cloudWords([3, 5, 2, 4, 1, 5, 3, 2, 4, 3, 1, 2, 5, 4, 3, 2, 1, 3, 4, 2].map((level, i) => ({ name: `skill${i}`, level: level as 1 | 2 | 3 | 4 | 5 })));
+    const vertical = words.filter((w) => w.vertical).length;
+    expect(vertical).toBeGreaterThan(3);
+    expect(vertical).toBeLessThan(words.length - 3);
+    expect(words.map((w) => w.name)).not.toEqual(words.map((w) => w.name).sort((a, b) => Number(a.slice(5)) - Number(b.slice(5))));
+    const sameLevel = words.filter((w) => w.level === 3).map((w) => w.size);
+    expect(new Set(sameLevel).size).toBeGreaterThan(1); // size varies even within a level
+    expect(cloudWords(words)).toEqual(cloudWords(words)); // deterministic
+  });
+
   it("gives every word its own colour", () => {
-    const colors = cloudColors(20);
-    expect(new Set(colors).size).toBe(20);
+    expect(new Set(cloudColors(20)).size).toBe(20);
   });
 });
