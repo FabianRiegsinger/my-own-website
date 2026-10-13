@@ -222,8 +222,9 @@ job is added without a page.
 - **Agentic:** ~170 instanced nodes and links on a sheet facing the camera, 4 units behind the
   figure, sized for 21:9 plus the view shift, drifting slowly in its own plane (cyan → violet).
 - **Skills:** the skill names as a static word cloud 1.6 m behind him: extruded, bevelled Inter Bold
-  words facing the camera, inside a cartoon-cloud outline (flat base, five puffs) sized to the space
-  beside the glass panel, with his silhouette kept free. Shuffled, mostly horizontal (only names
+  words facing the camera, inside a cartoon-cloud outline (flat base, five puffs) wider than the space
+  beside the glass panel: its right edge stays on screen, its left part runs behind the frosted panel,
+  and he stands in front of it. Shuffled, mostly horizontal (only names
   under 10 characters may run vertically), sizes by level times a random factor, each word its own
   shade along the site palette (`#2563EB` → `#2F7BF6` → `#8B5CF6` → `#FFA878`).
 

@@ -13,18 +13,14 @@ import { useStationOffset } from "../station-offset";
 /** Inter Bold, printable ASCII (scripts/make-typeface.mjs, OFL). */
 const FONT = "/fonts/inter-700.typeface.json";
 /**
- * The word cloud hangs just behind Fabian at CLOUD_Y, centred on him. CLOUD_SCALE sizes the outline (unit cloud ~5.8
- * wide) to the ~4.9 m between the glass panel and the screen edge at the cloud's depth (desktop). Words shrink to fit.
+ * The word cloud hangs just behind Fabian at CLOUD_Y. CLOUD_SCALE sizes the outline (unit cloud ~5.8 wide) wider than
+ * the space beside the glass panel: CLOUD_X keeps its right edge on screen and lets its left part run behind the
+ * frosted panel. Words shrink together until all fit inside the outline.
  */
-const CLOUD_X = 0;
-const CLOUD_SCALE = 0.84;
-const CLOUD_Y = 1.6;
+const CLOUD_X = -0.75;
+const CLOUD_SCALE = 1.1;
+const CLOUD_Y = 1.45;
 const CLOUD_Z = -1.6;
-/**
- * Gap kept free where Fabian stands, in cloud coordinates: his silhouette as the skills camera sees it, projected onto
- * the cloud (1.25x larger at z -1.6), floor to just above his head, plus a margin.
- */
-const FIGURE_GAP = { x: -CLOUD_X, y: 2.05 / 2 - CLOUD_Y, w: 0.95, h: 2.05 };
 
 /** Longest a word may run across the floor (metres); longer names get a smaller font. */
 const MAX_LENGTH = 3.6;
@@ -119,7 +115,7 @@ export function cloudColors(n: number): string[] {
   });
 }
 
-/** Skills page: the skill names as a cloud of extruded words behind Fabian, with a gap where he stands. */
+/** Skills page: the skill names as a cloud of extruded words behind Fabian. */
 export function SkillCloud({ skills }: { skills: SkillGroup[] }) {
   const root = useRef<Group>(null);
   const offset = useStationOffset();
@@ -147,14 +143,14 @@ export function SkillCloud({ skills }: { skills: SkillGroup[] }) {
     });
     // Fit the words into the fixed outline: start from a size that would fill ~half of it, shrink until all fit.
     const inside = cloudShape(CLOUD_SCALE);
-    const free = UNIT_CLOUD_AREA * CLOUD_SCALE ** 2 - FIGURE_GAP.w * FIGURE_GAP.h * 0.5;
+    const free = UNIT_CLOUD_AREA * CLOUD_SCALE ** 2;
     let k = Math.sqrt((0.5 * free) / built.reduce((a, w) => a + w.box.w * w.box.h, 0));
     let at: { x: number; y: number }[] | null = null;
     for (let tries = 0; !at; tries++, k *= 0.92) {
       try {
         at = packCloud(
           built.map((w) => ({ w: w.box.w * k, h: w.box.h * k })),
-          { reserved: [FIGURE_GAP], inside },
+          { inside },
         );
       } catch (e) {
         if (tries > 15) throw e;
