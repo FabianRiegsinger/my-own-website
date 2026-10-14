@@ -196,7 +196,11 @@ job is added without a page.
   bright rim and top highlight, radius 2rem; inner cards as lighter glass.
 - From 1024 px up the panel sits in the left 36vw (keep `GlassPanel` and `PANEL_EDGE` in sync);
   below that it spans the width and floats over the frosted figure.
-- Panels taller than the screen (agentic, skills) pin their heading at the top while they scroll.
+- Panels taller than the screen (agentic, skills) pin their heading at the top while they scroll. The
+  panel clips to its rounded shape (`overflow: clip`), so the pinned header is square and flush. It
+  cannot blur (a backdrop-filter nested in the panel's has no effect), so it repaints the page's
+  colour field, saturated like the panel and aligned to the screen from JS, under the panel's white,
+  and fades out at its lower edge: the text under it is hidden and the colour matches the glass.
 - The panel's face tilts up to 4° toward the mouse (`perspective(1400px)`), mouse pointers only, off
   with reduced motion.
 
