@@ -16,14 +16,4 @@ export function Eyebrow({ children }: { children: ReactNode }) {
   return <p className="mb-3 text-sm font-semibold uppercase tracking-widest text-accent">{children}</p>;
 }
 
-/**
- * Panel header that sticks to the top of the screen while a panel taller than the screen scrolls past, so its
- * heading stays readable. Bleeds over the panel padding (p-6 / sm:p-10 / lg:p-8) with its own frosted backdrop.
- */
-export function StickyHeader({ children }: { children: ReactNode }) {
-  return (
-    <div className="sticky top-0 z-10 -mx-6 -mt-6 mb-2 rounded-t-[2rem] bg-[rgb(250_250_252/0.97)] px-6 pt-6 pb-4 shadow-[0_8px_16px_-12px_rgb(30_40_90/0.25)] backdrop-blur-xl sm:-mx-10 sm:-mt-10 sm:px-10 sm:pt-10 lg:-mx-8 lg:-mt-8 lg:px-8 lg:pt-8">
-      {children}
-    </div>
-  );
-}
+export { StickyHeader } from "./StickyHeader";

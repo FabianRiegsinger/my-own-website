@@ -125,6 +125,33 @@ body {
     inset 0 -1px 1px rgb(255 255 255 / 0.25),
     0 8px 28px rgb(30 40 90 / 0.05);
   backdrop-filter: blur(28px) saturate(180%);
+  /* Clip to the rounded shape (clip, not hidden: no scroll container, so a sticky header inside still sticks). */
+  overflow: clip;
+}
+
+/* Solid stand-in for the glass, for a header pinned inside a panel: a backdrop-filter nested in the panel's own does not
+   blur, so text scrolling under it would show. Instead it repaints what the panel shows: the page's colour field,
+   saturated like the panel's backdrop, under the panel's white. The field is laid out at screen size and shifted by
+   the header's screen position (--field-x/y, set by StickyHeader), since the panel's scroll-driven translate stops
+   `background-attachment: fixed` from pinning it to the screen. */
+@utility glass-solid {
+  isolation: isolate;
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background:
+      linear-gradient(rgb(255 255 255 / 0.5), rgb(255 255 255 / 0.5)),
+      radial-gradient(42vmax 42vmax at 12% 18%, var(--blob-a), transparent 75%),
+      radial-gradient(38vmax 38vmax at 88% 26%, var(--blob-b), transparent 75%),
+      radial-gradient(46vmax 46vmax at 62% 96%, var(--blob-c), transparent 75%),
+      #f5f5f7;
+    background-size: 100vw 100vh;
+    background-position: var(--field-x, 0) var(--field-y, 0);
+    background-repeat: no-repeat;
+    filter: saturate(180%);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
