@@ -7,12 +7,15 @@ import { MathUtils, type Group, type Mesh, type Object3D } from "three";
 import { entrance, introStep, POSES, poseFor, type Pose } from "@/lib/entrance";
 import { heading, stationAt, type ClipName } from "@/lib/scroll-map";
 import { applyArms, findArms } from "./arm-pose";
-import { attachHead, paintBody, setOutfit, updateAvatar } from "./avatar";
+import { paintBody, setOutfit } from "./avatar";
 import { buildLaptop, buildTablet } from "./props";
 import { switchClip } from "./clips";
 import { useStationOffset } from "./station-offset";
 
+/** The mannequin rig: its clips and generic body serve the faceless colleagues and the customer (Person). */
 export const MODEL = "/models/figure.glb";
+/** Fabian: the scan of him rigged onto the same skeleton, with his own glasses and hair (scripts/rig-me). */
+export const ME = "/models/me.glb";
 const FADE = 0.4;
 /** Scrolling past this many pixels ends the landing entrance so the page never fights the reader. */
 const TOP_PX = 40;
@@ -20,14 +23,13 @@ const atTop = () => window.scrollY < TOP_PX;
 
 export function Figure({ shadows }: { shadows: boolean }) {
   const group = useRef<Group>(null);
-  const { scene, animations } = useGLTF(MODEL, "/draco/");
+  const { scene, animations } = useGLTF(ME, "/draco/");
   const { actions, mixer } = useAnimations(animations, group);
   const offset = useStationOffset();
   const current = useRef<ClipName | null>(null);
   const intro = useRef({ t: 0, done: false });
   const pose = useRef<Pose>(poseFor("walk"));
   const arms = useMemo(() => findArms(scene), [scene]);
-  const head = useRef<Group | null>(null);
   const props = useRef<{ laptop: Object3D; tablet: Object3D } | null>(null);
 
   useMemo(() => paintBody(scene), [scene]);
@@ -57,12 +59,9 @@ export function Figure({ shadows }: { shadows: boolean }) {
     switchClip(actions, null, clip, FADE);
     mixer.update(0);
     current.current = clip;
-    // Memoji head over the mannequin's, sized from the posed head so it never pokes through.
-    head.current = attachHead(scene);
     // Page props: laptop (ESAS), tablet (Mobileye). Shown by pose weight.
     if (!props.current && arms) {
       const p = { laptop: buildLaptop(), tablet: buildTablet(arms.left.side) };
-      Object.values(p).forEach((o) => (o.userData.avatarExtra = true)); // so copies of the rig can drop them
       scene.add(p.laptop, p.tablet);
       props.current = p;
     }
@@ -96,7 +95,6 @@ export function Figure({ shadows }: { shadows: boolean }) {
     }
     // Runs after useAnimations' mixer update (registered first), so the overlay sits on this frame's pose.
     if (arms) applyArms(g, arms, pose.current, clock.elapsedTime);
-    if (head.current) updateAvatar(head.current, clock.elapsedTime);
     const pr = props.current;
     if (pr) {
       const p = pose.current;
@@ -109,4 +107,4 @@ export function Figure({ shadows }: { shadows: boolean }) {
   return <primitive ref={group} object={scene} />;
 }
 
-useGLTF.preload(MODEL, "/draco/");
+useGLTF.preload(ME, "/draco/");

@@ -7,7 +7,7 @@ Status: Approved; in development
 
 A public personal website for Fabian Riegsinger that tells one story: an experienced automotive
 system-integration and software engineer (8+ years, ADAS/AD) who is quickly adapting to the agentic
-AI world. The CV is presented as a scroll-driven 3D journey, with a Memoji-style 3D avatar of Fabian
+AI world. The CV is presented as a scroll-driven 3D journey, with a stylised 3D figure of Fabian
 acting out each chapter.
 
 ### Success criteria
@@ -24,7 +24,7 @@ acting out each chapter.
 |---|---|
 | Tech stack | Next.js (App Router) + React + TypeScript, Tailwind CSS |
 | 3D approach | One fixed full-screen `<Canvas>` behind natively scrolling HTML; scroll position drives the 3D |
-| Figure | Memoji-style avatar of Fabian on a rigged mannequin (procedural head and clothes), not a photo likeness |
+| Figure | Stylised full-body scan of Fabian (`me.glb`, from his own image-to-3D model), rigged onto the Mixamo skeleton |
 | Style | Apple-style light theme with liquid-glass text panels (chosen over brutalism, neon, swiss and bento prototypes) |
 | CV source | `curriculum-vitae-ats-nophoto.pdf` (Sept 2026), transcribed into `src/content/cv.ts` |
 | Agentic evidence | Daily work with Claude Code and Cursor; side projects on GitHub (first: `snap-notes`) |
@@ -95,7 +95,8 @@ absent in browsers without view timelines).
 | `src/components/three/ScrollTracker.tsx`, `CameraRig.tsx` | Scroll → station offset; camera pose and screen shift |
 | `src/components/three/Figure.tsx` | Avatar: clips, entrance, yaw, pose overlays, outfits, props |
 | `src/components/three/arm-pose.ts` | Procedural arm and spine overlays on the playing clip |
-| `src/components/three/avatar.ts` | Memoji head, per-vertex outfits, `stripAvatar` for rig copies |
+| `src/components/three/avatar.ts` | Per-vertex outfits: baked regions on `me.glb`, by bone on the mannequin |
+| `scripts/rig-me/` | Scan → `public/models/me.glb`: simplify, fit skeleton, skin, bake regions, add glasses, Draco |
 | `src/components/three/props.ts` | Laptop and tablet |
 | `src/components/three/Person.tsx` | Generic faceless person (rig copy in its own clothes) |
 | `src/components/three/stations/*.tsx` | `Graduation`, `Team`, `Fleet`, `AgentNetwork`, `SkillCloud` |
@@ -206,17 +207,26 @@ job is added without a page.
 
 ### Avatar
 
-- Rig: placeholder mannequin `figure.glb` (Mixamo-derived Xbot; clips `idle`, `walk`).
-- Head: Memoji-style, procedural, on the head bone and fitted to the mannequin head (which shrinks to
-  0.6 inside it): oval skull, short swept brown hair, thin round metal glasses, blue-grey eyes that
-  blink, small smile.
-- Outfits are per-vertex colours by dominant bone, swapped per page: `casual` (light-blue shirt, dark
-  trousers), `business` on ESAS (navy blazer over the shirt, beige chinos), `polo` on education (grey
+- Fabian: `public/models/me.glb` (~400 KB), built by `node scripts/rig-me/index.mjs` from his static
+  T-pose scan (`assets-src/me.glb`, kept out of git). The script welds and simplifies it (~45k
+  triangles), drops a hidden inner shell, estimates joints from the mesh (arm line, wrist as the
+  thinnest point, crotch, neck as the narrowest point), builds a skeleton with the mannequin's bone
+  names and identity rest rotations, skins by distance to bone segments within body regions, and
+  copies the mannequin's clips (rotations only; hips height scaled). Regions are baked into a
+  `_region` attribute: skin, shirt (to the hem), trousers, shoes, hair (above a hairline high at
+  the front, low at the back), forearms below the short sleeves.
+- Glasses: the scan's rims are fused into the face, so they are fitted (ridge vertices, ellipse
+  Hough search, both sides mirrored) and rebuilt as dark tube frames with a bridge and temples,
+  plus oval pupils with catchlights, all on the head bone.
+- Mannequin: `figure.glb` (Mixamo-derived Xbot; clips `idle`, `walk`) now only for the colleagues
+  and the customer, faceless in their own clothes.
+- Outfits are per-vertex colours (baked regions on Fabian, dominant bone on the mannequin), swapped per page: `casual` (light-blue shirt, dark
+  trousers), `business` on ESAS (navy blazer over the shirt, its sleeves over the forearms, beige chinos), `polo` on education (grey
   polo, beige chinos, after the graduation photo).
 - Poses are procedural overlays on the idle clip (`arm-pose.ts`): `wave`, `hips`, `think` (spine
   and neck lean, hand to chin), `ring` (right hand on the bell handle, left on the hip), `laptop`,
-  `tablet`. Hands on hips is the rest pose.
-- Other people are copies of the rig with the avatar stripped: faceless, in their own clothes.
+  `tablet`. Hands on hips is the rest pose; the hand is aimed too, fingers wrapping back around the
+  waist, so long hands never poke through the front.
 
 ### Scenes
 

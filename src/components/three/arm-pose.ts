@@ -6,6 +6,8 @@ export interface Arm {
   upper: Object3D;
   fore: Object3D;
   hand: Object3D;
+  /** First bone of the middle finger, to aim the hand by; absent on rigs without fingers. */
+  tip?: Object3D;
   side: number;
 }
 
@@ -43,7 +45,7 @@ export function findArms(root: Object3D): Rig | null {
     const fore = bone(root, `${s}ForeArm`);
     const hand = bone(root, `${s}Hand`);
     if (!upper || !fore || !hand) return null;
-    return { upper, fore, hand, side: Math.sign(root.worldToLocal(upper.getWorldPosition(a)).x) || 1 };
+    return { upper, fore, hand, tip: bone(root, `${s}HandMiddle1`), side: Math.sign(root.worldToLocal(upper.getWorldPosition(a)).x) || 1 };
   };
   const left = arm("Left");
   const right = arm("Right");
@@ -84,9 +86,12 @@ export function applyArms(root: Object3D, arms: Rig, pose: Pose, t: number) {
   });
   for (const arm of [arms.left, arms.right]) {
     const s = arm.side;
-    // Elbow out and slightly back, forearm folding in so the hand rests on the waist.
+    // Elbow out and slightly back, forearm folding in so the hand rests on the side of the waist (not so far in that
+    // the fingers come through the front).
     aim(root, arm.upper, arm.fore, d.set(0.6 * s, -0.76, -0.26), pose.hips);
-    aim(root, arm.fore, arm.hand, d.set(-0.68 * s, -0.62, 0.36), pose.hips);
+    aim(root, arm.fore, arm.hand, d.set(-0.5 * s, -0.78, 0.18), pose.hips);
+    // Fingers wrap back around the waist, so long hands never reach the front.
+    if (arm.tip) aim(root, arm.hand, arm.tip, d.set(-0.3 * s, -0.35, -0.9), pose.hips);
   }
   const r = arms.right;
   const l = arms.left;
@@ -100,7 +105,8 @@ export function applyArms(root: Object3D, arms: Rig, pose: Pose, t: number) {
   aim(root, r.upper, r.fore, d.set(0.82 * r.side, 0.5 - tug, -0.08), pose.ring);
   aim(root, r.fore, r.hand, d.set(0.45 * r.side, 0.85 - tug, -0.12), pose.ring);
   aim(root, l.upper, l.fore, d.set(0.6 * l.side, -0.76, -0.26), pose.ring);
-  aim(root, l.fore, l.hand, d.set(-0.68 * l.side, -0.62, 0.36), pose.ring);
+  aim(root, l.fore, l.hand, d.set(-0.5 * l.side, -0.78, 0.18), pose.ring);
+  if (l.tip) aim(root, l.hand, l.tip, d.set(-0.3 * l.side, -0.35, -0.9), pose.ring);
   // Holding an open laptop: elbows at the sides, forearms level and forward under the base.
   for (const arm of [l, r]) {
     aim(root, arm.upper, arm.fore, d.set(0.12 * arm.side, -0.95, 0.2), pose.laptop);
