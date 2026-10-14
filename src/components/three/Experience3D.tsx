@@ -6,7 +6,7 @@ import { Suspense, useRef, useState } from "react";
 import type { ExperienceProps } from "../ExperienceGate";
 import { Sections } from "../StaticPage";
 import { CameraRig } from "./CameraRig";
-import { Figure } from "./Figure";
+import { GenMe } from "./GenMe";
 import { ScrollTracker } from "./ScrollTracker";
 import { StationOffset } from "./station-offset";
 import { AgentNetwork } from "./stations/AgentNetwork";
@@ -43,7 +43,7 @@ export function Experience3D({ cv, projects, lowPower: initialLowPower, onFail }
           <ScrollTracker content={content} />
           <CameraRig />
           <Suspense fallback={null}>
-            <Figure shadows={!lowPower} />
+            <GenMe shadows={!lowPower} />
           </Suspense>
           <Graduation />
           {/* Anything that loads (models, the label font) suspends here, inside the canvas; uncaught it would
