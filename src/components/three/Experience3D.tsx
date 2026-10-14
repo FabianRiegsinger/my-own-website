@@ -55,7 +55,9 @@ export function Experience3D({ cv, projects, lowPower: initialLowPower, onFail }
           </Suspense>
           <AgentNetwork />
           <Launch />
-          <ContactShadows position={[0, 0, 0]} opacity={0.35} scale={10} blur={2.5} far={4} frames={lowPower ? 1 : Infinity} />
+          {/* Always live: freezing them on low power (frames={1}) would keep whatever stood on the floor at that moment
+              (rocket pad, colleagues, cars) as a stale shadow on every later page. Cheaper at low resolution instead. */}
+          <ContactShadows position={[0, 0, 0]} opacity={0.35} scale={10} blur={2.5} far={4} resolution={lowPower ? 256 : 512} />
         </Canvas>
       </div>
       <main ref={content} className="relative">
