@@ -63,8 +63,8 @@ shift and figure yaw. The camera and yaw ease to the next station over the secon
 | mobileye | holds a tablet, gestures to the fleet | customer, unbadged test fleet | Mobileye role, highlights, tags |
 | agentic | hands on hips | screen-filling network of nodes | Claude Code, Cursor, how used; GitHub project cards |
 | skills | hands on hips | word cloud of the skill names | Skill groups with level dots |
-| launch | hands on hips, turned toward the rocket | rocket on a pad, venting steam; lifts off into contact | "What comes next": countdown T-3…T-1 of next challenges, "T-0" link to contact |
-| contact | wave | figure only | GitHub, LinkedIn, Xing, obfuscated email link |
+| launch | hands on hips, turned toward the rocket | rocket on a pad, venting steam; lifts off and is gone by contact, leaving ground fog | "What comes next": countdown T-3…T-1 of next challenges, "T-0" link to contact |
+| contact | wave | figure in low ground fog | GitHub, LinkedIn, Xing, obfuscated email link |
 
 **Landing entrance** (only when the page loads at the top): the figure walks in from just past the
 right edge (1.8 s), turns to the viewer (0.6 s), waves (3 s) and settles into hands on hips (0.6 s).
@@ -240,11 +240,14 @@ job is added without a page.
   under 10 characters may run vertically), sizes by level times a random factor, each word its own
   shade along the site palette (`#2563EB` → `#2F7BF6` → `#8B5CF6` → `#FFA878`).
 - **Launch:** a white rocket (~3.8 m: orange nose and fins, violet band) on a dark pad with a service
-  tower, on his right behind him; the set is built in pad units and scaled 1.5x. Steam vents slowly
-  around the pad while the countdown is read; at 70% of the page it ignites and lifts off with constant
-  thrust (`liftoff`), carrying on into contact. The plume is additive (orange cone, white-hot core,
-  nozzle glow) with a flickering orange point light; on the pad it stops at the deck and fans out as a
-  glow across it, then lengthens as the rocket climbs.
+  tower, on his right behind him; the set is built in pad units and scaled 1.5x. Soft steam sprites
+  vent around the pad while the countdown is read. Just past mid-page it ignites and lifts off with
+  constant thrust (`liftoff`), 12 m up and out of frame by the end of the page, so contact never shows
+  its fire; the empty pad and tower clear away as contact begins. The plume is additive (orange cone,
+  white-hot core, nozzle glow) with a flickering orange point light; on the pad it stops at the deck and
+  fans out as a glow across it. The launch leaves a low ground fog around his feet (top ~0.22 m, just
+  over the shoes) that builds from ignition and stays through contact. Fog and steam sprites sit on
+  their own render layer, so ContactShadows does not darken the floor under them.
   Blobs turn ignition orange `#FF6A1A`, dusk violet and pale sky; T-labels use `#C2410C` for contrast.
 
 ### Motion and interaction

@@ -4,7 +4,7 @@ import { STATIONS } from "@/lib/scroll-map";
 import { BELL, HANDLE, NICHE, WALL } from "./Graduation";
 import { TEAM } from "./Team";
 import { CUSTOMER, FLEET } from "./Fleet";
-import { launchWeight, liftoff, PAD } from "./Launch";
+import { FOG, fogWeight, launchWeight, liftoff, PAD } from "./Launch";
 import { cloudColors, cloudShape, cloudWords, packCloud, SITE_COLORS } from "./SkillCloud";
 
 const facing = (yaw: number) => new Vector3(Math.sin(yaw), 0, Math.cos(yaw));
@@ -135,18 +135,35 @@ describe("launch pad", () => {
     expect(liftoff((launch.start + launch.end) / 2)).toBe(0);
   });
 
-  it("lifts off as the page scrolls on to contact, gathering speed", () => {
-    const a = liftoff(launch.end - 0.01);
-    const b = liftoff(launch.end + 0.02);
+  it("lifts off late on the page, gathering speed", () => {
+    const a = liftoff(launch.end - 0.03);
+    const b = liftoff(launch.end - 0.015);
     expect(a).toBeGreaterThan(0);
     expect(b - a).toBeGreaterThan(a);
   });
 
-  it("stays out of the skills page (tall, so its lower half sits close to the launch page) and lingers into contact", () => {
+  it("has left the frame by the time contact begins", () => {
+    expect(liftoff(launch.end)).toBeGreaterThanOrEqual(10);
+  });
+
+  it("stays out of the skills page (tall, so its lower half sits close to the launch page)", () => {
     expect(launchWeight(launch.start - 0.01)).toBe(0);
     expect(launchWeight(launch.start)).toBe(0);
     expect(launchWeight((launch.start + launch.end) / 2)).toBe(1);
-    expect(launchWeight(launch.end + 0.02)).toBeGreaterThan(0);
+  });
+
+  it("clears the pad and tower away early on the contact page", () => {
+    const contact = STATIONS.find((s) => s.id === "contact")!;
+    expect(launchWeight(contact.start + 0.02)).toBe(0);
+  });
+
+  it("leaves a low fog around his feet from ignition on, through contact", () => {
+    expect(fogWeight(launch.start)).toBe(0);
+    expect(fogWeight(launch.end)).toBe(1);
+    expect(fogWeight(1)).toBe(1);
+    // Just over the shoes (~0.1 m), well below the knees.
+    expect(FOG.top).toBeGreaterThan(0.1);
+    expect(FOG.top).toBeLessThan(0.35);
   });
 
   it("stands the pad beside Fabian, clear of him", () => {
