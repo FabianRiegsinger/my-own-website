@@ -17,6 +17,14 @@ const launch = STATIONS.find((s) => s.id === "launch")!;
 /** Ignition late on the page, so the countdown is read first; lift-off carries on into contact. */
 const IGNITION = launch.start + 0.7 * (launch.end - launch.start);
 
+/**
+ * Scene opacity: fades in over the start of the launch page only, never earlier (the skills page before it is tall,
+ * so the default fade would ghost the big rocket behind its word cloud); fades out into contact as usual.
+ */
+export function launchWeight(offset: number) {
+  return offset < launch.end ? Math.min(1, Math.max(0, (offset - launch.start) / 0.02)) : stationWeight(offset, "launch");
+}
+
 /** Rocket height above the pad (m) at a scroll offset: 0 until ignition, then accelerating (constant thrust). */
 export function liftoff(offset: number) {
   const t = Math.max(0, offset - IGNITION) / 0.04;
@@ -78,7 +86,7 @@ export function Launch() {
 
   useFrame(({ clock }) => {
     if (!root.current || !rocket.current || !flame.current || !light.current || !splash.current) return;
-    fade(root.current, stationWeight(offset.current, "launch"));
+    fade(root.current, launchWeight(offset.current));
     if (!root.current.visible) return;
     const t = clock.elapsedTime;
     const lift = liftoff(offset.current) / PAD.scale; // in pad units

@@ -4,7 +4,7 @@ import { STATIONS } from "@/lib/scroll-map";
 import { BELL, HANDLE, NICHE, WALL } from "./Graduation";
 import { TEAM } from "./Team";
 import { CUSTOMER, FLEET } from "./Fleet";
-import { liftoff, PAD } from "./Launch";
+import { launchWeight, liftoff, PAD } from "./Launch";
 import { cloudColors, cloudShape, cloudWords, packCloud, SITE_COLORS } from "./SkillCloud";
 
 const facing = (yaw: number) => new Vector3(Math.sin(yaw), 0, Math.cos(yaw));
@@ -140,6 +140,13 @@ describe("launch pad", () => {
     const b = liftoff(launch.end + 0.02);
     expect(a).toBeGreaterThan(0);
     expect(b - a).toBeGreaterThan(a);
+  });
+
+  it("stays out of the skills page (tall, so its lower half sits close to the launch page) and lingers into contact", () => {
+    expect(launchWeight(launch.start - 0.01)).toBe(0);
+    expect(launchWeight(launch.start)).toBe(0);
+    expect(launchWeight((launch.start + launch.end) / 2)).toBe(1);
+    expect(launchWeight(launch.end + 0.02)).toBeGreaterThan(0);
   });
 
   it("stands the pad beside Fabian, clear of him", () => {
