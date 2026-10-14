@@ -17,7 +17,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run lint
-      - run: npx tsc --noEmit
+      # LayoutProps and other route types are generated into .next/types; a fresh checkout has none.
+      - run: npx next typegen && npx tsc --noEmit
       - run: npm test
       - run: npx playwright install --with-deps chromium
       # Builds and serves the site itself (playwright.config.ts webServer).
