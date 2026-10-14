@@ -241,8 +241,8 @@ job is added without a page.
   shade along the site palette (`#2563EB` → `#2F7BF6` → `#8B5CF6` → `#FFA878`).
 - **Launch:** a white rocket (~3.8 m: orange nose and fins, violet band) on a dark pad with a service
   tower, on his right behind him; the set is built in pad units and scaled 1.5x. Soft steam sprites
-  vent around the pad while the countdown is read. Just past mid-page it ignites and lifts off with
-  constant thrust (`liftoff`), 12 m up and out of frame by the end of the page, so contact never shows
+  vent around the pad while the countdown is read. Just past mid-page it ignites and lifts off on an
+  e-curve (`liftoff`: creeps off the pad, then ~2.7x faster every fifth of the climb), 12 m up and out of frame by the end of the page, so contact never shows
   its fire; the empty pad and tower clear away as contact begins. The plume is additive (orange cone,
   white-hot core, nozzle glow) with a flickering orange point light; on the pad it stops at the deck and
   fans out as a glow across it. The launch leaves a low ground fog around his feet (top ~0.22 m, just

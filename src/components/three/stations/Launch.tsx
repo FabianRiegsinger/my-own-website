@@ -45,10 +45,16 @@ export function launchWeight(offset: number) {
   return Math.max(0, 1 - (offset - launch.end) / 0.015);
 }
 
-/** Rocket height above the pad (m) at a scroll offset: 0 until ignition, then accelerating (constant thrust) to GONE. */
+/** Steepness of the climb: each fifth of it is e (~2.7x) faster than the one before. */
+const CLIMB = 5;
+
+/**
+ * Rocket height above the pad (m) at a scroll offset: 0 until ignition, then an e-curve to GONE at the end of the
+ * page: it creeps off the pad, then speeds up by the same factor over every equal stretch of scroll.
+ */
 export function liftoff(offset: number) {
-  const t = Math.max(0, offset - IGNITION) / (launch.end - IGNITION);
-  return GONE * t * t;
+  const u = Math.max(0, offset - IGNITION) / (launch.end - IGNITION);
+  return (GONE * (Math.exp(CLIMB * u) - 1)) / (Math.exp(CLIMB) - 1);
 }
 
 /** Ground fog the launch leaves behind: low around his feet (top just over the shoes), across the stage. */

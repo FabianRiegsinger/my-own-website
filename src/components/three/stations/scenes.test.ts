@@ -142,6 +142,15 @@ describe("launch pad", () => {
     expect(b - a).toBeGreaterThan(a);
   });
 
+  it("climbs on an e-curve: a slow start, then each equal scroll step multiplies the speed", () => {
+    const climb = (u: number) => liftoff(launch.end - (1 - u) * 0.0405); // u: 0 at ignition .. 1 at the page end
+    expect(climb(0.25)).toBeLessThan(0.03 * climb(1)); // still barely off the pad a quarter of the way in
+    const steps = [0.4, 0.6, 0.8, 1].map((u, i, a) => climb(u) - climb(i ? a[i - 1] : 0.2));
+    const ratios = steps.slice(1).map((s, i) => s / steps[i]);
+    for (const r of ratios) expect(r).toBeCloseTo(ratios[0], 1); // constant growth factor = exponential
+    expect(ratios[0]).toBeGreaterThan(2);
+  });
+
   it("has left the frame by the time contact begins", () => {
     expect(liftoff(launch.end)).toBeGreaterThanOrEqual(10);
   });
