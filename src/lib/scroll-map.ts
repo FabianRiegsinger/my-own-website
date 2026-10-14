@@ -32,7 +32,7 @@ export const STATIONS: Station[] = [
   { id: "agentic", start: 0.6, end: 0.74, clip: "typing", camera: [-3, 1.8, 4], target: [0, 1, 0], shift: 0.32, yaw: 0 },
   { id: "skills", start: 0.74, end: 0.84, clip: "idle", camera: [0, 2.2, 6.4], target: [0, 1.2, 0], shift: BESIDE_PANEL, yaw: 0 },
   // What comes next: on the launch pad, looking up at the rocket (stations/Launch), which lifts off into contact.
-  { id: "launch", start: 0.84, end: 0.93, clip: "idle", camera: [0.6, 1.1, 6.6], target: [-0.3, 1.7, 0], shift: BESIDE_PANEL, yaw: -0.35 },
+  { id: "launch", start: 0.84, end: 0.93, clip: "idle", camera: [0.8, 1.2, 7.4], target: [-0.6, 2, 0], shift: BESIDE_PANEL, yaw: -0.4 },
   { id: "contact", start: 0.93, end: 1, clip: "wave", camera: [0, 1.3, 6], target: [0, 1, 0], shift: BESIDE_PANEL, yaw: 0 },
 ];
 

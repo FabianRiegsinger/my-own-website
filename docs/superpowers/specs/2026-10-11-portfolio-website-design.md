@@ -235,9 +235,12 @@ job is added without a page.
   1024 px, where the full-width panel covers it. Shuffled, mostly horizontal (only names
   under 10 characters may run vertically), sizes by level times a random factor, each word its own
   shade along the site palette (`#2563EB` → `#2F7BF6` → `#8B5CF6` → `#FFA878`).
-- **Launch:** a white rocket (orange nose and fins, violet band) on a dark pad with a service tower, on
-  his right a step behind him. Steam vents slowly around the pad while the countdown is read; at 70%
-  of the page it ignites and lifts off with constant thrust (`liftoff`), carrying on into contact.
+- **Launch:** a white rocket (~3.8 m: orange nose and fins, violet band) on a dark pad with a service
+  tower, on his right behind him; the set is built in pad units and scaled 1.5x. Steam vents slowly
+  around the pad while the countdown is read; at 70% of the page it ignites and lifts off with constant
+  thrust (`liftoff`), carrying on into contact. The plume is additive (orange cone, white-hot core,
+  nozzle glow) with a flickering orange point light; on the pad it stops at the deck and fans out as a
+  glow across it, then lengthens as the rocket climbs.
   Blobs turn ignition orange `#FF6A1A`, dusk violet and pale sky; T-labels use `#C2410C` for contrast.
 
 ### Motion and interaction
