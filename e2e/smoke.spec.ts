@@ -162,8 +162,13 @@ test("glass panel tilts toward the mouse and settles when it leaves", async ({ p
   }).toPass({ timeout: 10_000 });
   const ry = await panel.evaluate((el) => parseFloat(/rotateY\((-?[\d.]+)deg\)/.exec(el.style.transform)![1]));
   expect(ry).toBeGreaterThan(2);
-  await page.mouse.move(5, 5);
-  await expect.poll(() => panel.evaluate((el) => el.style.transform)).toBe("");
+  // Same for leaving: re-enter and leave until the panel settles.
+  await expect(async () => {
+    const box = (await panel.boundingBox())!;
+    await page.mouse.move(box.x + box.width - 4, box.y + box.height / 2);
+    await page.mouse.move(5, 5, { steps: 4 });
+    expect(await panel.evaluate((el) => el.style.transform)).toBe("");
+  }).toPass({ timeout: 10_000 });
 });
 
 test("hero fallback figure never flashes before the page decides between 3D and static", async ({ page }) => {
