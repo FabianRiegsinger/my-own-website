@@ -57,7 +57,7 @@ test("reduced motion shows static page", async ({ page }) => {
 });
 
 test("missing model falls back", async ({ page }) => {
-  await page.route("**/figure.glb", (r) => r.abort());
+  await page.route("**/me.glb", (r) => r.abort());
   await page.goto("/");
   await expect(page.locator("canvas")).toHaveCount(0, { timeout: 10_000 });
   await expect(page.getByText("Mobileye Germany GmbH").first()).toBeVisible();
@@ -87,7 +87,7 @@ test("metadata", async ({ page }) => {
 });
 
 test("hero text stays uncovered while the model loads", async ({ page }) => {
-  await page.route("**/figure.glb", async (r) => {
+  await page.route("**/me.glb", async (r) => {
     await new Promise((res) => setTimeout(res, 4000));
     await r.continue();
   });
