@@ -25,6 +25,7 @@ test("mobile 360px no horizontal scroll", async ({ page }) => {
 
 test("contact links are 44px targets", async ({ page }) => {
   await page.goto("/");
+  await expect(page.locator("canvas")).toBeAttached({ timeout: 10_000 }); // the 3D upgrade replaces the DOM: act on the final one
   const links = page.locator("#contact a");
   await expect(links.first()).toBeAttached();
   expect(await links.count()).toBeGreaterThanOrEqual(4);
@@ -37,6 +38,7 @@ test("contact links are 44px targets", async ({ page }) => {
 
 test("focus ring visible", async ({ page }) => {
   await page.goto("/");
+  await expect(page.locator("canvas")).toBeAttached({ timeout: 10_000 }); // the 3D upgrade replaces the DOM: act on the final one
   const first = page.locator("#contact a").first();
   await first.focus();
   expect(await first.evaluate((el) => getComputedStyle(el).outlineStyle)).not.toBe("none");
@@ -102,8 +104,144 @@ test("hero text stays uncovered while the model loads", async ({ page }) => {
 
 test("career timeline runs oldest to newest", async ({ page }) => {
   await page.goto("/");
-  const text = (await page.locator("#timeline").first().innerText()).replace(/\s+/g, " ");
+  const text = (await page.locator("main").first().innerText()).replace(/\s+/g, " ");
   const order = ["B.Eng.", "M.Sc.", "ESAS Automotive GmbH", "Mobileye Germany GmbH"].map((t) => text.indexOf(t));
   expect(order.every((i) => i >= 0)).toBe(true);
   expect([...order].sort((a, b) => a - b)).toEqual(order);
+});
+
+test("apple glass: every text panel is frosted glass left of the centred figure", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/");
+  await expect(page.locator("canvas")).toBeAttached({ timeout: 10_000 });
+  // Read every panel in one go: the 3D upgrade replaces the DOM, so per-element handles can go stale.
+  const panels = await page.evaluate(() =>
+    [...document.querySelectorAll("[data-glass]")].map((el) => {
+      const s = getComputedStyle(el);
+      return { right: el.getBoundingClientRect().right, backdrop: s.backdropFilter, radius: parseFloat(s.borderRadius) };
+    }),
+  );
+  expect(panels).toHaveLength(9);
+  for (const p of panels) {
+    expect(p.right).toBeLessThanOrEqual(1440 * 0.42);
+    expect(p.backdrop).toContain("blur");
+    expect(p.radius).toBeGreaterThanOrEqual(24);
+  }
+});
+
+test("nine pages in order, each its own glass panel", async ({ page }) => {
+  await page.goto("/");
+  const ids = await page.locator("main section").evaluateAll((els) => els.map((e) => e.id));
+  expect(ids).toEqual(["hero", "about", "education", "esas", "mobileye", "agentic", "skills", "launch", "contact"]);
+  await expect(page.locator("#education")).toContainText("B.Eng.");
+  await expect(page.locator("#education")).toContainText("M.Sc.");
+  await expect(page.locator("#esas h2")).toHaveText("ESAS Automotive GmbH");
+  await expect(page.locator("#mobileye h2")).toHaveText("Mobileye Germany GmbH");
+});
+
+test("pages snap and panels fade in with scroll", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.locator("canvas")).toBeAttached({ timeout: 10_000 }); // the 3D upgrade replaces the DOM: act on the final one
+  expect(await page.evaluate(() => getComputedStyle(document.documentElement).scrollSnapType)).toMatch(/^y( proximity)?$/); // proximity is the default, so browsers may omit it
+  expect(await page.locator("#about").evaluate((el) => getComputedStyle(el).scrollSnapAlign)).toContain("start");
+  const timeline = await page.locator("#about [data-glass]").evaluate((el) => getComputedStyle(el).getPropertyValue("animation-timeline"));
+  expect(timeline).toContain("view");
+});
+
+test("glass panel tilts toward the mouse and settles when it leaves", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/");
+  await expect(page.locator("canvas")).toBeAttached({ timeout: 10_000 }); // tilt the final (3D) DOM, not the static one it replaces
+  const panel = page.locator("#hero [data-glass]");
+  // Re-measure and re-hover until the tilt shows: under load a single early pointer event can be dropped.
+  await expect(async () => {
+    const box = (await panel.boundingBox())!;
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.move(box.x + box.width - 4, box.y + box.height / 2, { steps: 4 });
+    expect(await panel.evaluate((el) => el.style.transform)).toContain("rotateY(");
+  }).toPass({ timeout: 10_000 });
+  const ry = await panel.evaluate((el) => parseFloat(/rotateY\((-?[\d.]+)deg\)/.exec(el.style.transform)![1]));
+  expect(ry).toBeGreaterThan(2);
+  // Same for leaving: re-enter and leave until the panel settles.
+  await expect(async () => {
+    const box = (await panel.boundingBox())!;
+    await page.mouse.move(box.x + box.width - 4, box.y + box.height / 2);
+    await page.mouse.move(5, 5, { steps: 4 });
+    expect(await panel.evaluate((el) => el.style.transform)).toBe("");
+  }).toPass({ timeout: 10_000 });
+});
+
+test("hero fallback figure never flashes before the page decides between 3D and static", async ({ page }) => {
+  // First paint = server HTML before any script runs: the still must already be hidden there.
+  await page.route(/\/_next\/static\/chunks\/.*\.js(\?.*)?$/, (r) => r.abort());
+  await page.goto("/");
+  await expect(page.locator('img[src="/fallback.webp"]')).toBeAttached();
+  await expect(page.locator('img[src="/fallback.webp"]')).toBeHidden();
+});
+
+test("static page still shows the fallback figure", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/");
+  await expect(page.locator('img[src="/fallback.webp"]')).toBeVisible();
+});
+
+for (const [id, rgb, brand] of [
+  ["education", "128, 186, 36", "THM green"],
+  ["esas", "242, 85, 68", "ESAS coral"],
+  ["mobileye", "30, 46, 184", "Mobileye blue"],
+  ["launch", "255, 106, 26", "ignition orange"],
+] as const) {
+  test(`background blobs take ${brand} on the ${id} page`, async ({ page }) => {
+    await page.goto("/");
+    await expect(page.locator("canvas")).toBeAttached({ timeout: 10_000 }); // scroll the final (3D) DOM, not the static one it replaces
+    const blob = () => page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--blob-a"));
+    expect(await blob()).not.toContain(rgb);
+    await page.evaluate((id) => {
+      const el = document.getElementById(id)!;
+      window.scrollTo({ top: el.offsetTop + el.offsetHeight / 2 - innerHeight / 2, behavior: "instant" });
+    }, id);
+    // Long timeout: the first view of a scene compiles its shaders, which in software WebGL (CI, headless) stalls frames
+    // and with them the CSS colour transition for several seconds.
+    await expect.poll(blob, { timeout: 15_000 }).toContain(rgb);
+  });
+}
+
+test("once the 3D page is up, the static page never flashes back in", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.locator("canvas")).toBeAttached({ timeout: 10_000 });
+  for (let i = 0; i < 20; i++) {
+    expect(await page.locator("section#hero").count()).toBe(1);
+    await page.waitForTimeout(100);
+  }
+});
+
+for (const id of ["agentic", "skills"]) {
+  test(`${id} heading stays in view while its tall panel scrolls`, async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto("/");
+    await expect(page.locator("canvas")).toBeAttached({ timeout: 10_000 }); // measure the final (3D) DOM, not the static one it replaces
+    await page.evaluate((id) => {
+      const el = document.getElementById(id)!;
+      window.scrollTo({ top: el.offsetTop + el.offsetHeight / 2 - innerHeight / 2, behavior: "instant" });
+    }, id);
+    const box = (await page.locator(`#${id} h2`).boundingBox())!;
+    expect(box.y).toBeGreaterThanOrEqual(0);
+    expect(box.y + box.height).toBeLessThanOrEqual(800);
+  });
+}
+
+test("landing page invites scrolling with a cue that jumps to the about page", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.locator("canvas")).toBeAttached({ timeout: 10_000 }); // check the final (3D) DOM, not the static one it replaces
+  const cue = page.locator('#hero a[href="#about"]');
+  await expect(cue).toBeVisible();
+  const box = (await cue.boundingBox())!;
+  expect(box.height).toBeGreaterThanOrEqual(44);
+});
+
+test("launch page counts down the next challenges and hands over to contact", async ({ page }) => {
+  await page.goto("/");
+  const launch = page.locator("#launch");
+  for (const t of ["T-3", "T-2", "T-1"]) await expect(launch).toContainText(t);
+  await expect(launch.locator('a[href="#contact"]')).toBeAttached();
 });

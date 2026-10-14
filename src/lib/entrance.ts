@@ -1,0 +1,55 @@
+import type { ClipName } from "./scroll-map";
+
+/**
+ * Landing choreography timings (seconds) and the start position (world units, camera at z = 5): just past the right
+ * screen edge with the figure at three quarters of the width (edge ≈ 1.3) and on phones (edge ≈ 0.7).
+ */
+export const ENTRANCE = { walk: 1.8, turn: 0.6, wave: 3, settle: 0.6, startX: 2.2 } as const;
+
+/** Procedural overlays on top of the playing clip (see arm-pose.ts), each weighted 0..1. */
+export const POSES = ["wave", "hips", "think", "ring", "laptop", "tablet"] as const;
+export type Pose = Record<(typeof POSES)[number], number>;
+
+const restPose = (): Pose => ({ wave: 0, hips: 0, think: 0, ring: 0, laptop: 0, tablet: 0 });
+
+export interface EntranceState {
+  x: number;
+  /** Figure rotation.y: -π/2 faces left (walking in), 0 faces the viewer. */
+  heading: number;
+  clip: ClipName;
+  pose: Pose;
+  done: boolean;
+}
+
+const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
+const ease = (v: number) => v * v * (3 - 2 * v);
+
+/** Where the figure is `t` seconds into the landing: walk in from the right, turn, wave, hands on hips. */
+export function entrance(t: number): EntranceState {
+  const { walk, turn, wave, settle, startX } = ENTRANCE;
+  // Constant pace matches the walk cycle (no foot sliding); the clip cross-fade softens the stop.
+  const x = startX * (1 - clamp01(t / walk));
+  const heading = (Math.PI / 2) * (ease(clamp01((t - walk) / turn)) - 1);
+  const w = t - walk - turn;
+  const ramp = 0.3;
+  const waving = w <= 0 ? 0 : Math.min(clamp01(w / ramp), clamp01((wave - w) / ramp));
+  const hips = ease(clamp01((w - wave) / settle));
+  return { x, heading, clip: t < walk ? "walk" : "idle", pose: { ...restPose(), wave: waving, hips }, done: t >= walk + turn + wave + settle };
+}
+
+/** Overlay for a page's clip once the landing is over: one overlay at full weight, or none while walking. */
+export function poseFor(clip: ClipName): Pose {
+  const pose = restPose();
+  if (clip === "walk") return pose;
+  if (clip === "idle" || clip === "typing") pose.hips = 1; // placeholder model has no typing clip
+  else pose[clip] = 1;
+  return pose;
+}
+
+/** Longest frame the landing counts: a stall (first-frame shader compile) pauses the walk instead of skipping it. */
+const MAX_STEP = 0.05;
+
+/** Landing time after a frame of `dt` seconds. */
+export function introStep(t: number, dt: number): number {
+  return t + Math.min(dt, MAX_STEP);
+}

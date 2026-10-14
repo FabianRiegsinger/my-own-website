@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import { preload } from "react-dom";
 import { cv } from "@/content/cv";
 import { SITE_URL } from "@/lib/site";
 import "./globals.css";
@@ -29,6 +30,8 @@ const personJsonLd = {
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
+  // Start the 1 MB figure download with the HTML, not after the 3D code has loaded (same request useGLTF makes).
+  preload("/models/figure.glb", { as: "fetch", crossOrigin: "anonymous" });
   return (
     <html lang="en" className={`${inter.variable} h-full antialiased`}>
       <body className="min-h-full bg-bg text-ink font-sans">

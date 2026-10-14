@@ -10,9 +10,11 @@ import { Figure } from "./Figure";
 import { ScrollTracker } from "./ScrollTracker";
 import { StationOffset } from "./station-offset";
 import { AgentNetwork } from "./stations/AgentNetwork";
-import { Hero } from "./stations/Hero";
-import { SkillOrbit } from "./stations/SkillOrbit";
-import { Timeline } from "./stations/Timeline";
+import { Graduation } from "./stations/Graduation";
+import { Launch } from "./stations/Launch";
+import { Fleet } from "./stations/Fleet";
+import { SkillCloud } from "./stations/SkillCloud";
+import { Team } from "./stations/Team";
 
 /** Fixed full-screen 3D world behind natively scrolling text; scroll position drives camera, figure and stations. */
 export function Experience3D({ cv, projects, lowPower: initialLowPower, onFail }: ExperienceProps) {
@@ -29,9 +31,7 @@ export function Experience3D({ cv, projects, lowPower: initialLowPower, onFail }
           camera={{ position: [0, 1.4, 5], fov: 35 }}
           onCreated={({ gl }) => gl.domElement.addEventListener("webglcontextlost", onFail)}
         >
-          <color attach="background" args={["#f5f5f7"]} />
-          {/* Fog in the background colour dissolves the floor edge into an endless studio. */}
-          <fog attach="fog" args={["#f5f5f7", 7, 20]} />
+          {/* Transparent canvas: the page's soft colour field shows through, which the glass panels need to read as glass. */}
           <PerformanceMonitor onDecline={() => setLowPower(true)} />
           <Environment resolution={256}>
             <Lightformer intensity={2} position={[0, 5, -2]} scale={[10, 2, 1]} rotation-x={Math.PI / 2} />
@@ -45,11 +45,19 @@ export function Experience3D({ cv, projects, lowPower: initialLowPower, onFail }
           <Suspense fallback={null}>
             <Figure shadows={!lowPower} />
           </Suspense>
-          <Hero lowPower={lowPower} />
-          <Timeline experience={cv.experience} education={cv.education} />
-          <SkillOrbit skills={cv.skills} />
+          <Graduation />
+          {/* Anything that loads (models, the label font) suspends here, inside the canvas; uncaught it would
+              bubble up to the page's fallback and flash the static page back in. */}
+          <Suspense fallback={null}>
+            <Team />
+            <Fleet />
+            <SkillCloud skills={cv.skills} />
+          </Suspense>
           <AgentNetwork />
-          <ContactShadows position={[0, 0, 0]} opacity={0.35} scale={10} blur={2.5} far={4} frames={lowPower ? 1 : Infinity} />
+          <Launch />
+          {/* Always live: freezing them on low power (frames={1}) would keep whatever stood on the floor at that moment
+              (rocket pad, colleagues, cars) as a stale shadow on every later page. Cheaper at low resolution instead. */}
+          <ContactShadows position={[0, 0, 0]} opacity={0.35} scale={10} blur={2.5} far={4} resolution={lowPower ? 256 : 512} />
         </Canvas>
       </div>
       <main ref={content} className="relative">

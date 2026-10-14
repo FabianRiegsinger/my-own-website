@@ -6,7 +6,7 @@ export const cv: CV = {
     headline: "Automotive System Integration & Software Engineer",
     location: "Ingolstadt, Germany",
     summary:
-      "Software engineer with 8+ years in automotive, working in C++ and Python on autonomous-driving software. I'm Mobileye's on-site resident at AUDI for the ADAS Level 3 program and keep about 30 development vehicles running. Most of my day is spent between AUDI's engineers and Mobileye R&D. I write much of my code with AI agents.",
+      "I'm a software engineer with over 8 years in automotive. I build autonomous-driving software in C++ and Python. For Mobileye, I work on site at AUDI on the Level 3 ADAS program, where I keep around 30 development vehicles running. Most days I sit between AUDI's engineers and Mobileye's R&D team. I write much of my code with AI agents.",
     links: {
       github: "https://github.com/FabianRiegsinger",
       linkedin: "https://www.linkedin.com/in/fabian-riegsinger-736b78b7/",
@@ -112,6 +112,27 @@ export const cv: CV = {
     tools: ["Claude Code", "Cursor"],
     workUse:
       "I use Claude Code and Cursor every day, at work and on side projects. This website was built with Claude Code.",
+  },
+  next: {
+    intro: "Eight years of software in test vehicles taught me how systems fail in the real world. Next, I want to work where AI is built at scale.",
+    steps: [
+      {
+        label: "T-3",
+        title: "Agents in production",
+        body: "Taking agents from demos to systems people rely on: tool use, evaluations, guardrails, and cost at scale.",
+      },
+      {
+        label: "T-2",
+        title: "Physical AI",
+        body: "Foundation models that perceive and act in cars and robots, where a wrong answer has physical consequences. My automotive years count here.",
+      },
+      {
+        label: "T-1",
+        title: "A frontier AI team",
+        body: "Joining a big-tech AI team that builds the models, the infrastructure, and the products on top of them.",
+      },
+    ],
+    liftoff: "Building something in this space? Let's talk.",
   },
   additional: [{ title: "C++/OOP Tutor, Technische Hochschule Mittelhessen", year: "2017" }],
 };
