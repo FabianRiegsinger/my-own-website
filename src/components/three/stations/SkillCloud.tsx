@@ -119,9 +119,16 @@ export function sitePalette(u: number): Color {
   return stops[k].clone().lerp(stops[k + 1], t - k);
 }
 
-/** `n` shades along the site palette, first to last colour, one per word. */
-export function cloudColors(n: number): string[] {
-  return Array.from({ length: n }, (_, i) => `#${sitePalette(n === 1 ? 0 : i / (n - 1)).getHexString()}`);
+/** The frosted white of the glass panels, lesser skills fade toward it. */
+const GLASS = new Color("#f3f1fb");
+
+/**
+ * A word's colour: hue from the page's colour field at its place in the cloud (`u`: 0 left .. 1 right, blue through
+ * violet to peach, like the background blobs), strength from the skill level: level 5 nearly in full (10% toward the
+ * glass), each level below 17% further, so the strongest skills read first and the cloud stays soft.
+ */
+export function cloudColor(u: number, level: Level): string {
+  return `#${sitePalette(u).lerp(GLASS, 0.1 + (5 - level) * 0.17).getHexString()}`;
 }
 
 /** Skills page: the skill names as a cloud of extruded words behind Fabian. */
@@ -132,7 +139,6 @@ export function SkillCloud({ skills }: { skills: SkillGroup[] }) {
 
   const words = useMemo(() => {
     const items = cloudWords(skills.flatMap((g) => g.items));
-    const colors = cloudColors(items.length);
     const built = items.map((it) => {
       const geometry = new TextGeometry(it.name, {
         font,
@@ -165,7 +171,12 @@ export function SkillCloud({ skills }: { skills: SkillGroup[] }) {
         if (tries > 15) throw e;
       }
     }
-    return built.map((w, i) => ({ ...w, ...at[i], scale: k, material: new MeshStandardMaterial({ color: colors[i], roughness: 0.45 }) }));
+    const [left, right] = [Math.min(...at.map((p) => p.x)), Math.max(...at.map((p) => p.x))];
+    return built.map((w, i) => {
+      const color = cloudColor((at[i].x - left) / (right - left || 1), w.level);
+      // A little self-glow keeps the extruded sides from going muddy in shadow.
+      return { ...w, ...at[i], scale: k, material: new MeshStandardMaterial({ color, roughness: 0.55, emissive: color, emissiveIntensity: 0.12 }) };
+    });
   }, [skills, font]);
 
   useFrame(({ size }) => {

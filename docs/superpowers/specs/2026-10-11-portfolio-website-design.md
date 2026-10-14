@@ -237,8 +237,10 @@ job is added without a page.
   his head as the camera sees it; its right edge stays on screen, its left edge reaches the frosted
   panel, and he stands in front of it. A spot behind his head and neck stays free. Hidden below
   1024 px, where the full-width panel covers it. Shuffled, mostly horizontal (only names
-  under 10 characters may run vertically), sizes by level times a random factor, each word its own
-  shade along the site palette (`#2563EB` → `#2F7BF6` → `#8B5CF6` → `#FFA878`).
+  under 10 characters may run vertically), sizes by level times a random factor. Colour follows the
+  page's colour field: hue by the word's place in the cloud, left to right along the site palette
+  (`#2563EB` → `#2F7BF6` → `#8B5CF6` → `#FFA878`, like the background blobs); strength by skill level,
+  level 5 nearly full, each level below fading 17% further toward the glass white `#F3F1FB`.
 - **Launch:** a white rocket (~3.8 m: orange nose and fins, violet band) on a dark pad with a service
   tower, on his right behind him; the set is built in pad units and scaled 1.5x. Soft steam sprites
   vent around the pad while the countdown is read. Just past mid-page it ignites and lifts off on an

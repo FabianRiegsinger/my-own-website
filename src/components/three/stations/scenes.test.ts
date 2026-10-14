@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { Vector3 } from "three";
+import { Color, Vector3 } from "three";
 import { STATIONS } from "@/lib/scroll-map";
 import { BELL, HANDLE, NICHE, WALL } from "./Graduation";
 import { TEAM } from "./Team";
 import { CUSTOMER, FLEET } from "./Fleet";
 import { FOG, fogWeight, launchWeight, liftoff, PAD } from "./Launch";
-import { cloudColors, cloudShape, cloudWords, packCloud, SITE_COLORS } from "./SkillCloud";
+import { cloudColor, cloudShape, cloudWords, packCloud, SITE_COLORS } from "./SkillCloud";
 
 const facing = (yaw: number) => new Vector3(Math.sin(yaw), 0, Math.cos(yaw));
 
@@ -119,11 +119,20 @@ describe("skill word cloud", () => {
     expect(cloudWords(words)).toEqual(cloudWords(words));
   });
 
-  it("colours every word in its own shade between the site's colours", () => {
-    const colors = cloudColors(20);
-    expect(new Set(colors).size).toBe(20);
-    expect(colors[0]).toBe(SITE_COLORS[0]);
-    expect(colors.at(-1)).toBe(SITE_COLORS.at(-1));
+  it("tints words like the page's colour field: blue on the left, through violet, to peach on the right", () => {
+    const hue = (hex: string) => new Color(hex).getHSL({ h: 0, s: 0, l: 0 }).h;
+    expect(Math.abs(hue(cloudColor(0, 5)) - hue(SITE_COLORS[0]))).toBeLessThan(0.02);
+    expect(Math.abs(hue(cloudColor(1, 5)) - hue(SITE_COLORS.at(-1)!))).toBeLessThan(0.02);
+  });
+
+  it("strong skills read strongest; lesser ones fade toward the pastel of the glass", () => {
+    const l = (hex: string) => new Color(hex).getHSL({ h: 0, s: 0, l: 0 }).l;
+    for (const u of [0, 0.5, 1]) {
+      expect(l(cloudColor(u, 3))).toBeGreaterThan(l(cloudColor(u, 4)));
+      expect(l(cloudColor(u, 4))).toBeGreaterThan(l(cloudColor(u, 5)));
+      expect(l(cloudColor(u, 1))).toBeLessThan(0.9); // never washed out to white
+    }
+    expect(new Set([0, 0.25, 0.5, 0.75, 1].map((u) => cloudColor(u, 4))).size).toBe(5);
   });
 });
 
