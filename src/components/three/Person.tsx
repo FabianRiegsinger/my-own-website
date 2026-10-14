@@ -1,13 +1,14 @@
 "use client";
 
-import { useAnimations, useGLTF } from "@react-three/drei";
+import { useGLTF } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { useLayoutEffect, useMemo, useRef } from "react";
-import type { Group, Mesh } from "three";
+import { AnimationMixer, type Group, type Mesh } from "three";
 import { clone } from "three/examples/jsm/utils/SkeletonUtils.js";
 import { poseFor, type Pose } from "@/lib/entrance";
 import { applyArms, findArms } from "./arm-pose";
 import { paintBody, stripAvatar, type Palette } from "./avatar";
+import { isShown } from "./fade";
 import { MODEL } from "./Figure";
 
 /** A generic, faceless person: a copy of the figure's rig in its own clothes, idling out of step with the others. */
@@ -21,19 +22,23 @@ export function Person({ position, yaw, palette, pose = {}, phase = 0 }: { posit
     return c;
   }, [scene, palette]);
   const ref = useRef<Group>(null);
-  const { actions, mixer } = useAnimations(animations, ref);
+  // Own mixer instead of useAnimations: it only advances while this person's scene is on screen.
+  const mixer = useMemo(() => new AnimationMixer(body), [body]);
   const rig = useMemo(() => findArms(body), [body]);
   const weights = useMemo(() => ({ ...poseFor("walk"), ...pose }), [pose]);
 
   useLayoutEffect(() => {
-    const idle = actions.idle;
+    const idle = animations.find((a) => a.name === "idle");
     if (!idle) return;
-    idle.reset().play();
+    mixer.clipAction(idle).play();
     mixer.update(phase); // start out of step with the others (only action on this mixer)
-  }, [actions, mixer, phase]);
+    return () => void mixer.stopAllAction();
+  }, [animations, mixer, phase]);
 
-  useFrame(({ clock }) => {
-    if (rig && ref.current?.visible) applyArms(body, rig, weights, clock.elapsedTime + phase);
+  useFrame(({ clock }, dt) => {
+    if (!isShown(ref.current)) return;
+    mixer.update(dt);
+    if (rig) applyArms(body, rig, weights, clock.elapsedTime + phase);
   });
 
   return <primitive ref={ref} object={body} position={position} rotation-y={yaw} />;
