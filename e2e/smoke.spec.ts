@@ -184,13 +184,16 @@ for (const [id, rgb, brand] of [
 ] as const) {
   test(`background blobs take ${brand} on the ${id} page`, async ({ page }) => {
     await page.goto("/");
+    await expect(page.locator("canvas")).toBeAttached({ timeout: 10_000 }); // scroll the final (3D) DOM, not the static one it replaces
     const blob = () => page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--blob-a"));
     expect(await blob()).not.toContain(rgb);
     await page.evaluate((id) => {
       const el = document.getElementById(id)!;
       window.scrollTo({ top: el.offsetTop + el.offsetHeight / 2 - innerHeight / 2, behavior: "instant" });
     }, id);
-    await expect.poll(blob, { timeout: 5000 }).toContain(rgb);
+    // Long timeout: the first view of a scene compiles its shaders, which in software WebGL (CI, headless) stalls frames
+    // and with them the CSS colour transition for several seconds.
+    await expect.poll(blob, { timeout: 15_000 }).toContain(rgb);
   });
 }
 
@@ -207,6 +210,7 @@ for (const id of ["agentic", "skills"]) {
   test(`${id} heading stays in view while its tall panel scrolls`, async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto("/");
+    await expect(page.locator("canvas")).toBeAttached({ timeout: 10_000 }); // measure the final (3D) DOM, not the static one it replaces
     await page.evaluate((id) => {
       const el = document.getElementById(id)!;
       window.scrollTo({ top: el.offsetTop + el.offsetHeight / 2 - innerHeight / 2, behavior: "instant" });
