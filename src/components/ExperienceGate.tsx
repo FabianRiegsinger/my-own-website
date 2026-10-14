@@ -51,6 +51,8 @@ export function ExperienceGate({
   useEffect(() => {
     const env = detectEnv();
     if (!canRender3D(env)) return markStatic();
+    // Device detection needs the browser, so it can only run after hydration: the server and first client render stay static.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLowPower(env.isMobile);
     setMode("3d");
   }, []);
