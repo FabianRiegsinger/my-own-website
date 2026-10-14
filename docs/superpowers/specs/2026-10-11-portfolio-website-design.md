@@ -49,7 +49,7 @@ static page's still of the figure stays hidden until the page has settled on sta
 
 ### Scroll journey
 
-The canvas is fixed behind eight full-screen sections. `ScrollTracker` maps the viewport centre onto
+The canvas is fixed behind nine full-screen sections. `ScrollTracker` maps the viewport centre onto
 a 0..1 station offset using the measured section rects, so 3D stays in sync with text of any height.
 `lib/scroll-map.ts` holds one station per section: range, pose clip, camera, look-at target, screen
 shift and figure yaw. The camera and yaw ease to the next station over the second half of each page.
@@ -63,6 +63,7 @@ shift and figure yaw. The camera and yaw ease to the next station over the secon
 | mobileye | holds a tablet, gestures to the fleet | customer, unbadged test fleet | Mobileye role, highlights, tags |
 | agentic | hands on hips | screen-filling network of nodes | Claude Code, Cursor, how used; GitHub project cards |
 | skills | hands on hips | word cloud of the skill names | Skill groups with level dots |
+| launch | hands on hips, turned toward the rocket | rocket on a pad, venting steam; lifts off into contact | "What comes next": countdown T-3…T-1 of next challenges, "T-0" link to contact |
 | contact | wave | figure only | GitHub, LinkedIn, Xing, obfuscated email link |
 
 **Landing entrance** (only when the page loads at the top): the figure walks in from just past the
@@ -87,7 +88,7 @@ absent in browsers without view timelines).
 | `src/app/layout.tsx` | Fonts, metadata, Open Graph, JSON-LD `Person`, preload of `figure.glb` |
 | `src/app/impressum/page.tsx`, `src/app/privacy/page.tsx` | Legal templates, details filled by the owner |
 | `src/components/ExperienceGate.tsx` | Capability check, lazy 3D upgrade, error fallback, `data-experience` |
-| `src/components/StaticPage.tsx` | The eight sections (+ `ActivePage`); with the figure still when static |
+| `src/components/StaticPage.tsx` | The nine sections (+ `ActivePage`); with the figure still when static |
 | `src/components/ActivePage.tsx` | Sets `<html data-page>` to the section being read (drives page tints) |
 | `src/components/sections/*.tsx` | HTML per section; `GlassPanel` (glass + mouse tilt), `Timeline` (three career sections) |
 | `src/components/three/Experience3D.tsx` | Canvas, lights, environment, contact shadows, all scenes |
@@ -116,6 +117,7 @@ experience: { company, role, start, end: string | null, location, highlights: st
 education:  { degree, school, end, note }[]
 skills:     { group: "Languages" | "Automotive" | "Tooling" | "Leadership" | "AI"; items: { name: string; level: Level }[] }[]
 agentic:    { intro: string; tools: string[]; workUse: string }
+next:       { intro: string; steps: { label: string; title: string; body: string }[]; liftoff: string }
 additional: { title, year }[]
 ```
 
@@ -233,6 +235,10 @@ job is added without a page.
   1024 px, where the full-width panel covers it. Shuffled, mostly horizontal (only names
   under 10 characters may run vertically), sizes by level times a random factor, each word its own
   shade along the site palette (`#2563EB` → `#2F7BF6` → `#8B5CF6` → `#FFA878`).
+- **Launch:** a white rocket (orange nose and fins, violet band) on a dark pad with a service tower, on
+  his right a step behind him. Steam vents slowly around the pad while the countdown is read; at 70%
+  of the page it ignites and lifts off with constant thrust (`liftoff`), carrying on into contact.
+  Blobs turn ignition orange `#FF6A1A`, dusk violet and pale sky; T-labels use `#C2410C` for contrast.
 
 ### Motion and interaction
 
@@ -267,7 +273,7 @@ job is added without a page.
   layouts (team, fleet, bell reach, network size, word-cloud packing and colours); tilt; active page.
 - **Playwright (smoke):** page loads and canvas mounts; static page with reduced motion and on model
   failure; CV text, JSON-LD, metadata and legal pages; no phone number; 360 px without horizontal
-  scroll; 44 px contact targets and focus rings; eight pages in order; glass panels, snap,
+  scroll; 44 px contact targets and focus rings; nine pages in order; glass panels, snap,
   view-timeline fade and tilt; per-page blob colours; no fallback-still flash and no static page
   flashing back after the 3D upgrade.
 - No visual/snapshot tests of the 3D scene; scenes are checked by screenshot during development.

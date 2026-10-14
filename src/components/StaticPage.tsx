@@ -5,6 +5,7 @@ import { About } from "./sections/About";
 import { Agentic } from "./sections/Agentic";
 import { Contact } from "./sections/Contact";
 import { Hero } from "./sections/Hero";
+import { Launch } from "./sections/Launch";
 import { Skills } from "./sections/Skills";
 import { Timeline } from "./sections/Timeline";
 
@@ -17,6 +18,7 @@ export function Sections({ cv, projects, showFigure = false }: { cv: CV; project
       <Timeline cv={cv} />
       <Agentic cv={cv} projects={projects} />
       <Skills cv={cv} />
+      <Launch cv={cv} />
       <Contact cv={cv} />
     </>
   );

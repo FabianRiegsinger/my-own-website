@@ -170,7 +170,8 @@ export function SkillCloud({ skills }: { skills: SkillGroup[] }) {
 
   useFrame(({ size }) => {
     if (!root.current) return;
-    fade(root.current, stationWeight(offset.current, "skills"));
+    // Short fade: the launch page after it is shorter than the default fade, the cloud would still ghost behind the rocket.
+    fade(root.current, stationWeight(offset.current, "skills", 0.03));
     // Below the lg breakpoint the full-width panel covers the cloud; only stray letters would peek out at its edges.
     if (size.width < 1024) root.current.visible = false;
   });

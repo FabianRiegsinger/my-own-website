@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { Vector3 } from "three";
+import { STATIONS } from "@/lib/scroll-map";
 import { BELL, HANDLE, NICHE, WALL } from "./Graduation";
 import { TEAM } from "./Team";
 import { CUSTOMER, FLEET } from "./Fleet";
+import { liftoff, PAD } from "./Launch";
 import { cloudColors, cloudShape, cloudWords, packCloud, SITE_COLORS } from "./SkillCloud";
 
 const facing = (yaw: number) => new Vector3(Math.sin(yaw), 0, Math.cos(yaw));
@@ -122,5 +124,25 @@ describe("skill word cloud", () => {
     expect(new Set(colors).size).toBe(20);
     expect(colors[0]).toBe(SITE_COLORS[0]);
     expect(colors.at(-1)).toBe(SITE_COLORS.at(-1));
+  });
+});
+
+describe("launch pad", () => {
+  const launch = STATIONS.find((s) => s.id === "launch")!;
+
+  it("holds the rocket on the pad while the launch page is read", () => {
+    expect(liftoff(launch.start)).toBe(0);
+    expect(liftoff((launch.start + launch.end) / 2)).toBe(0);
+  });
+
+  it("lifts off as the page scrolls on to contact, gathering speed", () => {
+    const a = liftoff(launch.end - 0.01);
+    const b = liftoff(launch.end + 0.02);
+    expect(a).toBeGreaterThan(0);
+    expect(b - a).toBeGreaterThan(a);
+  });
+
+  it("stands the pad beside Fabian, clear of him", () => {
+    expect(Math.hypot(PAD.x, PAD.z)).toBeGreaterThan(0.9);
   });
 });

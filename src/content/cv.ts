@@ -113,5 +113,26 @@ export const cv: CV = {
     workUse:
       "I use Claude Code and Cursor every day, at work and on side projects. This website was built with Claude Code.",
   },
+  next: {
+    intro: "Eight years of software in test vehicles taught me how systems fail in the real world. Next, I want to work where AI is built at scale.",
+    steps: [
+      {
+        label: "T-3",
+        title: "Agents in production",
+        body: "Taking agents from demos to systems people rely on: tool use, evaluations, guardrails, and cost at scale.",
+      },
+      {
+        label: "T-2",
+        title: "Physical AI",
+        body: "Foundation models that perceive and act in cars and robots, where a wrong answer has physical consequences. My automotive years count here.",
+      },
+      {
+        label: "T-1",
+        title: "A frontier AI team",
+        body: "Joining a big-tech AI team that builds the models, the infrastructure, and the products on top of them.",
+      },
+    ],
+    liftoff: "Building something in this space? Let's talk.",
+  },
   additional: [{ title: "C++/OOP Tutor, Technische Hochschule Mittelhessen", year: "2017" }],
 };

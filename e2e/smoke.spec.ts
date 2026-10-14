@@ -121,7 +121,7 @@ test("apple glass: every text panel is frosted glass left of the centred figure"
       return { right: el.getBoundingClientRect().right, backdrop: s.backdropFilter, radius: parseFloat(s.borderRadius) };
     }),
   );
-  expect(panels).toHaveLength(8);
+  expect(panels).toHaveLength(9);
   for (const p of panels) {
     expect(p.right).toBeLessThanOrEqual(1440 * 0.42);
     expect(p.backdrop).toContain("blur");
@@ -129,10 +129,10 @@ test("apple glass: every text panel is frosted glass left of the centred figure"
   }
 });
 
-test("eight pages in order, each its own glass panel", async ({ page }) => {
+test("nine pages in order, each its own glass panel", async ({ page }) => {
   await page.goto("/");
   const ids = await page.locator("main section").evaluateAll((els) => els.map((e) => e.id));
-  expect(ids).toEqual(["hero", "about", "education", "esas", "mobileye", "agentic", "skills", "contact"]);
+  expect(ids).toEqual(["hero", "about", "education", "esas", "mobileye", "agentic", "skills", "launch", "contact"]);
   await expect(page.locator("#education")).toContainText("B.Eng.");
   await expect(page.locator("#education")).toContainText("M.Sc.");
   await expect(page.locator("#esas h2")).toHaveText("ESAS Automotive GmbH");
@@ -189,6 +189,7 @@ for (const [id, rgb, brand] of [
   ["education", "128, 186, 36", "THM green"],
   ["esas", "242, 85, 68", "ESAS coral"],
   ["mobileye", "30, 46, 184", "Mobileye blue"],
+  ["launch", "255, 106, 26", "ignition orange"],
 ] as const) {
   test(`background blobs take ${brand} on the ${id} page`, async ({ page }) => {
     await page.goto("/");
@@ -236,4 +237,11 @@ test("landing page invites scrolling with a cue that jumps to the about page", a
   await expect(cue).toBeVisible();
   const box = (await cue.boundingBox())!;
   expect(box.height).toBeGreaterThanOrEqual(44);
+});
+
+test("launch page counts down the next challenges and hands over to contact", async ({ page }) => {
+  await page.goto("/");
+  const launch = page.locator("#launch");
+  for (const t of ["T-3", "T-2", "T-1"]) await expect(launch).toContainText(t);
+  await expect(launch.locator('a[href="#contact"]')).toBeAttached();
 });

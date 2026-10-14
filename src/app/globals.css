@@ -6,6 +6,8 @@
   --color-muted: #6e6e73;
   --color-accent: #2563eb;
   --color-glow: #2f7bf6;
+  /* Launch page: rocket orange, darkened to pass 4.5:1 as text on the glass. */
+  --color-ignition: #c2410c;
   --font-sans: var(--font-inter);
 }
 
@@ -95,6 +97,13 @@ html[data-page="mobileye"] {
   --blob-a: rgb(30 46 184 / 0.45);
   --blob-b: rgb(202 202 231 / 0.85);
   --blob-c: rgb(242 202 212 / 0.75);
+}
+
+/* Launch: ignition orange, a dusk violet and a pale sky. */
+html[data-page="launch"] {
+  --blob-a: rgb(255 106 26 / 0.5);
+  --blob-b: rgb(124 92 230 / 0.45);
+  --blob-c: rgb(255 214 170 / 0.8);
 }
 
 body {

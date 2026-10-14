@@ -6,7 +6,7 @@ const mid = (id: string) => (st(id).start + st(id).end) / 2;
 
 describe("scroll-map", () => {
   it("has one station per page, in page order", () => {
-    expect(STATIONS.map((s) => s.id)).toEqual(["hero", "about", "education", "esas", "mobileye", "agentic", "skills", "contact"]);
+    expect(STATIONS.map((s) => s.id)).toEqual(["hero", "about", "education", "esas", "mobileye", "agentic", "skills", "launch", "contact"]);
   });
 
   it("ranges are contiguous and cover 0..1", () => {

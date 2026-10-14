@@ -11,6 +11,7 @@ import { ScrollTracker } from "./ScrollTracker";
 import { StationOffset } from "./station-offset";
 import { AgentNetwork } from "./stations/AgentNetwork";
 import { Graduation } from "./stations/Graduation";
+import { Launch } from "./stations/Launch";
 import { Fleet } from "./stations/Fleet";
 import { SkillCloud } from "./stations/SkillCloud";
 import { Team } from "./stations/Team";
@@ -53,6 +54,7 @@ export function Experience3D({ cv, projects, lowPower: initialLowPower, onFail }
             <SkillCloud skills={cv.skills} />
           </Suspense>
           <AgentNetwork />
+          <Launch />
           <ContactShadows position={[0, 0, 0]} opacity={0.35} scale={10} blur={2.5} far={4} frames={lowPower ? 1 : Infinity} />
         </Canvas>
       </div>
