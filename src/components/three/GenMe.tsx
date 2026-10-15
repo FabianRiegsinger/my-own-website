@@ -2,8 +2,11 @@
 
 import { useGLTF } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
-import { useMemo } from "react";
-import { Box3, MeshPhysicalMaterial, Quaternion, Vector3, type Mesh, type MeshStandardMaterial, type Object3D } from "three";
+import { useLayoutEffect, useMemo, useRef } from "react";
+import { Box3, MathUtils, MeshPhysicalMaterial, Quaternion, Vector3, type Group, type Mesh, type MeshStandardMaterial, type Object3D } from "three";
+import { entrance, introStep } from "@/lib/entrance";
+import { heading, stationAt } from "@/lib/scroll-map";
+import { useStationOffset } from "./station-offset";
 
 const MODEL = "/models/me.glb";
 const HEIGHT = 1.8;
@@ -14,6 +17,14 @@ const Y = new Vector3(0, 1, 0);
 const Z = new Vector3(0, 0, 1);
 const ARMS_DOWN = 1.35; // rad from T-pose; a little short of 90° so the arms clear the hips
 const ELBOW = 0.2;
+/** Walk cycle: strides per second and swing amplitudes (rad). Pace ≈ ENTRANCE.startX / ENTRANCE.walk. */
+const STRIDE_HZ = 0.9;
+const LEG_SWING = 0.45;
+const KNEE = 0.6;
+const ARM_SWING = 0.35;
+/** Scrolling past this many pixels ends the landing entrance so the page never fights the reader. */
+const TOP_PX = 40;
+const atTop = () => window.scrollY < TOP_PX;
 
 const q = new Quaternion();
 const pq = new Quaternion();
@@ -35,10 +46,17 @@ function turn(j: Joint, axis: Vector3, angle: number) {
   j.bone.quaternion.premultiply(pq);
 }
 
-/** Generated likeness of Fabian, rigged but without clips: a procedural idle (arms down, breathing, weight shift). */
+/**
+ * Generated likeness of Fabian, rigged but without clips: walks in on the landing page (same choreography as the
+ * mannequin Figure, without its wave), then a procedural idle (arms down, breathing, weight shift); turns with the scroll.
+ */
 export function GenMe({ shadows }: { shadows: boolean }) {
   const { scene } = useGLTF(MODEL, "/draco/");
-  const { scale, offset } = useMemo(() => {
+  const group = useRef<Group>(null);
+  const offset = useStationOffset();
+  const intro = useRef({ t: 0, done: false });
+  const walk = useRef(0); // walk-cycle weight, eased so the stop is not a snap
+  const { scale, offset: centre } = useMemo(() => {
     const box = new Box3().setFromObject(scene);
     const size = box.getSize(new Vector3());
     const s = HEIGHT / size.y;
@@ -68,12 +86,42 @@ export function GenMe({ shadows }: { shadows: boolean }) {
       if (!bone?.parent) return null;
       return { bone, rest: bone.quaternion.clone(), parent: inv.clone().multiply(bone.parent.getWorldQuaternion(new Quaternion())) };
     };
-    const names = ["L_Upperarm", "R_Upperarm", "L_Forearm", "R_Forearm", "Waist", "Spine02", "Head"] as const;
+    const names = ["L_Upperarm", "R_Upperarm", "L_Forearm", "R_Forearm", "L_Thigh", "R_Thigh", "L_Calf", "R_Calf", "Waist", "Spine02", "Head"] as const;
     const found = names.map(joint);
     return found.every(Boolean) ? (Object.fromEntries(names.map((n, i) => [n, found[i]!])) as Record<(typeof names)[number], Joint>) : null;
   }, [scene]);
 
-  useFrame(({ clock }) => {
+  // At the top of the page start off-screen right before the first frame; anywhere else already in place.
+  useLayoutEffect(() => {
+    const top = atTop();
+    intro.current.done = !top;
+    if (top && group.current) {
+      const s = entrance(0);
+      group.current.position.x = s.x;
+      group.current.rotation.y = s.heading;
+    }
+  }, []);
+
+  useFrame(({ clock }, dt) => {
+    const g = group.current;
+    if (!g) return;
+    const it = intro.current;
+    if (!it.done && !atTop()) it.done = true;
+    let walking = false;
+    if (!it.done) {
+      it.t = introStep(it.t, dt); // frame time, not wall time: a first-frame stall must not skip the walk-in
+      const s = entrance(it.t);
+      g.position.x = s.x;
+      g.rotation.y = s.heading;
+      walking = s.clip === "walk";
+      it.done = s.done;
+    } else {
+      g.position.x = MathUtils.damp(g.position.x, 0, 6, dt);
+      g.rotation.y = MathUtils.damp(g.rotation.y, heading(offset.current), 4, dt);
+      walking = stationAt(offset.current).clip === "walk";
+    }
+    walk.current = MathUtils.damp(walk.current, walking ? 1 : 0, 8, dt);
+
     if (!joints) return;
     const t = clock.elapsedTime;
     for (const j of Object.values(joints)) j.bone.quaternion.copy(j.rest);
@@ -89,12 +137,25 @@ export function GenMe({ shadows }: { shadows: boolean }) {
     turn(joints.Spine02, Z, -0.02 * breath);
     turn(joints.Head, Y, 0.12 * Math.sin(t * 0.3));
     turn(joints.Head, X, -0.02 * sway);
+    // Walk: legs swing about the left-right axis (+ = forward), the trailing knee bends back, arms swing opposite.
+    const w = walk.current;
+    if (w > 0.001) {
+      const step = Math.sin(t * STRIDE_HZ * 2 * Math.PI);
+      turn(joints.L_Thigh, Z, w * LEG_SWING * step);
+      turn(joints.R_Thigh, Z, -w * LEG_SWING * step);
+      turn(joints.L_Calf, Z, -w * KNEE * Math.max(0, -step));
+      turn(joints.R_Calf, Z, -w * KNEE * Math.max(0, step));
+      turn(joints.L_Upperarm, Z, -w * ARM_SWING * step);
+      turn(joints.R_Upperarm, Z, w * ARM_SWING * step);
+    }
   });
 
   // The export faces +x; turn it to face the camera (+z).
   return (
-    <group rotation-y={-Math.PI / 2}>
-      <primitive object={scene} scale={scale} position={offset} />
+    <group ref={group}>
+      <group rotation-y={-Math.PI / 2}>
+        <primitive object={scene} scale={scale} position={centre} />
+      </group>
     </group>
   );
 }
