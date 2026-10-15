@@ -15,10 +15,11 @@ const FONT = "/fonts/inter-700.typeface.json";
 /**
  * The word cloud hangs 1.6 m behind Fabian, its centre right behind his head as the skills camera sees it: the ray
  * from the camera (0, 2.2, 6.4) through his head (0, 1.65, 0) meets the cloud plane at about (0, 1.5). The unit
- * outline's visual centre sits at (0.15, 0.2), so the group is offset by that. CLOUD_SCALE keeps the right edge on
- * screen; the left part runs behind the frosted panel. Words shrink together until all fit inside the outline.
+ * outline's visual centre sits at (0.15, 0.2), so the group is offset by that. CLOUD_SCALE (with the skills page's
+ * view shift) keeps the whole cloud between the frosted panel and the right screen edge from 1280 px wide up.
+ * Words shrink together until all fit inside the outline.
  */
-const CLOUD_SCALE = 0.98;
+const CLOUD_SCALE = 0.86;
 const CLOUD_X = -0.15 * CLOUD_SCALE;
 const CLOUD_Y = 1.5 - 0.2 * CLOUD_SCALE;
 const CLOUD_Z = -1.6;

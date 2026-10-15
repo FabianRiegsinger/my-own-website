@@ -71,10 +71,11 @@ describe("scroll-map", () => {
 });
 
 describe("screen shift", () => {
-  it("centres the figure between the text panel's right edge and the screen edge, further right on the agentic page", () => {
+  it("centres the figure between the text panel's right edge and the screen edge, further right on the agentic and skills pages", () => {
     const between = (PANEL_EDGE + 1) / 2;
-    for (const s of STATIONS.filter((s) => s.id !== "agentic")) expect(0.5 + s.shift).toBeCloseTo(between);
+    for (const s of STATIONS.filter((s) => s.id !== "agentic" && s.id !== "skills")) expect(0.5 + s.shift).toBeCloseTo(between);
     expect(PANEL_EDGE).toBeCloseTo(0.39); // 3vw gutter + 36vw panel (Section/GlassPanel)
     expect(0.5 + st("agentic").shift).toBeGreaterThanOrEqual(0.75);
+    expect(0.5 + st("skills").shift).toBeGreaterThan(between);
   });
 });
