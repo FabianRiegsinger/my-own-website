@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { Color, Vector3 } from "three";
 import { STATIONS } from "@/lib/scroll-map";
-import { BELL, CAPS, capFlight, HANDLE, NICHE, PLAQUES, WALL } from "./Graduation";
+import { BELL, CAPS, capFlight, HANDLE, NICHE, PLAQUES, terrazzo, WALL } from "./Graduation";
 import { TEAM } from "./Team";
 import { CUSTOMER, FLEET } from "./Fleet";
 import { FOG, fogWeight, launchWeight, liftoff, PAD } from "./Launch";
@@ -35,6 +35,16 @@ describe("graduation wall", () => {
       expect(p.position[2]).toBeGreaterThan(WALL.z);
     }
     expect(PLAQUES[0].position[1] - PLAQUES[1].position[1]).toBeGreaterThan(0.31);
+  });
+
+  it("scatters terrazzo chips over the whole floor, not just a patch in the middle", () => {
+    const pos = terrazzo();
+    const xs = pos.filter((_, i) => i % 3 === 0);
+    const zs = pos.filter((_, i) => i % 3 === 2);
+    expect(xs.length).toBeGreaterThan(1500);
+    expect(Math.max(...xs) - Math.min(...xs)).toBeGreaterThan(2.6); // floor is 3 wide
+    expect(Math.max(...zs) - Math.min(...zs)).toBeGreaterThan(1.4); // and 1.8 deep
+    expect(Math.min(...zs)).toBeGreaterThanOrEqual(WALL.z);
   });
 
   it("throws the caps up from above his head at a swing peak, in front of the wall, and lands them", () => {
