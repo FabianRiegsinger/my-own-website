@@ -24,7 +24,8 @@ export function GenMe({ shadows }: { shadows: boolean }) {
         const m = o as Mesh;
         if (!m.isMesh || m.material instanceof MeshPhysicalMaterial) return;
         const { map, normalMap } = m.material as MeshStandardMaterial;
-        m.material = new MeshPhysicalMaterial({ map, normalMap, metalness: 0, roughness: 0.35, clearcoat: 0.8, clearcoatRoughness: 0.15, envMapIntensity: 1.5 });
+        // Faint self-glow in the texture's own colours lifts the shadow side evenly; reflections alone only brighten lit faces.
+        m.material = new MeshPhysicalMaterial({ map, normalMap, metalness: 0, roughness: 0.35, clearcoat: 0.8, clearcoatRoughness: 0.15, envMapIntensity: 2.5, emissive: 0xffffff, emissiveMap: map, emissiveIntensity: 0.3 });
       }),
     [scene],
   );
