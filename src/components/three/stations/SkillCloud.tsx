@@ -23,10 +23,14 @@ const CLOUD_X = -0.15 * CLOUD_SCALE;
 const CLOUD_Y = 1.5 - 0.2 * CLOUD_SCALE;
 const CLOUD_Z = -1.6;
 /**
- * His face as the camera sees it on the cloud plane, kept free so no word runs right behind it. The Memoji head's
- * centre is ~1.72 m high; the camera ray through it meets the cloud plane at ~1.6 m (1.25x farther than the head).
+ * Him as the camera sees him on the cloud plane, kept free so no word runs behind him. The plane is 1.25x farther
+ * from the camera than he is, so a height y on him lands at 2.2 + (y - 2.2) * 1.25: head and neck (1.45 to 1.8 m)
+ * at 1.26 to 1.7, his body from the hips up (0.95 to 1.45 m) at 0.64 to 1.26, arms included in the width.
  */
-const HEAD_SPOT = { x: -CLOUD_X, y: 1.5 - CLOUD_Y, w: 0.55, h: 0.85 }; // head and neck
+const HEAD_SPOT = { x: -CLOUD_X, y: 1.48 - CLOUD_Y, w: 0.5, h: 0.48 };
+const BODY_SPOT = { x: -CLOUD_X, y: 0.9 - CLOUD_Y, w: 0.8, h: 0.75 };
+/** This skill sits centred right above his head; the others pack around it. */
+const CROWN = "FlexRay/CAN/Automotive Ethernet";
 
 /** Longest a word may run across the floor (metres); longer names get a smaller font. */
 const MAX_LENGTH = 3.6;
@@ -161,12 +165,16 @@ export function SkillCloud({ skills }: { skills: SkillGroup[] }) {
     const free = UNIT_CLOUD_AREA * CLOUD_SCALE ** 2;
     let k = Math.sqrt((0.5 * free) / built.reduce((a, w) => a + w.box.w * w.box.h, 0));
     let at: { x: number; y: number }[] | null = null;
+    const crown = built.findIndex((w) => w.name === CROWN);
     for (let tries = 0; !at; tries++, k *= 0.92) {
+      const boxes = built.map((w) => ({ w: w.box.w * k, h: w.box.h * k }));
+      const reserved = [HEAD_SPOT, BODY_SPOT];
+      const top = crown < 0 ? null : { x: HEAD_SPOT.x, y: HEAD_SPOT.y + (HEAD_SPOT.h + boxes[crown].h) / 2 + 0.03, ...boxes[crown] };
+      if (top) reserved.push(top);
       try {
-        at = packCloud(
-          built.map((w) => ({ w: w.box.w * k, h: w.box.h * k })),
-          { inside, reserved: [HEAD_SPOT] },
-        );
+        // The others pack around the reserved crown spot; the crown word goes back in at its own index.
+        const packed = packCloud(boxes.filter((_, i) => i !== crown), { inside, reserved });
+        at = top ? [...packed.slice(0, crown), { x: top.x, y: top.y }, ...packed.slice(crown)] : packed;
       } catch (e) {
         if (tries > 15) throw e;
       }
