@@ -1,9 +1,9 @@
 "use client";
 
 import { useGLTF } from "@react-three/drei";
-import { useFrame } from "@react-three/fiber";
-import { useLayoutEffect, useMemo, useRef } from "react";
-import { Box3, MathUtils, MeshStandardMaterial, Quaternion, Vector3, type Group, type Material, type Mesh, type Object3D } from "three";
+import { useFrame, useThree } from "@react-three/fiber";
+import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
+import { Box3, MathUtils, Raycaster, Vector2, MeshStandardMaterial, Quaternion, Vector3, type Group, type Material, type Mesh, type Object3D } from "three";
 import { ENTRANCE, entrance, introStep } from "@/lib/entrance";
 import { heading, stationAt } from "@/lib/scroll-map";
 import { useStationOffset } from "./station-offset";
@@ -15,7 +15,7 @@ const HEIGHT = 1.8;
 const X = new Vector3(1, 0, 0);
 const Y = new Vector3(0, 1, 0);
 const Z = new Vector3(0, 0, 1);
-const ARMS_DOWN = 1.35; // rad from T-pose; a little short of 90° so the arms clear the hips
+const ARMS_DOWN = 1.4; // rad from T-pose; a little short of 90° so the arms clear the hips
 const ELBOW = 0.2;
 /** Gait cycles per second: ~0.68 m steps at ENTRANCE pace (startX / walk ≈ 1.2 m/s), so the feet do not slide. */
 const STRIDE_HZ = 0.9;
@@ -31,6 +31,14 @@ const LOOK_AHEAD = 0.6; // s
 const LOOK = 0.6;
 const TURN_RATE = 5;
 const WAVE_HZ = 2;
+/** Relaxed hands: wrists bent toward the palm (toward the thigh once the arms hang) and trailing the arm swing. */
+const HAND_IN = 0.15;
+const HAND_LAG = 0.25;
+/** Head yaw follows its target this fast (1/s): quick enough to lead the turn, slow enough never to snap. */
+const HEAD_RATE = 3;
+/** Click-and-hold spin: radians per dragged pixel, and how fast he turns back to the camera after release (1/s). */
+const SPIN_PER_PX = 0.01;
+const SPIN_BACK = 1.5;
 const DEG = Math.PI / 180;
 const TAU = 2 * Math.PI;
 
@@ -95,6 +103,10 @@ export function GenMe({ shadows }: { shadows: boolean }) {
   const walkT = useRef(0); // time into the walk: every walk starts on a heel strike
   const wave = useRef(0);
   const model = useRef<Object3D>(null);
+  const spinner = useRef<Group>(null);
+  const spin = useRef({ angle: 0, dragging: false, x: 0 });
+  const headYaw = useRef(0);
+  const { camera, gl } = useThree();
   const { scale, offset: centre } = useMemo(() => {
     const box = new Box3().setFromObject(scene);
     const size = box.getSize(new Vector3());
@@ -126,7 +138,7 @@ export function GenMe({ shadows }: { shadows: boolean }) {
       if (!bone?.parent) return null;
       return { bone, rest: bone.quaternion.clone(), parent: inv.clone().multiply(bone.parent.getWorldQuaternion(new Quaternion())) };
     };
-    const names = ["L_Upperarm", "R_Upperarm", "L_Forearm", "R_Forearm", "L_Thigh", "R_Thigh", "L_Calf", "R_Calf", "L_Foot", "R_Foot", "L_ToeBase", "R_ToeBase", "Hip", "Waist", "Spine02", "Head"] as const;
+    const names = ["L_Upperarm", "R_Upperarm", "L_Forearm", "R_Forearm", "L_Thigh", "R_Thigh", "L_Calf", "R_Calf", "L_Foot", "R_Foot", "L_ToeBase", "R_ToeBase", "L_Hand", "R_Hand", "Hip", "Waist", "Spine02", "NeckTwist01", "NeckTwist02", "Head"] as const;
     const found = names.map(joint);
     return found.every(Boolean) ? (Object.fromEntries(names.map((n, i) => [n, found[i]!])) as Record<(typeof names)[number], Joint>) : null;
   }, [scene]);
@@ -145,6 +157,54 @@ export function GenMe({ shadows }: { shadows: boolean }) {
       walk.current = 1; // already mid-walk when he comes into view, not easing into it
     }
   }, []);
+
+  // Click and hold on him, then drag sideways to spin him about his centre. The canvas sits behind the page and takes
+  // no pointer events, so this listens on the window and hit-tests his bounding box (cheap enough for every move).
+  useEffect(() => {
+    const ray = new Raycaster();
+    const ndc = new Vector2();
+    const box = new Box3();
+    const root = document.documentElement;
+    const over = (e: PointerEvent) => {
+      const m = model.current;
+      if (!m) return false;
+      const r = gl.domElement.getBoundingClientRect();
+      ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+      ray.setFromCamera(ndc, camera);
+      return ray.ray.intersectsBox(box.setFromObject(m));
+    };
+    const down = (e: PointerEvent) => {
+      if (e.button !== 0 || !over(e)) return;
+      e.preventDefault(); // no text selection while dragging
+      Object.assign(spin.current, { dragging: true, x: e.clientX });
+      root.style.cursor = "grabbing";
+      root.style.userSelect = "none";
+    };
+    const move = (e: PointerEvent) => {
+      const sp = spin.current;
+      if (sp.dragging) {
+        sp.angle += (e.clientX - sp.x) * SPIN_PER_PX;
+        sp.x = e.clientX;
+      } else if (e.pointerType === "mouse") root.style.cursor = over(e) ? "grab" : "";
+    };
+    const up = () => {
+      if (!spin.current.dragging) return;
+      spin.current.dragging = false;
+      root.style.cursor = "";
+      root.style.userSelect = "";
+    };
+    window.addEventListener("pointerdown", down);
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+    window.addEventListener("pointercancel", up); // e.g. a touch that turns into a page scroll
+    return () => {
+      window.removeEventListener("pointerdown", down);
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      window.removeEventListener("pointercancel", up);
+      up();
+    };
+  }, [camera, gl]);
 
   useFrame(({ clock }, dt) => {
     const g = group.current;
@@ -169,6 +229,9 @@ export function GenMe({ shadows }: { shadows: boolean }) {
       g.rotation.y = MathUtils.damp(g.rotation.y, heading(offset.current), 4, dt);
       walking = stationAt(offset.current).clip === "walk" ? 1 : 0;
     }
+    const sp = spin.current;
+    if (!sp.dragging) sp.angle = MathUtils.damp(sp.angle, 0, SPIN_BACK, dt);
+    if (spinner.current) spinner.current.rotation.y = sp.angle;
     walk.current = MathUtils.damp(walk.current, walking, 8, dt);
     wave.current = MathUtils.damp(wave.current, waving, 6, dt);
     const w = walk.current;
@@ -189,10 +252,12 @@ export function GenMe({ shadows }: { shadows: boolean }) {
     turn(joints.R_Upperarm, X, ARMS_DOWN - 0.03 * breath);
     turn(joints.L_Forearm, Y, -ELBOW); // about Y in the rest frame: the T-posed forearm bends toward +x (forward)
     turn(joints.R_Forearm, Y, ELBOW);
-    // Weight shifts slowly from foot to foot; chest rises with each breath; head drifts a little.
+    // Hands hang relaxed: bent toward the palm, which faces the thigh once the arm is down.
+    turn(joints.L_Hand, X, -HAND_IN);
+    turn(joints.R_Hand, X, HAND_IN * (1 - wave.current));
+    // Weight shifts slowly from foot to foot; chest rises with each breath; head nods a touch.
     turn(joints.Waist, X, 0.03 * sway);
     turn(joints.Spine02, Z, -0.02 * breath);
-    turn(joints.Head, Y, 0.12 * Math.sin(t * 0.3));
     turn(joints.Head, X, -0.02 * sway);
     // Walk (+ = forward about the left-right axis): each leg follows the gait curves, the arms swing with the opposite leg,
     // the pelvis turns with the forward leg and the chest against it, and the body leans a touch into the walk.
@@ -211,16 +276,25 @@ export function GenMe({ shadows }: { shadows: boolean }) {
       turn(joints.R_Upperarm, Z, -w * ARM_SWING * armL);
       turn(joints.L_Forearm, Y, -w * ELBOW_SWING * (1 + armL) / 2); // rest frame, as for ELBOW
       turn(joints.R_Forearm, Y, w * ELBOW_SWING * (1 - armL) / 2);
+      // Hands trail the swing (bent back while the arm travels forward); same expression for both arms, see ELBOW signs.
+      const lag = -w * HAND_LAG * Math.sin(TAU * pR);
+      turn(joints.L_Hand, Y, lag);
+      turn(joints.R_Hand, Y, lag);
       const twist = Math.cos(TAU * pL); // 1 = left leg forward
       turn(joints.Hip, Y, -w * TWIST * twist); // +Y turns his left side (-z) back, so negate
       turn(joints.Spine02, Y, w * TWIST * 1.5 * twist);
       turn(joints.Waist, Z, -w * LEAN);
     }
-    // Looking to the camera ahead of the body: -rotation.y is the yaw still to go.
-    if (look > 0) {
-      turn(joints.Spine02, Y, -0.25 * look * g.rotation.y);
-      turn(joints.Head, Y, -look * g.rotation.y);
-    }
+    // Head yaw, eased: looks to the camera ahead of the body (-rotation.y is the yaw still to go), drifts while standing.
+    // Spread over the neck so it turns as a whole, not from one joint; the chest follows a little.
+    const lead = -look * g.rotation.y;
+    headYaw.current = MathUtils.damp(headYaw.current, lead + 0.12 * (1 - w) * Math.sin(t * 0.3), HEAD_RATE, dt);
+    // While walking the chest swings 0.5 x TWIST with the steps; the head holds still against it, eyes forward.
+    const yaw = headYaw.current - (w > 0.001 ? 0.5 * w * TWIST * Math.cos(TAU * pL) : 0);
+    turn(joints.Spine02, Y, 0.25 * lead);
+    turn(joints.NeckTwist01, Y, 0.2 * yaw);
+    turn(joints.NeckTwist02, Y, 0.2 * yaw);
+    turn(joints.Head, Y, 0.6 * yaw);
     // Wave with his right hand (+z): upper arm out to the side, forearm up, swinging side to side at the elbow.
     const wv = wave.current;
     if (wv > 0.001) {
@@ -235,8 +309,10 @@ export function GenMe({ shadows }: { shadows: boolean }) {
   // The export faces +x; turn it to face the camera (+z).
   return (
     <group ref={group}>
-      <group rotation-y={-Math.PI / 2}>
-        <primitive ref={model} object={scene} scale={scale} position={centre} />
+      <group ref={spinner}>
+        <group rotation-y={-Math.PI / 2}>
+          <primitive ref={model} object={scene} scale={scale} position={centre} />
+        </group>
       </group>
     </group>
   );
