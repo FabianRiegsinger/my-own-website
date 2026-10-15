@@ -17,16 +17,34 @@ const Y = new Vector3(0, 1, 0);
 const Z = new Vector3(0, 0, 1);
 const ARMS_DOWN = 1.35; // rad from T-pose; a little short of 90° so the arms clear the hips
 const ELBOW = 0.2;
-/** Walk cycle: strides per second and swing amplitudes (rad). Pace ≈ ENTRANCE.startX / ENTRANCE.walk. */
+/** Gait cycles per second: ~0.68 m steps at ENTRANCE pace (startX / walk ≈ 1.2 m/s), so the feet do not slide. */
 const STRIDE_HZ = 0.9;
-const LEG_SWING = 0.45;
-const KNEE = 0.75;
-const ANKLE = 0.3;
-const TOE = 0.45;
-const ARM_SWING = 0.4;
-const ELBOW_SWING = 0.35;
-const TWIST = 0.08;
-const BOB = 0.025; // world units
+const ARM_SWING = 0.35; // rad
+const ELBOW_SWING = 0.3;
+const TWIST = 0.1; // pelvis yaw; the chest turns 1.5x against it
+const LEAN = 0.05;
+const BOB = 0.02; // world units
+const SWAY = 0.02;
+const DEG = Math.PI / 180;
+const TAU = 2 * Math.PI;
+
+/** Wrap-around bump centred at gait phase `c` (0..1) with width ~`s`: a smooth periodic Gaussian. */
+const bump = (p: number, c: number, s: number) => Math.exp((Math.cos(TAU * (p - c)) - 1) / (TAU * s) ** 2);
+
+/**
+ * One leg's sagittal angles (rad; + = flexion, toes up) over a gait cycle, shaped after typical gait-lab curves.
+ * p = 0 at heel strike; stance until ~0.6, then swing.
+ */
+function gait(p: number) {
+  return {
+    hip: (7.5 + 22.5 * Math.cos(TAU * p)) * DEG,
+    // Small give as the heel lands (loading response), big bend mid-swing so the foot clears the floor.
+    knee: (4 + 15 * bump(p, 0.15, 0.06) + 58 * bump(p, 0.72, 0.1)) * DEG,
+    // Foot slaps flat, shin rolls over it, push-off, toes lifted through swing.
+    ankle: (-7 * bump(p, 0.06, 0.035) + 10 * bump(p, 0.42, 0.1) - 18 * bump(p, 0.62, 0.05) + 3 * bump(p, 0.85, 0.08)) * DEG,
+    toe: 30 * bump(p, 0.56, 0.05) * DEG, // heel lifts off the flat toes before push-off
+  };
+}
 /** Scrolling past this many pixels ends the landing entrance so the page never fights the reader. */
 const TOP_PX = 40;
 const atTop = () => window.scrollY < TOP_PX;
@@ -61,6 +79,7 @@ export function GenMe({ shadows }: { shadows: boolean }) {
   const offset = useStationOffset();
   const intro = useRef({ t: 0, done: false });
   const walk = useRef(0); // walk-cycle weight, eased so the stop is not a snap
+  const walkT = useRef(0); // time into the walk: every walk starts on a heel strike
   const { scale, offset: centre } = useMemo(() => {
     const box = new Box3().setFromObject(scene);
     const size = box.getSize(new Vector3());
@@ -128,8 +147,11 @@ export function GenMe({ shadows }: { shadows: boolean }) {
     }
     walk.current = MathUtils.damp(walk.current, walking ? 1 : 0, 8, dt);
     const w = walk.current;
-    const phase = clock.elapsedTime * STRIDE_HZ * 2 * Math.PI;
-    g.position.y = w * BOB * Math.cos(2 * phase); // lowest with the legs spread, highest passing over the planted foot
+    walkT.current = w > 0.001 ? walkT.current + dt : 0;
+    const pL = (walkT.current * STRIDE_HZ) % 1;
+    const pR = (pL + 0.5) % 1;
+    // Highest passing over the planted foot (mid-stance), lowest with the legs spread; weight shifts over the stance leg (his left is -z).
+    scene.position.set(centre[0], centre[1] + w * BOB * Math.cos(2 * TAU * (pL - 0.3)), centre[2] - w * SWAY * Math.cos(TAU * (pL - 0.3)));
 
     if (!joints) return;
     const t = clock.elapsedTime;
@@ -146,26 +168,27 @@ export function GenMe({ shadows }: { shadows: boolean }) {
     turn(joints.Spine02, Z, -0.02 * breath);
     turn(joints.Head, Y, 0.12 * Math.sin(t * 0.3));
     turn(joints.Head, X, -0.02 * sway);
-    // Walk (+ = forward about the left-right axis). Each leg: swing; knee bends most mid-swing, never snaps straight;
-    // toes up as the heel lands, heel lifts off the flat toes at push-off. Arms swing against the legs, hips twist with them.
+    // Walk (+ = forward about the left-right axis): each leg follows the gait curves, the arms swing with the opposite leg,
+    // the pelvis turns with the forward leg and the chest against it, and the body leans a touch into the walk.
     if (w > 0.001) {
-      const leg = (thigh: Joint, calf: Joint, foot: Joint, toe: Joint, sign: number) => {
-        const swing = sign * Math.sin(phase);
-        const forward = sign * Math.cos(phase); // > 0 while the leg travels forward (swing phase)
-        turn(thigh, Z, w * LEG_SWING * swing);
-        turn(calf, Z, -w * KNEE * (0.08 + 0.92 * ((1 + forward) / 2) ** 2));
-        turn(foot, Z, w * ANKLE * swing);
-        turn(toe, Z, w * TOE * Math.max(0, -swing));
+      const leg = (p: number, thigh: Joint, calf: Joint, foot: Joint, toe: Joint) => {
+        const a = gait(p);
+        turn(thigh, Z, w * a.hip);
+        turn(calf, Z, -w * a.knee);
+        turn(foot, Z, w * a.ankle);
+        turn(toe, Z, w * a.toe);
       };
-      leg(joints.L_Thigh, joints.L_Calf, joints.L_Foot, joints.L_ToeBase, 1);
-      leg(joints.R_Thigh, joints.R_Calf, joints.R_Foot, joints.R_ToeBase, -1);
-      const arm = Math.sin(phase);
-      turn(joints.L_Upperarm, Z, -w * ARM_SWING * arm);
-      turn(joints.R_Upperarm, Z, w * ARM_SWING * arm);
-      turn(joints.L_Forearm, Y, -w * ELBOW_SWING * Math.max(0, -arm)); // rest frame, as for ELBOW
-      turn(joints.R_Forearm, Y, w * ELBOW_SWING * Math.max(0, arm));
-      turn(joints.Hip, Y, -w * TWIST * Math.sin(phase)); // +Y turns his left side (-z) back, so negate
-      turn(joints.Spine02, Y, w * TWIST * 1.5 * Math.sin(phase));
+      leg(pL, joints.L_Thigh, joints.L_Calf, joints.L_Foot, joints.L_ToeBase);
+      leg(pR, joints.R_Thigh, joints.R_Calf, joints.R_Foot, joints.R_ToeBase);
+      const armL = Math.cos(TAU * pR); // 1 = left arm fully forward, with the right leg
+      turn(joints.L_Upperarm, Z, w * ARM_SWING * armL);
+      turn(joints.R_Upperarm, Z, -w * ARM_SWING * armL);
+      turn(joints.L_Forearm, Y, -w * ELBOW_SWING * (1 + armL) / 2); // rest frame, as for ELBOW
+      turn(joints.R_Forearm, Y, w * ELBOW_SWING * (1 - armL) / 2);
+      const twist = Math.cos(TAU * pL); // 1 = left leg forward
+      turn(joints.Hip, Y, -w * TWIST * twist); // +Y turns his left side (-z) back, so negate
+      turn(joints.Spine02, Y, w * TWIST * 1.5 * twist);
+      turn(joints.Waist, Z, -w * LEAN);
     }
   });
 
