@@ -4,7 +4,7 @@ import { useGLTF } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { useLayoutEffect, useMemo, useRef } from "react";
 import { Box3, MathUtils, MeshStandardMaterial, Quaternion, Vector3, type Group, type Material, type Mesh, type Object3D } from "three";
-import { entrance, introStep } from "@/lib/entrance";
+import { ENTRANCE, entrance, introStep } from "@/lib/entrance";
 import { heading, stationAt } from "@/lib/scroll-map";
 import { useStationOffset } from "./station-offset";
 
@@ -23,8 +23,14 @@ const ARM_SWING = 0.35; // rad
 const ELBOW_SWING = 0.3;
 const TWIST = 0.1; // pelvis yaw; the chest turns 1.5x against it
 const LEAN = 0.05;
-const BOB = 0.02; // world units
-const SWAY = 0.02;
+const SWAY = 0.02; // world units
+/** Small steps in place while turning to the camera instead of pivoting on the spot. */
+const TURN_STEPS = 0.45;
+/** The head looks to the camera this long before the walk ends, the body follows (heading damped). */
+const LOOK_AHEAD = 0.6; // s
+const LOOK = 0.6;
+const TURN_RATE = 5;
+const WAVE_HZ = 2;
 const DEG = Math.PI / 180;
 const TAU = 2 * Math.PI;
 
@@ -69,9 +75,16 @@ function turn(j: Joint, axis: Vector3, angle: number) {
   j.bone.quaternion.premultiply(pq);
 }
 
+const v = new Vector3();
+/** Lowest of `bones` in `root`'s own (unscaled model) frame. */
+function lowest(root: Object3D, bones: Object3D[]) {
+  root.updateMatrixWorld(true);
+  return Math.min(...bones.map((b) => root.worldToLocal(b.getWorldPosition(v)).y));
+}
+
 /**
  * Generated likeness of Fabian, rigged but without clips: walks in on the landing page (same choreography as the
- * mannequin Figure, without its wave), then a procedural idle (arms down, breathing, weight shift); turns with the scroll.
+ * mannequin Figure: walk in, turn, wave), then a procedural idle (arms down, breathing, weight shift); turns with the scroll.
  */
 export function GenMe({ shadows }: { shadows: boolean }) {
   const { scene } = useGLTF(MODEL, "/draco/");
@@ -80,6 +93,8 @@ export function GenMe({ shadows }: { shadows: boolean }) {
   const intro = useRef({ t: 0, done: false });
   const walk = useRef(0); // walk-cycle weight, eased so the stop is not a snap
   const walkT = useRef(0); // time into the walk: every walk starts on a heel strike
+  const wave = useRef(0);
+  const model = useRef<Object3D>(null);
   const { scale, offset: centre } = useMemo(() => {
     const box = new Box3().setFromObject(scene);
     const size = box.getSize(new Vector3());
@@ -115,6 +130,9 @@ export function GenMe({ shadows }: { shadows: boolean }) {
     const found = names.map(joint);
     return found.every(Boolean) ? (Object.fromEntries(names.map((n, i) => [n, found[i]!])) as Record<(typeof names)[number], Joint>) : null;
   }, [scene]);
+  const feet = useMemo(() => (joints ? [joints.L_Foot, joints.R_Foot, joints.L_ToeBase, joints.R_ToeBase].map((j) => j.bone) : []), [joints]);
+  /** Lowest foot joint in the bind pose (model units): the height it is held at so a sole always rests on the floor. */
+  const ground = useMemo(() => lowest(scene, feet), [scene, feet]);
 
   // At the top of the page start off-screen right before the first frame; anywhere else already in place.
   useLayoutEffect(() => {
@@ -124,6 +142,7 @@ export function GenMe({ shadows }: { shadows: boolean }) {
       const s = entrance(0);
       group.current.position.x = s.x;
       group.current.rotation.y = s.heading;
+      walk.current = 1; // already mid-walk when he comes into view, not easing into it
     }
   }, []);
 
@@ -132,26 +151,33 @@ export function GenMe({ shadows }: { shadows: boolean }) {
     if (!g) return;
     const it = intro.current;
     if (!it.done && !atTop()) it.done = true;
-    let walking = false;
+    let walking = 0;
+    let waving = 0;
+    let look = 0; // how far the head (and a little the chest) leads the body toward the camera
     if (!it.done) {
       it.t = introStep(it.t, dt); // frame time, not wall time: a first-frame stall must not skip the walk-in
       const s = entrance(it.t);
       g.position.x = s.x;
-      g.rotation.y = s.heading;
-      walking = s.clip === "walk";
+      // Damped, so the body follows the head round instead of snapping on the eased curve.
+      g.rotation.y = MathUtils.damp(g.rotation.y, s.heading, TURN_RATE, dt);
+      walking = s.clip === "walk" ? 1 : it.t < ENTRANCE.walk + ENTRANCE.turn ? TURN_STEPS : 0;
+      waving = s.pose.wave;
+      look = LOOK * MathUtils.clamp((it.t - ENTRANCE.walk + LOOK_AHEAD) / 0.4, 0, 1);
       it.done = s.done;
     } else {
       g.position.x = MathUtils.damp(g.position.x, 0, 6, dt);
       g.rotation.y = MathUtils.damp(g.rotation.y, heading(offset.current), 4, dt);
-      walking = stationAt(offset.current).clip === "walk";
+      walking = stationAt(offset.current).clip === "walk" ? 1 : 0;
     }
-    walk.current = MathUtils.damp(walk.current, walking ? 1 : 0, 8, dt);
+    walk.current = MathUtils.damp(walk.current, walking, 8, dt);
+    wave.current = MathUtils.damp(wave.current, waving, 6, dt);
     const w = walk.current;
     walkT.current = w > 0.001 ? walkT.current + dt : 0;
     const pL = (walkT.current * STRIDE_HZ) % 1;
     const pR = (pL + 0.5) % 1;
-    // Highest passing over the planted foot (mid-stance), lowest with the legs spread; weight shifts over the stance leg (his left is -z).
-    scene.position.set(centre[0], centre[1] + w * BOB * Math.cos(2 * TAU * (pL - 0.3)), centre[2] - w * SWAY * Math.cos(TAU * (pL - 0.3)));
+    // Weight shifts over the stance leg (his left is -z). Height is set below, once the feet are posed.
+    const m = model.current;
+    m?.position.set(centre[0], centre[1], centre[2] - w * SWAY * Math.cos(TAU * (pL - 0.3)));
 
     if (!joints) return;
     const t = clock.elapsedTime;
@@ -190,13 +216,27 @@ export function GenMe({ shadows }: { shadows: boolean }) {
       turn(joints.Spine02, Y, w * TWIST * 1.5 * twist);
       turn(joints.Waist, Z, -w * LEAN);
     }
+    // Looking to the camera ahead of the body: -rotation.y is the yaw still to go.
+    if (look > 0) {
+      turn(joints.Spine02, Y, -0.25 * look * g.rotation.y);
+      turn(joints.Head, Y, -look * g.rotation.y);
+    }
+    // Wave with his right hand (+z): upper arm out to the side, forearm up, swinging side to side at the elbow.
+    const wv = wave.current;
+    if (wv > 0.001) {
+      turn(joints.R_Upperarm, X, -1.15 * wv);
+      turn(joints.R_Upperarm, Z, 0.25 * wv);
+      turn(joints.R_Forearm, X, -wv * (1.5 + 0.3 * Math.sin(t * WAVE_HZ * TAU))); // rest frame: -X lifts the forearm (+z) up
+    }
+    // Feet on the floor: the body drops as the legs spread (the natural gait bob) instead of the feet lifting off.
+    if (m) m.position.y = centre[1] + (ground - lowest(m, feet)) * scale;
   });
 
   // The export faces +x; turn it to face the camera (+z).
   return (
     <group ref={group}>
       <group rotation-y={-Math.PI / 2}>
-        <primitive object={scene} scale={scale} position={centre} />
+        <primitive ref={model} object={scene} scale={scale} position={centre} />
       </group>
     </group>
   );
