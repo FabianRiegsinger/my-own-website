@@ -39,6 +39,14 @@ const HEAD_RATE = 3;
 /** Click-and-hold spin: radians per dragged pixel, and how fast he turns back to the camera after release (1/s). */
 const SPIN_PER_PX = 0.01;
 const SPIN_BACK = 1.5;
+/** A press that moves less than this (px) and lasts less than CLICK_MS is a click: he greets you. */
+const CLICK_PX = 5;
+const CLICK_MS = 400;
+const GREET = 2.6; // s
+const GREET_TILT = 0.12; // head tilt (rad) while greeting
+/** Waving hand: palm turned to the viewer (supination, shared with the forearm twist bones), tilted a little inward. */
+const PALM_TURN = Math.PI / 2;
+const HAND_TILT = 0.2;
 const DEG = Math.PI / 180;
 const TAU = 2 * Math.PI;
 
@@ -104,7 +112,8 @@ export function GenMe({ shadows }: { shadows: boolean }) {
   const wave = useRef(0);
   const model = useRef<Object3D>(null);
   const spinner = useRef<Group>(null);
-  const spin = useRef({ angle: 0, dragging: false, x: 0 });
+  const spin = useRef({ angle: 0, dragging: false, x: 0, x0: 0, t0: 0 });
+  const greet = useRef(-1); // seconds into a click greeting, -1 when none
   const headYaw = useRef(0);
   const { camera, gl } = useThree();
   const { scale, offset: centre } = useMemo(() => {
@@ -138,7 +147,7 @@ export function GenMe({ shadows }: { shadows: boolean }) {
       if (!bone?.parent) return null;
       return { bone, rest: bone.quaternion.clone(), parent: inv.clone().multiply(bone.parent.getWorldQuaternion(new Quaternion())) };
     };
-    const names = ["L_Upperarm", "R_Upperarm", "L_Forearm", "R_Forearm", "L_Thigh", "R_Thigh", "L_Calf", "R_Calf", "L_Foot", "R_Foot", "L_ToeBase", "R_ToeBase", "L_Hand", "R_Hand", "Hip", "Waist", "Spine02", "NeckTwist01", "NeckTwist02", "Head"] as const;
+    const names = ["L_Upperarm", "R_Upperarm", "L_Forearm", "R_Forearm", "L_Thigh", "R_Thigh", "L_Calf", "R_Calf", "L_Foot", "R_Foot", "L_ToeBase", "R_ToeBase", "L_Hand", "R_Hand", "R_ForearmTwist01", "R_ForearmTwist02", "Hip", "Waist", "Spine02", "NeckTwist01", "NeckTwist02", "Head"] as const;
     const found = names.map(joint);
     return found.every(Boolean) ? (Object.fromEntries(names.map((n, i) => [n, found[i]!])) as Record<(typeof names)[number], Joint>) : null;
   }, [scene]);
@@ -176,7 +185,7 @@ export function GenMe({ shadows }: { shadows: boolean }) {
     const down = (e: PointerEvent) => {
       if (e.button !== 0 || !over(e)) return;
       e.preventDefault(); // no text selection while dragging
-      Object.assign(spin.current, { dragging: true, x: e.clientX });
+      Object.assign(spin.current, { dragging: true, x: e.clientX, x0: e.clientX, t0: e.timeStamp });
       root.style.cursor = "grabbing";
       root.style.userSelect = "none";
     };
@@ -187,9 +196,11 @@ export function GenMe({ shadows }: { shadows: boolean }) {
         sp.x = e.clientX;
       } else if (e.pointerType === "mouse") root.style.cursor = over(e) ? "grab" : "";
     };
-    const up = () => {
-      if (!spin.current.dragging) return;
-      spin.current.dragging = false;
+    const up = (e?: PointerEvent) => {
+      const sp = spin.current;
+      if (!sp.dragging) return;
+      sp.dragging = false;
+      if (e?.type === "pointerup" && Math.abs(e.clientX - sp.x0) < CLICK_PX && e.timeStamp - sp.t0 < CLICK_MS) greet.current = 0;
       root.style.cursor = "";
       root.style.userSelect = "";
     };
@@ -233,7 +244,10 @@ export function GenMe({ shadows }: { shadows: boolean }) {
     if (!sp.dragging) sp.angle = MathUtils.damp(sp.angle, 0, SPIN_BACK, dt);
     if (spinner.current) spinner.current.rotation.y = sp.angle;
     walk.current = MathUtils.damp(walk.current, walking, 8, dt);
-    wave.current = MathUtils.damp(wave.current, waving, 6, dt);
+    if (greet.current >= 0) greet.current = greet.current + dt > GREET ? -1 : greet.current + dt;
+    const gt = greet.current;
+    const greeting = gt < 0 ? 0 : Math.min(MathUtils.smoothstep(gt, 0, 0.3), MathUtils.smoothstep(GREET - gt, 0, 0.5));
+    wave.current = MathUtils.damp(wave.current, Math.max(waving, greeting), 6, dt);
     const w = walk.current;
     walkT.current = w > 0.001 ? walkT.current + dt : 0;
     const pL = (walkT.current * STRIDE_HZ) % 1;
@@ -295,12 +309,24 @@ export function GenMe({ shadows }: { shadows: boolean }) {
     turn(joints.NeckTwist01, Y, 0.2 * yaw);
     turn(joints.NeckTwist02, Y, 0.2 * yaw);
     turn(joints.Head, Y, 0.6 * yaw);
+    // Greeting: a friendly head tilt and a small nod as the hand comes up.
+    if (gt >= 0) {
+      turn(joints.Head, X, GREET_TILT * greeting);
+      turn(joints.Head, Z, -0.12 * Math.sin(Math.PI * MathUtils.clamp(gt / 0.8, 0, 1)));
+    }
     // Wave with his right hand (+z): upper arm out to the side, forearm up, swinging side to side at the elbow.
     const wv = wave.current;
     if (wv > 0.001) {
+      const swing = Math.sin(t * WAVE_HZ * TAU);
       turn(joints.R_Upperarm, X, -1.15 * wv);
       turn(joints.R_Upperarm, Z, 0.25 * wv);
-      turn(joints.R_Forearm, X, -wv * (1.5 + 0.3 * Math.sin(t * WAVE_HZ * TAU))); // rest frame: -X lifts the forearm (+z) up
+      turn(joints.R_Forearm, X, -wv * (1.5 + 0.3 * swing)); // rest frame: -X lifts the forearm (+z) up
+      // Palm to the viewer: twist about the forearm (rest +z; -y palm turns to +x, forward), a third more at each twist bone.
+      turn(joints.R_ForearmTwist01, Z, (wv * PALM_TURN) / 3);
+      turn(joints.R_ForearmTwist02, Z, (wv * PALM_TURN) / 3);
+      turn(joints.R_Hand, Z, wv * PALM_TURN);
+      // Then, within the palm's plane, tilt inward and let the hand follow the swing a beat late.
+      turn(joints.R_Hand, X, -wv * (HAND_TILT + 0.15 * Math.sin(t * WAVE_HZ * TAU - 0.8)));
     }
     // Feet on the floor: the body drops as the legs spread (the natural gait bob) instead of the feet lifting off.
     if (m) m.position.y = centre[1] + (ground - lowest(m, feet)) * scale;
