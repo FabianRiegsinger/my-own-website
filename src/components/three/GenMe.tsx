@@ -4,6 +4,7 @@ import { useGLTF } from "@react-three/drei";
 import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import { Box3, MathUtils, Raycaster, Vector2, MeshStandardMaterial, Quaternion, Vector3, type Group, type Material, type Mesh, type Object3D } from "three";
+import { cheerBeats, THROW_AT } from "@/lib/cheer";
 import { ENTRANCE, entrance, introStep } from "@/lib/entrance";
 import { heading, stationAt, stationWeight } from "@/lib/scroll-map";
 import { useStationOffset } from "./station-offset";
@@ -45,7 +46,8 @@ const CLICK_PX = 5;
 const CLICK_MS = 400;
 const GREET = 2.6; // s
 const GREET_TILT = 0.12; // head tilt (rad) while greeting
-const CHEER_ARMS = 2.7; // rad up from arms-down: a V above the shoulders
+const CHEER_V = 2.6; // rad up from arms-down: a V above the shoulders
+const HOP = 0.07; // world units
 /** Waving hand: palm turned to the viewer (supination, shared with the forearm twist bones), tilted a little inward. */
 const PALM_TURN = Math.PI / 2;
 const HAND_TILT = 0.2;
@@ -103,7 +105,7 @@ function lowest(root: Object3D, bones: Object3D[]) {
 /**
  * Generated likeness of Fabian, rigged but without clips: walks in on the landing page (same choreography as the
  * mannequin Figure: walk in, turn, wave), then a procedural idle (arms down, breathing, weight shift); turns with the scroll.
- * On the education page he cheers: arms up, crouching just before each cap throw and punching up as the caps fly.
+ * On the education page he celebrates on each cap throw: wind-up, toss into a V with a hop, two punches at the sky, a breather.
  */
 export function GenMe({ shadows }: { shadows: boolean }) {
   const { scene } = useGLTF(MODEL, "/draco/");
@@ -317,29 +319,38 @@ export function GenMe({ shadows }: { shadows: boolean }) {
       turn(joints.Head, X, GREET_TILT * greeting);
       turn(joints.Head, Z, -0.12 * Math.sin(Math.PI * MathUtils.clamp(gt / 0.8, 0, 1)));
     }
-    // Cheer (education page): arms in a V, knees dipping before each throw (stations/Graduation) and arms punching up
-    // with it, head and chest tipped back to follow the caps. Gives way to walking and to a click greeting.
+    // Celebration (education page), on the cap throw's beat (stations/Graduation, lib/cheer). Gives way to walking and
+    // to a click greeting. Axes as above: upper arm X lifts (R -, L +) and Z swings forward; forearm Y bends the elbow.
     const cheer = stationWeight(offset.current, "education") * (1 - w) * (1 - wave.current);
+    let hop = 0;
     if (cheer > 0.001) {
-      const p = sinceThrow(t) / THROW_CYCLE;
-      const pump = bump(p, 0.04, 0.04);
-      const crouch = bump(p, 0.97, 0.03);
-      const lift = cheer * (CHEER_ARMS + 0.25 * pump);
-      const bend = cheer * (0.5 - 0.4 * pump); // elbows straighten as the arms punch up
+      const b = cheerBeats((sinceThrow(t) / THROW_CYCLE + THROW_AT) % 1);
+      const shake = 0.12 * Math.sin(t * 14) * b.up; // hands shaking in the air
+      // Wind-up: arms swung back, chest over the knees. Toss: both arms sweep up into a V, near straight.
+      const lift = cheer * CHEER_V * b.up;
       turn(joints.R_Upperarm, X, -lift);
       turn(joints.L_Upperarm, X, lift);
-      turn(joints.R_Upperarm, Z, 0.25 * cheer);
-      turn(joints.L_Upperarm, Z, 0.25 * cheer);
-      turn(joints.R_Forearm, X, -bend); // rest frame, as for the wave: lifts each forearm toward the head
-      turn(joints.L_Forearm, X, bend);
-      turn(joints.Spine02, Z, 0.06 * cheer);
-      turn(joints.Head, Z, cheer * (0.12 + 0.12 * pump));
-      const knee = cheer * (0.28 * crouch + 0.04 * (1 - Math.cos(t * 5)));
+      turn(joints.R_Upperarm, Z, cheer * (0.2 * b.up - 0.55 * b.windup));
+      turn(joints.L_Upperarm, Z, cheer * (0.2 * b.up - 0.55 * b.windup));
+      turn(joints.R_Forearm, Y, cheer * (shake - ELBOW * b.up));
+      turn(joints.L_Forearm, Y, cheer * (shake + ELBOW * b.up));
+      // "Yes!": right fist punched at the sky twice, the elbow cocked between punches.
+      turn(joints.R_Upperarm, X, -cheer * b.pump * (2.2 + 0.4 * b.beat));
+      turn(joints.R_Upperarm, Z, cheer * b.pump * 0.15);
+      turn(joints.R_Forearm, X, -cheer * b.pump * 0.9 * (1 - b.beat)); // rest frame, as for the wave: cocks the fist toward the head
+
+      // Body: leans in for the wind-up, opens up and looks after the caps, and up again with each punch.
+      turn(joints.Waist, Z, cheer * (-0.12 * b.crouch + 0.04 * b.up));
+      turn(joints.Spine02, Z, cheer * 0.06 * b.up);
+      turn(joints.Head, Z, cheer * (0.28 * b.up - 0.08 * b.crouch + 0.15 * b.pump));
+      turn(joints.Waist, X, cheer * 0.04 * Math.sin(t * 3) * b.up); // sways from foot to foot with his arms up
+      const knee = cheer * 0.3 * b.crouch;
       for (const [thigh, calf, foot] of [[joints.L_Thigh, joints.L_Calf, joints.L_Foot], [joints.R_Thigh, joints.R_Calf, joints.R_Foot]]) {
         turn(thigh, Z, knee);
         turn(calf, Z, -2 * knee);
         turn(foot, Z, knee);
       }
+      hop = cheer * HOP * b.hop;
     }
     // Wave with his right hand (+z): upper arm out to the side, forearm up, swinging side to side at the elbow.
     const wv = wave.current;
@@ -356,7 +367,7 @@ export function GenMe({ shadows }: { shadows: boolean }) {
       turn(joints.R_Hand, X, -wv * (HAND_TILT + 0.15 * Math.sin(t * WAVE_HZ * TAU - 0.8)));
     }
     // Feet on the floor: the body drops as the legs spread (the natural gait bob) instead of the feet lifting off.
-    if (m) m.position.y = centre[1] + (ground - lowest(m, feet)) * scale;
+    if (m) m.position.y = centre[1] + (ground - lowest(m, feet)) * scale + hop;
   });
 
   // The export faces +x; turn it to face the camera (+z).
