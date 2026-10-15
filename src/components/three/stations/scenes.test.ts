@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { Color, Vector3 } from "three";
 import { STATIONS } from "@/lib/scroll-map";
-import { BELL, HANDLE, NICHE, WALL } from "./Graduation";
+import { BELL, CAPS, capFlight, HANDLE, NICHE, PLAQUES, WALL } from "./Graduation";
 import { TEAM } from "./Team";
 import { CUSTOMER, FLEET } from "./Fleet";
 import { FOG, fogWeight, launchWeight, liftoff, PAD } from "./Launch";
@@ -25,6 +25,34 @@ describe("graduation wall", () => {
     expect(WALL.z).toBeLessThan(-0.2);
     expect(WALL.width).toBeLessThan(4);
     expect(NICHE.center[0] + NICHE.radius).toBeLessThan(0); // niche beside him, not behind his head
+  });
+
+  it("hangs a plaque per degree on his left, on the wall, clear of the niche and of each other", () => {
+    expect(PLAQUES.length).toBe(2);
+    for (const p of PLAQUES) {
+      expect(p.position[0] - 0.31).toBeGreaterThan(0.2); // left edge clears his body
+      expect(p.position[0] + 0.31).toBeLessThan(WALL.x + WALL.width / 2);
+      expect(p.position[2]).toBeGreaterThan(WALL.z);
+    }
+    expect(PLAQUES[0].position[1] - PLAQUES[1].position[1]).toBeGreaterThan(0.31);
+  });
+
+  it("throws the caps up from above his head at a swing peak, in front of the wall, and lands them", () => {
+    const peak = Math.PI / 2 / 2.6;
+    CAPS.forEach((_, i) => {
+      const start = capFlight(i, peak + CAPS[i].delay);
+      expect(start.position[1]).toBeGreaterThan(1.8);
+      let highest = 0;
+      let landed = false;
+      for (let t = peak; t < peak + 2; t += 0.02) {
+        const f = capFlight(i, t);
+        expect(f.position[2]).toBeGreaterThan(WALL.z);
+        highest = Math.max(highest, f.position[1]);
+        landed ||= !f.airborne;
+      }
+      expect(highest).toBeGreaterThan(2.5);
+      expect(landed).toBe(true);
+    });
   });
 });
 

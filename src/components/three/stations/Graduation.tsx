@@ -1,8 +1,9 @@
 "use client";
 
 import { useFrame } from "@react-three/fiber";
-import { useMemo, useRef } from "react";
-import { BufferGeometry, CanvasTexture, DoubleSide, Float32BufferAttribute, type Group, LatheGeometry, Vector2 } from "three";
+import { useLayoutEffect, useMemo, useRef } from "react";
+import { BufferGeometry, CanvasTexture, Color, DoubleSide, Float32BufferAttribute, type Group, type InstancedMesh, LatheGeometry, Object3D, Vector2 } from "three";
+import { cv } from "@/content/cv";
 import { stationWeight } from "@/lib/scroll-map";
 import { fade } from "../fade";
 import { useStationOffset } from "../station-offset";
@@ -10,7 +11,8 @@ import { useStationOffset } from "../station-offset";
 /**
  * Graduation, after the photo at the Friedberg campus: a grey wall with a round niche holding a bronze bell that
  * graduates ring, a dark terrazzo floor. A set piece, not a backdrop, so the page's colour field still shows.
- * University marks (FH logo, crest) are left out on purpose.
+ * University marks (FH logo, crest) are left out on purpose. Every other ring throws mortarboard caps, confetti drifts
+ * down, and two brass plaques on his left name the degrees.
  */
 export const WALL = { x: -0.2, z: -0.4, width: 3, height: 3 };
 /** Round niche in the wall, on Fabian's right (Mixamo rigs face +z, so his right is -x). */
@@ -21,11 +23,62 @@ export const HANDLE: [number, number, number] = [-0.55, 1.82, -0.1];
 
 const BELL_HEIGHT = 0.42;
 const FLOOR = { width: 3, depth: 1.8 };
+/** Bell swing rhythm (rad/s), shared with the ring pose in arm-pose.ts. */
+const RING_RATE = 2.6;
+const RING_PERIOD = (2 * Math.PI) / RING_RATE;
+/** Caps fly on every other ring, so the throw stays readable instead of constant. */
+const THROW_CYCLE = RING_PERIOD * 2;
+const GRAVITY = 4.9;
+/** Plaques on the wall, on his left (+x), clear of the niche. */
+export const PLAQUES = cv.education.map((e, i) => ({ ...e, position: [0.72, 2.05 - i * 0.43, WALL.z + 0.012] as [number, number, number] }));
+const PLAQUE = { width: 0.62, height: 0.31 };
+const CONFETTI = 260;
+const CONFETTI_COLOURS = ["#80ba24", "#c4c6ca", "#686c72", "#f2f2ef"]; // THM green and the photo's greys
 
 /** Deterministic pseudo-random so every visit looks the same. */
 function rand(seed: number) {
   const x = Math.sin(seed * 9301 + 49297) * 233280;
   return x - Math.floor(x);
+}
+
+/** Cap launch velocities, seeded so every visit throws the same way. */
+export const CAPS = [0, 1, 2, 3].map((i) => ({ vx: (rand(i + 7) - 0.4) * 1.2, vy: 3 + rand(i + 11) * 0.8, vz: 0.3 + rand(i + 3) * 0.5, spin: (rand(i + 5) - 0.5) * 9, delay: i * 0.08 }));
+
+/** Where cap `i` is at time `t`: thrown from above his head at each other swing peak, falling back to the floor. */
+export function capFlight(i: number, t: number) {
+  const c = CAPS[i];
+  const u = Math.max(0, ((((t - RING_PERIOD / 4) % THROW_CYCLE) + THROW_CYCLE) % THROW_CYCLE) - c.delay);
+  const y = 1.9 + c.vy * u - GRAVITY * u * u;
+  return { position: [0.05 + c.vx * u, Math.max(0.02, y), 0.1 + c.vz * u] as [number, number, number], spin: c.spin * u, airborne: y > 0.02 };
+}
+
+/** Engraved brass face: the degree and year large, the field of study below, shrunk to fit. */
+function plaqueFace(title: string, subtitle: string) {
+  const w = 512, h = 256;
+  const c = document.createElement("canvas");
+  c.width = w;
+  c.height = h;
+  const ctx = c.getContext("2d")!;
+  const g = ctx.createLinearGradient(0, 0, w, h);
+  g.addColorStop(0, "#b8964f");
+  g.addColorStop(0.5, "#d9bd7b");
+  g.addColorStop(1, "#9c7a3c");
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, w, h);
+  ctx.strokeStyle = "rgba(60,40,10,0.55)";
+  ctx.lineWidth = 6;
+  ctx.strokeRect(14, 14, w - 28, h - 28);
+  ctx.fillStyle = "rgba(55,36,8,0.88)";
+  ctx.textAlign = "center";
+  ctx.font = "600 64px Georgia, serif";
+  ctx.fillText(title, w / 2, 118);
+  let size = 30;
+  do ctx.font = `${size--}px Georgia, serif`;
+  while (ctx.measureText(subtitle).width > w - 64 && size > 12);
+  ctx.fillText(subtitle, w / 2, 182);
+  const t = new CanvasTexture(c);
+  t.colorSpace = "srgb";
+  return t;
 }
 
 /** Alpha map that is opaque in the middle and fades to clear over the given fraction of each edge. */
@@ -74,6 +127,8 @@ function nicheShade() {
 export function Graduation() {
   const root = useRef<Group>(null);
   const swing = useRef<Group>(null);
+  const caps = useRef<Group>(null);
+  const confetti = useRef<InstancedMesh>(null);
   const offset = useStationOffset();
 
   const bell = useMemo(
@@ -90,9 +145,29 @@ export function Graduation() {
       wall: edgeFade({ left: 0.22, right: 0.22, top: 0.25, bottom: 0 }),
       floor: edgeFade({ left: 0.25, right: 0.25, top: 0, bottom: 0.45 }),
       niche: nicheShade(),
+      plaques: PLAQUES.map((p) => {
+        const [title, ...field] = p.degree.split(" ");
+        return plaqueFace(`${title} ${p.end.slice(0, 4)}`, field.join(" "));
+      }),
     }),
     [],
   );
+  // Confetti flakes: seeded spot over the floor, fall speed, phase and tumble.
+  const flakes = useMemo(
+    () =>
+      Array.from({ length: CONFETTI }, (_, i) => ({
+        x: WALL.x + (rand(i * 3) - 0.5) * 2.4,
+        z: WALL.z + 0.2 + rand(i * 3 + 1) * 1.1,
+        speed: 0.35 + rand(i * 3 + 2) * 0.35,
+        phase: rand(i + 400) * 10,
+        tumble: rand(i + 900) * 6,
+      })),
+    [],
+  );
+  const dummy = useMemo(() => new Object3D(), []);
+  useLayoutEffect(() => {
+    flakes.forEach((_, i) => confetti.current?.setColorAt(i, new Color(CONFETTI_COLOURS[i % CONFETTI_COLOURS.length])));
+  }, [flakes]);
   // Terrazzo: light chips scattered over the solid middle of the dark floor.
   const chips = useMemo(() => {
     const pos: number[] = [];
@@ -101,10 +176,25 @@ export function Graduation() {
   }, []);
 
   useFrame(({ clock }) => {
-    if (!root.current || !swing.current) return;
+    if (!root.current || !swing.current || !caps.current || !confetti.current) return;
     fade(root.current, stationWeight(offset.current, "education"));
+    if (!root.current.visible) return;
+    const t = clock.elapsedTime;
     // Swings when the arm tugs the handle (same rhythm as the ring pose in arm-pose.ts).
-    swing.current.rotation.z = -0.12 * Math.max(0, Math.sin(clock.elapsedTime * 2.6));
+    swing.current.rotation.z = -0.12 * Math.max(0, Math.sin(t * RING_RATE));
+    caps.current.children.forEach((cap, i) => {
+      const f = capFlight(i, t);
+      cap.visible = f.airborne;
+      cap.position.set(...f.position);
+      cap.rotation.set(f.spin * 0.6, f.spin, f.spin * 0.3);
+    });
+    flakes.forEach((f, i) => {
+      dummy.position.set(f.x + Math.sin(t * 1.3 + f.phase) * 0.08, 3.2 - ((t * f.speed + f.phase) % 3.4), f.z);
+      dummy.rotation.set(t * 2 + f.tumble, t * 1.4 + f.tumble, f.tumble);
+      dummy.updateMatrix();
+      confetti.current!.setMatrixAt(i, dummy.matrix);
+    });
+    confetti.current.instanceMatrix.needsUpdate = true;
   });
 
   const bellTop: [number, number, number] = [BELL[0], BELL[1] + BELL_HEIGHT / 2, BELL[2]];
@@ -141,6 +231,41 @@ export function Graduation() {
       <points geometry={chips}>
         <pointsMaterial color="#9a9a9a" size={0.02} />
       </points>
+      {PLAQUES.map((p, i) => (
+        <group key={p.degree} position={p.position}>
+          <mesh castShadow>
+            <boxGeometry args={[PLAQUE.width, PLAQUE.height, 0.02]} />
+            <meshStandardMaterial color="#8c6c33" metalness={0.6} roughness={0.4} />
+          </mesh>
+          <mesh position-z={0.0101}>
+            <planeGeometry args={[PLAQUE.width, PLAQUE.height]} />
+            <meshStandardMaterial map={maps.plaques[i]} metalness={0.55} roughness={0.35} />
+          </mesh>
+        </group>
+      ))}
+      <group ref={caps}>
+        {CAPS.map((_, i) => (
+          <group key={i} visible={false}>
+            <mesh castShadow>
+              <boxGeometry args={[0.24, 0.014, 0.24]} />
+              <meshStandardMaterial color="#17181b" roughness={0.7} />
+            </mesh>
+            <mesh position-y={-0.04}>
+              <cylinderGeometry args={[0.075, 0.085, 0.07, 18]} />
+              <meshStandardMaterial color="#17181b" roughness={0.8} />
+            </mesh>
+            {/* Tassel in THM green. */}
+            <mesh position={[0.11, -0.05, 0.11]}>
+              <cylinderGeometry args={[0.006, 0.006, 0.1, 6]} />
+              <meshStandardMaterial color="#80ba24" roughness={0.6} />
+            </mesh>
+          </group>
+        ))}
+      </group>
+      <instancedMesh ref={confetti} args={[undefined, undefined, CONFETTI]}>
+        <planeGeometry args={[0.03, 0.018]} />
+        <meshStandardMaterial side={DoubleSide} roughness={0.8} />
+      </instancedMesh>
     </group>
   );
 }
