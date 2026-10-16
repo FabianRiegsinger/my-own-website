@@ -81,8 +81,22 @@ const atTop = () => window.scrollY < TOP_PX;
 const q = new Quaternion();
 const pq = new Quaternion();
 const toFrame = new Matrix4();
+const mouthMat = new Matrix4();
+const mouth = new Vector3();
+const pole = new Vector3();
+const poleQ = new Quaternion();
 const hand = new Vector3();
 const wrist = new Vector3();
+const ta = new Vector3();
+const tb = new Vector3();
+const tc = new Vector3();
+const qa = new Quaternion();
+const qb = new Quaternion();
+const qc = new Quaternion();
+/** Where the right hand goes for the cough, in the bind pose (metres, his model frame): just in front of the mouth. */
+const MOUTH = new Vector3(0.25, 1.39, 0.01);
+/** Elbow drops down and out to his right (+z) while the hand is at the mouth. */
+const ELBOW_POLE = new Vector3(0, -1, 0.5);
 /** Cough puffs: how long each one lives (s) and the matte skin tone the stand-in fist is painted in. */
 const PUFF_LIFE = 0.9;
 const SKIN = "#cc8d6e";
@@ -105,6 +119,41 @@ function puffTexture() {
 }
 /** Mid-line of his body across (model frame z), where the mouth is. */
 const AXIS_Z = -0.012;
+
+/** Turns `bone` (in world space) so its segment toward `child` points at `target`, blended by `w` over its pose. */
+function aimAt(bone: Object3D, child: Object3D, target: Vector3, w: number) {
+  bone.updateWorldMatrix(true, true);
+  bone.getWorldPosition(ta);
+  tb.setFromMatrixPosition(child.matrixWorld).sub(ta).normalize();
+  tc.copy(target).sub(ta).normalize();
+  qa.setFromUnitVectors(tb, tc).multiply(bone.getWorldQuaternion(qb));
+  bone.parent!.getWorldQuaternion(qc).invert().multiply(qa);
+  bone.quaternion.slerp(qc, w);
+}
+
+const shoulder = new Vector3();
+const elbow = new Vector3();
+const reachDir = new Vector3();
+const bend = new Vector3();
+/**
+ * Two-bone reach: bends the arm so the hand lands on `target` (world), the elbow toward `pole` (world direction),
+ * blended by `w`. Lengths come from the posed bones, so it works at any scale.
+ */
+function reach(upper: Object3D, fore: Object3D, hand: Object3D, target: Vector3, pole: Vector3, w: number) {
+  if (w <= 0.001) return;
+  upper.updateWorldMatrix(true, true);
+  upper.getWorldPosition(shoulder);
+  const l1 = shoulder.distanceTo(fore.getWorldPosition(elbow));
+  const l2 = elbow.distanceTo(hand.getWorldPosition(tc));
+  reachDir.copy(target).sub(shoulder);
+  const d = MathUtils.clamp(reachDir.length(), Math.abs(l1 - l2) + 1e-4, l1 + l2 - 1e-4);
+  reachDir.normalize();
+  const a = Math.acos(MathUtils.clamp((l1 * l1 + d * d - l2 * l2) / (2 * l1 * d), -1, 1));
+  bend.copy(pole).addScaledVector(reachDir, -pole.dot(reachDir)).normalize();
+  elbow.copy(shoulder).addScaledVector(reachDir, l1 * Math.cos(a)).addScaledVector(bend, l1 * Math.sin(a));
+  aimAt(upper, fore, elbow, w);
+  aimAt(fore, hand, tc.copy(shoulder).addScaledVector(reachDir, d), w);
+}
 
 /** One posed bone: its rest rotation and its parent's rotation relative to the model root (both fixed). */
 interface Joint {
@@ -420,17 +469,25 @@ export function GenMe({ shadows }: { shadows: boolean }) {
     const cb = coughBeats(coughT.current);
     const ck = contact * (1 - w) * (1 - wave.current);
     if (ck > 0.001) {
-      // Right fist: up to the mouth (arm forward, elbow folded), later out in front with the thumb up.
-      turn(joints.R_Upperarm, Z, ck * (1.45 * cb.fist + 0.95 * cb.thumb));
-      turn(joints.R_Upperarm, X, ck * (0.12 * cb.fist - 0.25 * cb.thumb));
-      turn(joints.R_Upperarm, Y, ck * 0.6 * cb.fist); // swings the forearm in, so the fist is in front of the mouth
-      turn(joints.R_Forearm, Y, ck * (2.35 * cb.fist + 1.15 * cb.thumb));
+      // Thumbs-up: right arm out in front, forearm raised. (The fist at the mouth is reached for below.)
+      turn(joints.R_Upperarm, Z, ck * 0.95 * cb.thumb);
+      turn(joints.R_Upperarm, X, -ck * 0.25 * cb.thumb);
+      turn(joints.R_Forearm, Y, ck * 1.15 * cb.thumb);
       // Each cough jerks him forward from the waist and drops his head; a slight hunch throughout; then he stands
       // tall with a proud tilt of the head.
       turn(joints.Waist, Z, ck * (-0.1 * cb.hunch - 0.12 * cb.hack + 0.04 * cb.thumb));
       turn(joints.Spine02, Z, -ck * 0.08 * cb.hack);
       turn(joints.Head, Z, ck * (-0.1 * cb.hunch - 0.15 * cb.hack + 0.06 * cb.thumb));
       turn(joints.Head, X, ck * 0.12 * cb.thumb);
+    }
+    // Fist to the mouth: the hand reaches for a point just in front of the mouth, which follows the head as it dips
+    // with each cough (head bone times its inverse bind pose maps the bind-pose point to now).
+    const frame = fist.current?.parent; // the gown's frame: the model frame MOUTH and ELBOW_POLE are given in
+    if (ck * cb.fist > 0.001 && frame) {
+      g.updateMatrixWorld(true);
+      mouth.copy(MOUTH).applyMatrix4(mouthMat.copy(joints.Head.bone.matrixWorld).multiply(unbind.Head));
+      pole.copy(ELBOW_POLE).applyQuaternion(frame.getWorldQuaternion(poleQ));
+      reach(joints.R_Upperarm.bone, joints.R_Forearm.bone, joints.R_Hand.bone, mouth, pole, ck * cb.fist);
     }
     const sm = soot.current;
     if (sm) {
