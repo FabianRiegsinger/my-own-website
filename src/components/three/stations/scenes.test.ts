@@ -4,7 +4,7 @@ import { STATIONS } from "@/lib/scroll-map";
 import { BELL, BELL_HEIGHT, BELL_RADIUS, HANDLE, LOGO, PLAQUE, SWING, NICHE, PLAQUES, terrazzo, WALL } from "./Graduation";
 import { TEAM } from "./Team";
 import { CUSTOMER, FLEET } from "./Fleet";
-import { FOG, fogWeight, launchWeight, liftoff, PAD } from "./Launch";
+import { armSwing, clampRelease, FOG, fogWeight, launchWeight, liftoff, PAD } from "./Launch";
 import { cloudColor, cloudShape, cloudWords, packCloud, SITE_COLORS } from "./SkillCloud";
 
 const facing = (yaw: number) => new Vector3(Math.sin(yaw), 0, Math.cos(yaw));
@@ -178,6 +178,14 @@ describe("skill word cloud", () => {
 
 describe("launch pad", () => {
   const launch = STATIONS.find((s) => s.id === "launch")!;
+
+  it("swings the access arm clear before ignition, and the clamps let go only once it has lifted", () => {
+    expect(armSwing(launch.start)).toBe(0);
+    const firstMove = [...Array(200)].map((_, i) => launch.start + (i / 200) * (launch.end - launch.start)).find((o) => liftoff(o) > 0)!;
+    expect(armSwing(firstMove)).toBe(1);
+    expect(clampRelease(firstMove - 0.001)).toBe(0);
+    expect(clampRelease(launch.end)).toBe(1);
+  });
 
   it("holds the rocket on the pad while the launch page is read", () => {
     expect(liftoff(launch.start)).toBe(0);
