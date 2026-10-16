@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { Color, Vector3 } from "three";
 import { STATIONS } from "@/lib/scroll-map";
-import { BELL, HANDLE, NICHE, PLAQUES, terrazzo, WALL } from "./Graduation";
+import { BELL, BELL_HEIGHT, BELL_RADIUS, HANDLE, SWING, NICHE, PLAQUES, terrazzo, WALL } from "./Graduation";
 import { TEAM } from "./Team";
 import { CUSTOMER, FLEET } from "./Fleet";
 import { FOG, fogWeight, launchWeight, liftoff, PAD } from "./Launch";
@@ -19,6 +19,18 @@ describe("graduation wall", () => {
     expect(handle.distanceTo(shoulder)).toBeGreaterThan(0.35);
     expect(handle.distanceTo(shoulder)).toBeLessThan(0.62);
     expect(Math.hypot(BELL[0] - NICHE.center[0], BELL[1] - NICHE.center[1])).toBeLessThan(NICHE.radius);
+  });
+
+  it("the bell hangs inside the recess, clear of its back, and swings without touching its side", () => {
+    expect(BELL[2] - BELL_RADIUS).toBeGreaterThan(WALL.z - NICHE.depth);
+    // Lip corners at full swing about the crown stay inside the niche's opening.
+    const pivot = [BELL[0], BELL[1] + BELL_HEIGHT / 2];
+    for (const a of [-SWING.amplitude, SWING.amplitude])
+      for (const x of [-BELL_RADIUS, BELL_RADIUS]) {
+        const px = pivot[0] + x * Math.cos(a) + BELL_HEIGHT * Math.sin(a);
+        const py = pivot[1] + x * Math.sin(a) - BELL_HEIGHT * Math.cos(a);
+        expect(Math.hypot(px - NICHE.center[0], py - NICHE.center[1])).toBeLessThan(NICHE.radius);
+      }
   });
 
   it("the wall stands behind him and is a set piece, not a full backdrop (the colour field stays visible)", () => {

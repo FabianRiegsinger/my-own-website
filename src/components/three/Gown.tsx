@@ -16,20 +16,44 @@ const DEPTH = 0.82;
 
 const lathe = (profile: [number, number][]) => new LatheGeometry(profile.map(([r, y]) => new Vector2(r, y)), 48);
 
+/** Gown fabric: matte black with a soft sheen at grazing angles, so folds read instead of a flat silhouette. */
+const Fabric = () => <meshPhysicalMaterial color={BLACK} roughness={0.8} sheen={1} sheenColor="#5d616b" sheenRoughness={0.45} side={DoubleSide} />;
+
 function Cloth({ shadows, ...props }: { shadows: boolean; geometry: LatheGeometry }) {
   return (
     <mesh {...props} position={[AXIS.x, 0, AXIS.z]} scale={[DEPTH, 1, 1]} castShadow={shadows}>
-      <meshStandardMaterial color={BLACK} roughness={0.85} side={DoubleSide} />
+      <Fabric />
     </mesh>
   );
 }
 
-/** Wide sleeve along one arm bone, from `z0` to `z1` (signed: - his left), opening from `r0` to `r1`. */
-function Sleeve({ z0, z1, r0, r1, y, shadows }: { z0: number; z1: number; r0: number; r1: number; y: number; shadows: boolean }) {
+/**
+ * Sleeve along +y (length `len`, radius `radius(s)` for s = 0..1 along it), with soft pleats that deepen toward the
+ * opening (`pleat`: relative depth there) and a bag that hangs below the arm at the open end (`bag`: relative extra
+ * radius on the underside). `side` is the arm (+1 his right): the underside is lathe +z on the right, -z on the left,
+ * which the mesh's quarter turn about x maps to world down.
+ */
+export function sleeveGeometry(len: number, radius: (s: number) => number, pleat: number, bag: number, side: 1 | -1) {
+  const RINGS = 16;
+  const g = new LatheGeometry(Array.from({ length: RINGS + 1 }, (_, i) => new Vector2(radius(i / RINGS), (i / RINGS) * len)), 64);
+  const p = g.attributes.position;
+  for (let i = 0; i < p.count; i++) {
+    const [x, y, z] = [p.getX(i), p.getY(i), p.getZ(i)];
+    const s = y / len;
+    const phi = Math.atan2(x, z);
+    const under = Math.max(0, side * Math.cos(phi)) ** 2;
+    const k = 1 + pleat * s * s * Math.sin(9 * phi) + bag * s ** 3 * under;
+    p.setXYZ(i, x * k, y, z * k);
+  }
+  g.computeVertexNormals();
+  return g;
+}
+
+/** Sleeve from `z0` along the arm (signed: - his left), at height `y`. */
+function Sleeve({ z0, y, geometry, shadows }: { z0: number; y: number; geometry: LatheGeometry; shadows: boolean }) {
   return (
-    <mesh position={[0.015, y, (z0 + z1) / 2]} rotation-x={(Math.sign(z1) * Math.PI) / 2} castShadow={shadows}>
-      <cylinderGeometry args={[r1, r0, Math.abs(z1 - z0), 24, 1, true]} />
-      <meshStandardMaterial color={BLACK} roughness={0.85} side={DoubleSide} />
+    <mesh geometry={geometry} position={[0.015, y, z0]} rotation-x={(Math.sign(z0) * Math.PI) / 2} castShadow={shadows}>
+      <Fabric />
     </mesh>
   );
 }
@@ -37,20 +61,30 @@ function Sleeve({ z0, z1, r0, r1, y, shadows }: { z0: number; z1: number; r0: nu
 export const Gown = forwardRef<Group, { shadows: boolean }>(function Gown({ shadows }, ref) {
   // Bodice up to just under the chin (rides on the chest), skirt over it from the waist to mid-calf (rides on the pelvis),
   // so leaning in or crouching never opens a gap.
-  const bodice = useMemo(() => lathe([[0.19, 0.74], [0.185, 0.9], [0.185, 1.05], [0.19, 1.15], [0.17, 1.21], [0.12, 1.245], [0.075, 1.26]]), []);
-  const skirt = useMemo(() => lathe([[0.2, 0.98], [0.2, 0.8], [0.23, 0.6], [0.27, 0.4], [0.3, 0.24]]), []);
+  const bodice = useMemo(() => lathe([[0.15, 0.72], [0.175, 0.8], [0.185, 0.9], [0.185, 1.05], [0.19, 1.15], [0.17, 1.21], [0.12, 1.245], [0.075, 1.26]]), []);
+  const skirt = useMemo(() => lathe([[0.188, 1.0], [0.196, 0.92], [0.2, 0.8], [0.23, 0.6], [0.27, 0.4], [0.3, 0.24]]), []);
+  // Upper sleeve: gathered at the shoulder, a little full over the upper arm. Lower sleeve: the academic bell sleeve,
+  // flaring and pleating toward the wrist, its open end bagging below the arm.
+  const shapes = useMemo(
+    () =>
+      ([-1, 1] as const).map((side) => ({
+        upper: sleeveGeometry(0.31, (s) => 0.086 + 0.014 * Math.sin(Math.PI * s), 0.05, 0, side),
+        lower: sleeveGeometry(0.16, (s) => 0.09 + 0.06 * s ** 1.6, 0.06, 0.3, side),
+      })),
+    [],
+  );
   const sleeves = (side: 1 | -1, y: number) => (
     <>
       <group name={side < 0 ? "L_Upperarm" : "R_Upperarm"} matrixAutoUpdate={false}>
-        <Sleeve z0={side * 0.05} z1={side * 0.36} r0={0.085} r1={0.092} y={y} shadows={shadows} />
+        <Sleeve z0={side * 0.05} y={y} geometry={shapes[(side + 1) / 2].upper} shadows={shadows} />
         {/* Shoulder: covers the joint whichever way the arm turns. */}
         <mesh position={[0.015, y, side * 0.17]} castShadow={shadows}>
           <sphereGeometry args={[0.1, 24, 16]} />
-          <meshStandardMaterial color={BLACK} roughness={0.85} />
+          <Fabric />
         </mesh>
       </group>
       <group name={side < 0 ? "L_Forearm" : "R_Forearm"} matrixAutoUpdate={false}>
-        <Sleeve z0={side * 0.33} z1={side * 0.49} r0={0.086} r1={0.12} y={y} shadows={shadows} />
+        <Sleeve z0={side * 0.33} y={y} geometry={shapes[(side + 1) / 2].lower} shadows={shadows} />
       </group>
     </>
   );

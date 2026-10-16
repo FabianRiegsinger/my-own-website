@@ -2,26 +2,33 @@
 
 import { useFrame } from "@react-three/fiber";
 import { useLayoutEffect, useMemo, useRef } from "react";
-import { BufferGeometry, CanvasTexture, Color, DoubleSide, Float32BufferAttribute, type Group, type InstancedMesh, LatheGeometry, Object3D, Vector2 } from "three";
+import { BackSide, MathUtils, BufferGeometry, CanvasTexture, Color, DoubleSide, Float32BufferAttribute, type Group, type InstancedMesh, LatheGeometry, Object3D, Vector2 } from "three";
 import { cv } from "@/content/cv";
+import { pendulum } from "@/lib/pendulum";
 import { stationWeight } from "@/lib/scroll-map";
 import { fade } from "../fade";
 import { useStationOffset } from "../station-offset";
 
 /**
  * Graduation, after the photo at the Friedberg campus: a grey wall with a round niche holding a bronze bell that
- * graduates ring, a dark terrazzo floor. A set piece, not a backdrop, so the page's colour field still shows.
+ * swings and rings, a dark terrazzo floor. A set piece, not a backdrop, so the page's colour field still shows.
  * University marks (FH logo, crest) are left out on purpose. Two brass plaques on his left name the degrees, confetti
  * drifts down, and he wears gown and mortarboard and jumps for joy (GenMe, Gown).
  */
 export const WALL = { x: -0.2, z: -0.4, width: 3, height: 3 };
-/** Round niche in the wall, on Fabian's right (Mixamo rigs face +z, so his right is -x). */
-export const NICHE = { center: [-0.62, 2] as [number, number], radius: 0.6 };
+/** Round niche cut into the wall, on Fabian's right (Mixamo rigs face +z, so his right is -x), deep enough for the bell. */
+export const NICHE = { center: [-0.62, 2] as [number, number], radius: 0.6, depth: 0.3 };
 /** Bell (centre of its body) and the handle he pulls, within reach of his raised right hand. */
 export const BELL: [number, number, number] = [-0.58, 2.15, -0.25];
 export const HANDLE: [number, number, number] = [-0.55, 1.82, -0.1];
 
-const BELL_HEIGHT = 0.42;
+export const BELL_HEIGHT = 0.42;
+/** Lip radius of the bell (BELL_PROFILE's widest point). */
+export const BELL_RADIUS = 0.207;
+/** Swing: amplitude (rad) and small-swing angular frequency (rad/s, ≈ 2 s per swing). */
+export const SWING = { amplitude: 0.5, omega: 3.2 };
+/** The clapper hangs free: it follows the bell this late (s) and further, until it strikes the sound bow. */
+const CLAPPER = { lag: 0.14, gain: 1.35, strike: 0.38 };
 const FLOOR = { width: 3, depth: 1.8 };
 /** Plaques on the wall, on his left (+x), clear of the niche. */
 export const PLAQUES = cv.education.map((e, i) => ({ ...e, position: [0.72, 2.05 - i * 0.43, WALL.z + 0.012] as [number, number, number] }));
@@ -118,8 +125,8 @@ function plaqueFace(title: string, subtitle: string) {
 }
 
 /** Alpha map that is opaque in the middle and fades to clear over the given fraction of each edge. */
-function edgeFade(edges: { left: number; right: number; top: number; bottom: number }) {
-  const size = 256;
+function edgeFade(edges: { left: number; right: number; top: number; bottom: number }, hole?: { u: number; v: number; r: number }) {
+  const size = 512;
   const c = document.createElement("canvas");
   c.width = c.height = size;
   const ctx = c.getContext("2d")!;
@@ -135,6 +142,14 @@ function edgeFade(edges: { left: number; right: number; top: number; bottom: num
   ctx.globalCompositeOperation = "multiply";
   ctx.fillStyle = ramp(ctx.createLinearGradient(0, 0, 0, size), edges.top, edges.bottom);
   ctx.fillRect(0, 0, size, size);
+  // A hole cut clean through (fractions of the map, v from the top).
+  if (hole) {
+    ctx.globalCompositeOperation = "source-over";
+    ctx.fillStyle = "#000";
+    ctx.beginPath();
+    ctx.arc(hole.u * size, hole.v * size, hole.r * size, 0, 2 * Math.PI);
+    ctx.fill();
+  }
   return new CanvasTexture(c);
 }
 
@@ -163,13 +178,18 @@ function nicheShade() {
 export function Graduation() {
   const root = useRef<Group>(null);
   const confetti = useRef<InstancedMesh>(null);
+  const swing = useRef<Group>(null);
+  const clapper = useRef<Group>(null);
   const offset = useStationOffset();
 
   const bell = useMemo(() => new LatheGeometry(BELL_PROFILE.map(([r, y]) => new Vector2(r, y)), 64), []);
   const maps = useMemo(
     () => ({
       // Wall fades out at the sides and top; floor fades at the sides and front, so neither shows a hard edge.
-      wall: edgeFade({ left: 0.22, right: 0.22, top: 0.25, bottom: 0 }),
+      wall: edgeFade(
+        { left: 0.22, right: 0.22, top: 0.25, bottom: 0 },
+        { u: (NICHE.center[0] - WALL.x) / WALL.width + 0.5, v: 1 - NICHE.center[1] / WALL.height, r: NICHE.radius / WALL.width },
+      ),
       floor: edgeFade({ left: 0.25, right: 0.25, top: 0, bottom: 0.45 }),
       niche: nicheShade(),
       bronze: bronze(),
@@ -199,10 +219,14 @@ export function Graduation() {
   const chips = useMemo(() => new BufferGeometry().setAttribute("position", new Float32BufferAttribute(terrazzo(), 3)), []);
 
   useFrame(({ clock }) => {
-    if (!root.current || !confetti.current) return;
+    if (!root.current || !confetti.current || !swing.current || !clapper.current) return;
     fade(root.current, stationWeight(offset.current, "education"));
     if (!root.current.visible) return;
     const t = clock.elapsedTime;
+    // Rings constantly: swings left and right about its crown like a real pendulum (lib/pendulum).
+    const bellAt = (s: number) => pendulum(s, SWING.amplitude, SWING.omega);
+    swing.current.rotation.z = bellAt(t);
+    clapper.current.rotation.z = MathUtils.clamp(CLAPPER.gain * bellAt(t - CLAPPER.lag) - swing.current.rotation.z, -CLAPPER.strike, CLAPPER.strike);
     flakes.forEach((f, i) => {
       dummy.position.set(f.x + Math.sin(t * 1.3 + f.phase) * 0.08, 3.2 - ((t * f.speed + f.phase) % 3.4), f.z);
       dummy.rotation.set(t * 2 + f.tumble, t * 1.4 + f.tumble, f.tumble);
@@ -219,17 +243,27 @@ export function Graduation() {
         <planeGeometry args={[WALL.width, WALL.height]} />
         <meshStandardMaterial color="#f2f2ef" roughness={0.95} alphaMap={maps.wall} transparent depthWrite={false} />
       </mesh>
-      {/* Niche: shaded like a recess (inner shadow under the top lip, lighter toward the bottom). */}
-      <mesh position={[NICHE.center[0], NICHE.center[1], WALL.z + 0.003]}>
-        <circleGeometry args={[NICHE.radius, 64]} />
-        <meshStandardMaterial map={maps.niche} roughness={0.9} />
-      </mesh>
+      {/* Niche: a round recess cut into the wall (the wall's alpha map has the hole), its back shaded darker under the lip. */}
+      <group position={[NICHE.center[0], NICHE.center[1], WALL.z]}>
+        <mesh position-z={-NICHE.depth / 2} rotation-x={Math.PI / 2} receiveShadow>
+          <cylinderGeometry args={[NICHE.radius, NICHE.radius, NICHE.depth, 64, 1, true]} />
+          <meshStandardMaterial color="#a4a5a8" roughness={0.95} side={BackSide} />
+        </mesh>
+        <mesh position-z={-NICHE.depth} receiveShadow>
+          <circleGeometry args={[NICHE.radius, 64]} />
+          <meshStandardMaterial map={maps.niche} roughness={0.9} />
+        </mesh>
+        <mesh>
+          <torusGeometry args={[NICHE.radius, 0.012, 8, 96]} />
+          <meshStandardMaterial color="#e4e4e1" roughness={0.9} />
+        </mesh>
+      </group>
       {/* Bracket from the niche's back wall to the bell's crown. */}
-      <mesh position={[bellTop[0], bellTop[1] + 0.05, (WALL.z + bellTop[2]) / 2]}>
-        <boxGeometry args={[0.05, 0.05, bellTop[2] - WALL.z]} />
+      <mesh position={[bellTop[0], bellTop[1] + 0.05, (WALL.z - NICHE.depth + bellTop[2]) / 2]}>
+        <boxGeometry args={[0.05, 0.05, bellTop[2] - WALL.z + NICHE.depth]} />
         <meshStandardMaterial color="#2a2a2c" roughness={0.6} />
       </mesh>
-      <group position={bellTop}>
+      <group ref={swing} position={bellTop}>
         <mesh geometry={bell} position-y={-BELL_HEIGHT} castShadow>
           <meshPhysicalMaterial map={maps.bronze} metalness={0.9} roughness={0.32} clearcoat={0.4} clearcoatRoughness={0.25} envMapIntensity={1.4} side={DoubleSide} />
         </mesh>
@@ -244,7 +278,7 @@ export function Graduation() {
           <torusGeometry args={[0.032, 0.011, 10, 24]} />
           <meshStandardMaterial color="#7a5c2e" metalness={0.85} roughness={0.4} />
         </mesh>
-        <group position-y={-0.03}>
+        <group ref={clapper} position-y={-0.03}>
           <mesh position-y={-0.15}>
             <cylinderGeometry args={[0.007, 0.007, 0.3, 8]} />
             <meshStandardMaterial color="#2a2a2c" metalness={0.7} roughness={0.5} />
