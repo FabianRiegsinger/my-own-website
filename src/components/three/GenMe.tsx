@@ -3,8 +3,10 @@
 import { useGLTF } from "@react-three/drei";
 import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
-import { Box3, MathUtils, Matrix4, Raycaster, Vector2, MeshStandardMaterial, Quaternion, Vector3, type Group, type Material, type Mesh, type Object3D } from "three";
+import { Box3, BufferAttribute, CanvasTexture, CapsuleGeometry, MathUtils, Matrix4, Raycaster, Vector2, MeshStandardMaterial, Quaternion, SkinnedMesh, type Sprite, Vector3, type Group, type Material, type Mesh, type Object3D } from "three";
+import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import { JUMP_PERIOD, jumpBeats } from "@/lib/cheer";
+import { COUGHS, coughBeats, sootAt } from "@/lib/cough";
 import { ENTRANCE, entrance, introStep } from "@/lib/entrance";
 import { heading, stationAt, stationWeight } from "@/lib/scroll-map";
 import { fade } from "./fade";
@@ -79,6 +81,30 @@ const atTop = () => window.scrollY < TOP_PX;
 const q = new Quaternion();
 const pq = new Quaternion();
 const toFrame = new Matrix4();
+const hand = new Vector3();
+const wrist = new Vector3();
+/** Cough puffs: how long each one lives (s) and the matte skin tone the stand-in fist is painted in. */
+const PUFF_LIFE = 0.9;
+const SKIN = "#cc8d6e";
+const FIST = new RoundedBoxGeometry(0.08, 0.075, 0.07, 3, 0.025);
+const THUMB = new CapsuleGeometry(0.017, 0.035, 4, 10);
+/** Soft round puff of smoke: opaque centre fading to clear (built on first use: needs a document). */
+let puffMap: CanvasTexture | null = null;
+function puffTexture() {
+  if (puffMap) return puffMap;
+  const c = document.createElement("canvas");
+  c.width = c.height = 64;
+  const ctx = c.getContext("2d")!;
+  const g = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+  g.addColorStop(0, "rgba(255,255,255,1)");
+  g.addColorStop(0.55, "rgba(255,255,255,0.5)");
+  g.addColorStop(1, "rgba(255,255,255,0)");
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, 64, 64);
+  return (puffMap = new CanvasTexture(c));
+}
+/** Mid-line of his body across (model frame z), where the mouth is. */
+const AXIS_Z = -0.012;
 
 /** One posed bone: its rest rotation and its parent's rotation relative to the model root (both fixed). */
 interface Joint {
@@ -125,6 +151,10 @@ export function GenMe({ shadows }: { shadows: boolean }) {
   const greet = useRef(-1); // seconds into a click greeting, -1 when none
   const headYaw = useRef(0);
   const gown = useRef<Group>(null);
+  const fist = useRef<Group>(null);
+  const thumb = useRef<Mesh>(null);
+  const puffs = useRef<(Sprite | null)[]>([]);
+  const coughT = useRef(-1); // seconds into the contact-page cough, -1 until he arrives there
   const { camera, gl } = useThree();
   const { scale, offset: centre } = useMemo(() => {
     const box = new Box3().setFromObject(scene);
@@ -146,7 +176,7 @@ export function GenMe({ shadows }: { shadows: boolean }) {
       }),
     [scene],
   );
-  useMemo(() => scene.traverse((o) => ((o as Mesh).isMesh ? (o.castShadow = shadows) : undefined)), [scene, shadows]);
+  useMemo(() => scene.traverse((o) => ((o as Mesh).isMesh && o.name !== "soot" ? (o.castShadow = shadows) : undefined)), [scene, shadows]);
 
   // Captured from the bind (T-)pose before anything is turned.
   const joints = useMemo(() => {
@@ -167,6 +197,32 @@ export function GenMe({ shadows }: { shadows: boolean }) {
     const place = new Matrix4().compose(new Vector3(...centre), new Quaternion(), new Vector3(scale, scale, scale));
     return joints ? Object.fromEntries(Object.entries(joints).map(([n, j]) => [n, place.clone().multiply(j.bind).invert()])) : {};
   }, [joints, centre, scale]);
+  // Soot from the launch (contact page): a dark copy of his body on the same skeleton, transparent except where
+  // lib/cough's smudge pattern puts soot (per-vertex alpha, from the bind pose in metres). Built once per loaded model.
+  const soot = useRef<SkinnedMesh | null>(null);
+  useEffect(() => {
+    let body: SkinnedMesh | undefined;
+    scene.traverse((o) => void ((o as SkinnedMesh).isSkinnedMesh && o.name !== "soot" && (body ??= o as SkinnedMesh)));
+    if (!body?.parent) return;
+    const built = body.parent.getObjectByName("soot") as SkinnedMesh | undefined;
+    if (built) return void (soot.current = built);
+    const geometry = body.geometry.clone();
+    const pos = geometry.attributes.position;
+    const rgba = new Float32Array(pos.count * 4);
+    for (let i = 0; i < pos.count; i++) {
+      const a = sootAt(pos.getX(i) * scale + centre[0], pos.getY(i) * scale + centre[1], pos.getZ(i) * scale + centre[2]);
+      rgba.set([0.16, 0.14, 0.12, a], i * 4);
+    }
+    geometry.setAttribute("color", new BufferAttribute(rgba, 4));
+    // Drawn just in front of the skin (polygon offset), never writing depth, so it only darkens what is there.
+    const material = new MeshStandardMaterial({ vertexColors: true, transparent: true, depthWrite: false, roughness: 1, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -4 });
+    material.userData.matte = true;
+    const mesh = new SkinnedMesh(geometry, material);
+    mesh.name = "soot";
+    mesh.bind(body.skeleton, body.bindMatrix);
+    body.parent.add(mesh);
+    soot.current = mesh;
+  }, [scene, scale, centre]);
   /** Lowest foot joint in the bind pose (model units): the height it is held at so a sole always rests on the floor. */
   const ground = useMemo(() => lowest(scene, feet), [scene, feet]);
 
@@ -356,6 +412,35 @@ export function GenMe({ shadows }: { shadows: boolean }) {
       }
       hop = joy * JUMP * b.air;
     }
+    // Contact page, after the launch: sooty, he coughs into his fist three times, then smiles and gives a thumbs-up
+    // (lib/cough). Starts once he has arrived, resets when he leaves. Axes as above.
+    const contact = stationWeight(offset.current, "contact");
+    if (contact < 0.2) coughT.current = -1;
+    else if (coughT.current >= 0 || contact > 0.9) coughT.current = Math.max(0, coughT.current) + dt;
+    const cb = coughBeats(coughT.current);
+    const ck = contact * (1 - w) * (1 - wave.current);
+    if (ck > 0.001) {
+      // Right fist: up to the mouth (arm forward, elbow folded), later out in front with the thumb up.
+      turn(joints.R_Upperarm, Z, ck * (1.45 * cb.fist + 0.95 * cb.thumb));
+      turn(joints.R_Upperarm, X, ck * (0.12 * cb.fist - 0.25 * cb.thumb));
+      turn(joints.R_Upperarm, Y, ck * 0.6 * cb.fist); // swings the forearm in, so the fist is in front of the mouth
+      turn(joints.R_Forearm, Y, ck * (2.35 * cb.fist + 1.15 * cb.thumb));
+      // Each cough jerks him forward from the waist and drops his head; a slight hunch throughout; then he stands
+      // tall with a proud tilt of the head.
+      turn(joints.Waist, Z, ck * (-0.1 * cb.hunch - 0.12 * cb.hack + 0.04 * cb.thumb));
+      turn(joints.Spine02, Z, -ck * 0.08 * cb.hack);
+      turn(joints.Head, Z, ck * (-0.1 * cb.hunch - 0.15 * cb.hack + 0.06 * cb.thumb));
+      turn(joints.Head, X, ck * 0.12 * cb.thumb);
+    }
+    const sm = soot.current;
+    if (sm) {
+      sm.visible = contact > 0.01;
+      (sm.material as Material).opacity = contact;
+    }
+    // The model's hand has no finger bones: while it makes a fist, the hand folds away and a modelled fist (thumb up
+    // for the thumbs-up) takes its place.
+    const fisted = ck > 0.5 && (cb.fist > 0.4 || cb.thumb > 0.4);
+    joints.R_Hand.bone.scale.setScalar(fisted ? 0.001 : 1);
     // Wave with his right hand (+z): upper arm out to the side, forearm up, swinging side to side at the elbow.
     const wv = wave.current;
     if (wv > 0.001) {
@@ -372,6 +457,31 @@ export function GenMe({ shadows }: { shadows: boolean }) {
     }
     // Feet on the floor: the body drops as the legs spread (the natural gait bob) instead of the feet lifting off.
     if (m) m.position.y = centre[1] + (ground - lowest(m, feet)) * scale + hop;
+    // Fist and cough puffs live in the gown's frame; place them from the posed bones.
+    const fs = fist.current;
+    if (fs?.parent) {
+      fs.visible = fisted;
+      if (thumb.current) thumb.current.visible = cb.thumb > 0.4;
+      const puffing = contact > 0.5 && coughT.current > 0 && coughT.current < COUGHS.at(-1)! + PUFF_LIFE;
+      if (fisted || puffing) {
+        g.updateMatrixWorld(true);
+        toFrame.copy(fs.parent.matrixWorld).invert();
+        hand.setFromMatrixPosition(joints.R_Hand.bone.matrixWorld).applyMatrix4(toFrame);
+        wrist.setFromMatrixPosition(joints.R_Forearm.bone.matrixWorld).applyMatrix4(toFrame);
+        // Centred a little past the wrist, along the forearm.
+        fs.position.copy(hand).add(wrist.sub(hand).normalize().multiplyScalar(-0.035));
+      }
+      // Each cough blows a small grey puff out past the fist, growing and fading.
+      puffs.current.forEach((p, i) => {
+        if (!p) return;
+        const age = coughT.current - COUGHS[i];
+        p.visible = contact > 0.5 && age > 0 && age < PUFF_LIFE;
+        if (!p.visible) return;
+        p.position.set(0.25 + 0.1 * age, 1.36 + 0.12 * age, AXIS_Z - 0.12 - 0.35 * age); // off to his left, clear of the face
+        p.scale.setScalar(0.08 + 0.26 * age); // sprite size = puff diameter plus its soft edge
+        (p.material as Material).opacity = 0.85 * (1 - age / PUFF_LIFE);
+      });
+    }
     // Gown: each piece follows its bone (pose relative to the gown's frame, times the inverse bind pose).
     const gw = gown.current;
     if (gw) fade(gw, stationWeight(offset.current, "education"));
@@ -389,6 +499,20 @@ export function GenMe({ shadows }: { shadows: boolean }) {
         <group rotation-y={-Math.PI / 2}>
           <primitive ref={model} object={scene} scale={scale} position={centre} />
           <Gown ref={gown} shadows={shadows} />
+          {/* Stand-in right fist (knuckles to the camera), with a thumb for the thumbs-up; placed each frame. */}
+          <group ref={fist} visible={false}>
+            <mesh geometry={FIST} castShadow={shadows}>
+              <meshStandardMaterial color={SKIN} roughness={0.85} emissive={SKIN} emissiveIntensity={0.35} />
+            </mesh>
+            <mesh ref={thumb} geometry={THUMB} position={[0.012, 0.058, -0.012]} castShadow={shadows}>
+              <meshStandardMaterial color={SKIN} roughness={0.85} emissive={SKIN} emissiveIntensity={0.35} />
+            </mesh>
+          </group>
+          {COUGHS.map((_, i) => (
+            <sprite key={i} ref={(el) => void (puffs.current[i] = el)} visible={false}>
+              <spriteMaterial map={puffTexture()} color="#5c5753" transparent depthWrite={false} />
+            </sprite>
+          ))}
         </group>
       </group>
     </group>
