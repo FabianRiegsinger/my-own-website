@@ -1,8 +1,8 @@
 "use client";
 
 import { useFrame } from "@react-three/fiber";
-import { useMemo, useRef } from "react";
-import { BufferGeometry, CanvasTexture, DoubleSide, Float32BufferAttribute, type Group, LatheGeometry, Vector2 } from "three";
+import { useLayoutEffect, useMemo, useRef } from "react";
+import { BufferGeometry, CanvasTexture, Color, DoubleSide, Float32BufferAttribute, type Group, type InstancedMesh, LatheGeometry, Object3D, Vector2 } from "three";
 import { cv } from "@/content/cv";
 import { stationWeight } from "@/lib/scroll-map";
 import { fade } from "../fade";
@@ -11,8 +11,8 @@ import { useStationOffset } from "../station-offset";
 /**
  * Graduation, after the photo at the Friedberg campus: a grey wall with a round niche holding a bronze bell that
  * graduates ring, a dark terrazzo floor. A set piece, not a backdrop, so the page's colour field still shows.
- * University marks (FH logo, crest) are left out on purpose. Two brass plaques on his left name the degrees; he wears
- * gown and mortarboard and jumps for joy (GenMe, Gown).
+ * University marks (FH logo, crest) are left out on purpose. Two brass plaques on his left name the degrees, confetti
+ * drifts down, and he wears gown and mortarboard and jumps for joy (GenMe, Gown).
  */
 export const WALL = { x: -0.2, z: -0.4, width: 3, height: 3 };
 /** Round niche in the wall, on Fabian's right (Mixamo rigs face +z, so his right is -x). */
@@ -26,6 +26,8 @@ const FLOOR = { width: 3, depth: 1.8 };
 /** Plaques on the wall, on his left (+x), clear of the niche. */
 export const PLAQUES = cv.education.map((e, i) => ({ ...e, position: [0.72, 2.05 - i * 0.43, WALL.z + 0.012] as [number, number, number] }));
 const PLAQUE = { width: 0.62, height: 0.31 };
+const CONFETTI = 260;
+const CONFETTI_COLOURS = ["#80ba24", "#c4c6ca", "#686c72", "#f2f2ef"]; // THM green and the photo's greys
 
 /** Deterministic pseudo-random so every visit looks the same. */
 function rand(seed: number) {
@@ -160,6 +162,7 @@ function nicheShade() {
 
 export function Graduation() {
   const root = useRef<Group>(null);
+  const confetti = useRef<InstancedMesh>(null);
   const offset = useStationOffset();
 
   const bell = useMemo(() => new LatheGeometry(BELL_PROFILE.map(([r, y]) => new Vector2(r, y)), 64), []);
@@ -177,10 +180,36 @@ export function Graduation() {
     }),
     [],
   );
+  // Confetti flakes: seeded spot over the floor, fall speed, phase and tumble.
+  const flakes = useMemo(
+    () =>
+      Array.from({ length: CONFETTI }, (_, i) => ({
+        x: WALL.x + (rand(i * 3) - 0.5) * 2.4,
+        z: WALL.z + 0.2 + rand(i * 3 + 1) * 1.1,
+        speed: 0.35 + rand(i * 3 + 2) * 0.35,
+        phase: rand(i + 400) * 10,
+        tumble: rand(i + 900) * 6,
+      })),
+    [],
+  );
+  const dummy = useMemo(() => new Object3D(), []);
+  useLayoutEffect(() => {
+    flakes.forEach((_, i) => confetti.current?.setColorAt(i, new Color(CONFETTI_COLOURS[i % CONFETTI_COLOURS.length])));
+  }, [flakes]);
   const chips = useMemo(() => new BufferGeometry().setAttribute("position", new Float32BufferAttribute(terrazzo(), 3)), []);
 
-  useFrame(() => {
-    if (root.current) fade(root.current, stationWeight(offset.current, "education"));
+  useFrame(({ clock }) => {
+    if (!root.current || !confetti.current) return;
+    fade(root.current, stationWeight(offset.current, "education"));
+    if (!root.current.visible) return;
+    const t = clock.elapsedTime;
+    flakes.forEach((f, i) => {
+      dummy.position.set(f.x + Math.sin(t * 1.3 + f.phase) * 0.08, 3.2 - ((t * f.speed + f.phase) % 3.4), f.z);
+      dummy.rotation.set(t * 2 + f.tumble, t * 1.4 + f.tumble, f.tumble);
+      dummy.updateMatrix();
+      confetti.current!.setMatrixAt(i, dummy.matrix);
+    });
+    confetti.current.instanceMatrix.needsUpdate = true;
   });
 
   const bellTop: [number, number, number] = [BELL[0], BELL[1] + BELL_HEIGHT / 2, BELL[2]];
@@ -250,6 +279,10 @@ export function Graduation() {
           </mesh>
         </group>
       ))}
+      <instancedMesh ref={confetti} args={[undefined, undefined, CONFETTI]}>
+        <planeGeometry args={[0.03, 0.018]} />
+        <meshStandardMaterial side={DoubleSide} roughness={0.8} />
+      </instancedMesh>
     </group>
   );
 }

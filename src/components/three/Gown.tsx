@@ -37,12 +37,17 @@ function Sleeve({ z0, z1, r0, r1, y, shadows }: { z0: number; z1: number; r0: nu
 export const Gown = forwardRef<Group, { shadows: boolean }>(function Gown({ shadows }, ref) {
   // Bodice up to just under the chin (rides on the chest), skirt over it from the waist to mid-calf (rides on the pelvis),
   // so leaning in or crouching never opens a gap.
-  const bodice = useMemo(() => lathe([[0.19, 0.74], [0.185, 0.9], [0.178, 1.05], [0.17, 1.12], [0.15, 1.17], [0.1, 1.2]]), []);
+  const bodice = useMemo(() => lathe([[0.19, 0.74], [0.185, 0.9], [0.185, 1.05], [0.19, 1.15], [0.17, 1.21], [0.12, 1.245], [0.075, 1.26]]), []);
   const skirt = useMemo(() => lathe([[0.2, 0.98], [0.2, 0.8], [0.23, 0.6], [0.27, 0.4], [0.3, 0.24]]), []);
   const sleeves = (side: 1 | -1, y: number) => (
     <>
       <group name={side < 0 ? "L_Upperarm" : "R_Upperarm"} matrixAutoUpdate={false}>
-        <Sleeve z0={side * 0.12} z1={side * 0.36} r0={0.075} r1={0.088} y={y} shadows={shadows} />
+        <Sleeve z0={side * 0.05} z1={side * 0.36} r0={0.085} r1={0.092} y={y} shadows={shadows} />
+        {/* Shoulder: covers the joint whichever way the arm turns. */}
+        <mesh position={[0.015, y, side * 0.17]} castShadow={shadows}>
+          <sphereGeometry args={[0.1, 24, 16]} />
+          <meshStandardMaterial color={BLACK} roughness={0.85} />
+        </mesh>
       </group>
       <group name={side < 0 ? "L_Forearm" : "R_Forearm"} matrixAutoUpdate={false}>
         <Sleeve z0={side * 0.33} z1={side * 0.49} r0={0.086} r1={0.12} y={y} shadows={shadows} />
@@ -55,8 +60,8 @@ export const Gown = forwardRef<Group, { shadows: boolean }>(function Gown({ shad
         <Cloth geometry={bodice} shadows={shadows} />
         {/* Stole: two green bands down the front, from the neckline to the skirt. */}
         {[-1, 1].map((s) => (
-          <mesh key={s} position={[0.168, 1.01, AXIS.z + s * 0.065]} rotation-z={0.12}>
-            <boxGeometry args={[0.008, 0.28, 0.055]} />
+          <mesh key={s} position={[0.172, 1.03, AXIS.z + s * 0.065]} rotation-z={0.1}>
+            <boxGeometry args={[0.008, 0.32, 0.055]} />
             <meshStandardMaterial color={GREEN} roughness={0.7} />
           </mesh>
         ))}
@@ -68,27 +73,27 @@ export const Gown = forwardRef<Group, { shadows: boolean }>(function Gown({ shad
       {sleeves(1, 1.19)}
       {/* Mortarboard on top of his head: skull cap, board, button, and the tassel hanging over his left side. */}
       <group name="Head" matrixAutoUpdate={false}>
-        <mesh position={[-0.005, 1.745, AXIS.z]} castShadow={shadows}>
-          <cylinderGeometry args={[0.22, 0.235, 0.13, 36]} />
+        <mesh position={[-0.005, 1.74, AXIS.z]} castShadow={shadows}>
+          <cylinderGeometry args={[0.245, 0.258, 0.15, 36]} />
           <meshStandardMaterial color={BLACK} roughness={0.8} />
         </mesh>
-        <mesh position={[-0.005, 1.822, AXIS.z]} castShadow={shadows}>
-          <boxGeometry args={[0.56, 0.025, 0.56]} />
+        <mesh position={[-0.005, 1.828, AXIS.z]} castShadow={shadows}>
+          <boxGeometry args={[0.6, 0.025, 0.6]} />
           <meshStandardMaterial color={BLACK} roughness={0.7} />
         </mesh>
-        <mesh position={[-0.005, 1.84, AXIS.z]}>
+        <mesh position={[-0.005, 1.846, AXIS.z]}>
           <cylinderGeometry args={[0.018, 0.018, 0.012, 12]} />
           <meshStandardMaterial color={GREEN} roughness={0.6} />
         </mesh>
-        <mesh position={[-0.005, 1.838, AXIS.z - 0.14]} rotation-x={Math.PI / 2}>
-          <cylinderGeometry args={[0.005, 0.005, 0.27, 6]} />
+        <mesh position={[-0.005, 1.844, AXIS.z - 0.15]} rotation-x={Math.PI / 2}>
+          <cylinderGeometry args={[0.005, 0.005, 0.29, 6]} />
           <meshStandardMaterial color={GREEN} roughness={0.6} />
         </mesh>
-        <mesh position={[-0.005, 1.76, AXIS.z - 0.29]}>
+        <mesh position={[-0.005, 1.766, AXIS.z - 0.31]}>
           <cylinderGeometry args={[0.005, 0.005, 0.15, 6]} />
           <meshStandardMaterial color={GREEN} roughness={0.6} />
         </mesh>
-        <mesh position={[-0.005, 1.67, AXIS.z - 0.29]}>
+        <mesh position={[-0.005, 1.676, AXIS.z - 0.31]}>
           <cylinderGeometry args={[0.006, 0.022, 0.06, 10]} />
           <meshStandardMaterial color={GREEN} roughness={0.9} />
         </mesh>
