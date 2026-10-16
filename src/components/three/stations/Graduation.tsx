@@ -12,7 +12,7 @@ import { useStationOffset } from "../station-offset";
 /**
  * Graduation, after the photo at the Friedberg campus: a grey wall with a round niche holding a bronze bell that
  * swings and rings, a dark terrazzo floor. A set piece, not a backdrop, so the page's colour field still shows.
- * University marks (FH logo, crest) are left out on purpose. Two brass plaques on his left name the degrees, confetti
+ * The THM logo is printed on the wall top right, two brass plaques below it name the degrees, confetti
  * drifts down, and he wears gown and mortarboard and jumps for joy (GenMe, Gown).
  */
 export const WALL = { x: -0.2, z: -0.4, width: 3, height: 3 };
@@ -32,7 +32,10 @@ const CLAPPER = { lag: 0.14, gain: 1.35, strike: 0.38 };
 const FLOOR = { width: 3, depth: 1.8 };
 /** Plaques on the wall, on his left (+x), clear of the niche. */
 export const PLAQUES = cv.education.map((e, i) => ({ ...e, position: [0.72, 2.05 - i * 0.43, WALL.z + 0.012] as [number, number, number] }));
-const PLAQUE = { width: 0.62, height: 0.31 };
+export const PLAQUE = { width: 0.62, height: 0.31 };
+/** THM logo printed on the wall above the plaques, twice their width; aspect from the logo artwork (830 x 278). */
+const LOGO_ART = { width: 830, height: 278 };
+export const LOGO = { width: 2 * PLAQUE.width, height: (2 * PLAQUE.width * LOGO_ART.height) / LOGO_ART.width, position: [0.67, 2.62, WALL.z + 0.004] as [number, number, number] };
 const CONFETTI = 260;
 const CONFETTI_COLOURS = ["#80ba24", "#c4c6ca", "#686c72", "#f2f2ef"]; // THM green and the photo's greys
 
@@ -124,6 +127,51 @@ function plaqueFace(title: string, subtitle: string) {
   return t;
 }
 
+/**
+ * THM logo, redrawn as vector shapes in the artwork's own units (830 x 278): the square pattern, the divider, the
+ * block letters THM, and the wordmark below, on a transparent background.
+ */
+function thmLogo() {
+  const k = 2; // pixels per artwork unit
+  const c = document.createElement("canvas");
+  c.width = LOGO_ART.width * k;
+  c.height = LOGO_ART.height * k;
+  const ctx = c.getContext("2d")!;
+  ctx.scale(k, k);
+  const green = "#80ba24";
+  const grey = "#4a5c66";
+  ctx.fillStyle = green;
+  // Squares: 35 wide on a 52 pitch, three columns by four rows with the top-left one missing.
+  for (let row = 0; row < 4; row++) for (let col = row === 0 ? 1 : 0; col < 3; col++) ctx.fillRect(col * 52, row * 52, 35, 35);
+  const poly = (...pts: number[]) => {
+    ctx.beginPath();
+    for (let i = 0; i < pts.length; i += 2) ctx.lineTo(pts[i], pts[i + 1]);
+    ctx.fill();
+  };
+  const CAP = 190;
+  ctx.fillRect(276, 0, 144, 36); // T
+  ctx.fillRect(329, 0, 39, CAP);
+  ctx.fillRect(462, 0, 38, CAP); // H
+  ctx.fillRect(568, 0, 40, CAP);
+  ctx.fillRect(500, 78, 68, 32);
+  poly(650, 0, 690, 0, 740, 108, 790, 0, 830, 0, 830, CAP, 791, CAP, 791, 78, 740, 158, 689, 78, 689, CAP, 650, CAP); // M
+  ctx.fillStyle = grey;
+  ctx.fillRect(206, 0, 5, CAP); // divider
+  // Wordmark: condensed caps, squeezed or stretched to span the artwork's full width.
+  ctx.font = '600 58px "DIN Condensed", "Arial Narrow", "Roboto Condensed", sans-serif';
+  ctx.textBaseline = "alphabetic";
+  const text = "TECHNISCHE HOCHSCHULE MITTELHESSEN";
+  ctx.save();
+  ctx.translate(0, 276);
+  ctx.scale(LOGO_ART.width / ctx.measureText(text).width, 1);
+  ctx.fillText(text, 0, 0);
+  ctx.restore();
+  const t = new CanvasTexture(c);
+  t.colorSpace = "srgb";
+  t.anisotropy = 4;
+  return t;
+}
+
 /** Alpha map that is opaque in the middle and fades to clear over the given fraction of each edge. */
 function edgeFade(edges: { left: number; right: number; top: number; bottom: number }, hole?: { u: number; v: number; r: number }) {
   const size = 512;
@@ -192,6 +240,7 @@ export function Graduation() {
       ),
       floor: edgeFade({ left: 0.25, right: 0.25, top: 0, bottom: 0.45 }),
       niche: nicheShade(),
+      logo: thmLogo(),
       bronze: bronze(),
       plaques: PLAQUES.map((p) => {
         const [title, ...field] = p.degree.split(" ");
@@ -301,6 +350,10 @@ export function Graduation() {
       <points geometry={chips}>
         <pointsMaterial color="#9a9a9a" size={0.02} />
       </points>
+      <mesh position={LOGO.position}>
+        <planeGeometry args={[LOGO.width, LOGO.height]} />
+        <meshStandardMaterial map={maps.logo} transparent roughness={0.9} depthWrite={false} />
+      </mesh>
       {PLAQUES.map((p, i) => (
         <group key={p.degree} position={p.position}>
           <mesh castShadow>

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { Color, Vector3 } from "three";
 import { STATIONS } from "@/lib/scroll-map";
-import { BELL, BELL_HEIGHT, BELL_RADIUS, HANDLE, SWING, NICHE, PLAQUES, terrazzo, WALL } from "./Graduation";
+import { BELL, BELL_HEIGHT, BELL_RADIUS, HANDLE, LOGO, PLAQUE, SWING, NICHE, PLAQUES, terrazzo, WALL } from "./Graduation";
 import { TEAM } from "./Team";
 import { CUSTOMER, FLEET } from "./Fleet";
 import { FOG, fogWeight, launchWeight, liftoff, PAD } from "./Launch";
@@ -47,6 +47,14 @@ describe("graduation wall", () => {
       expect(p.position[2]).toBeGreaterThan(WALL.z);
     }
     expect(PLAQUES[0].position[1] - PLAQUES[1].position[1]).toBeGreaterThan(0.31);
+  });
+
+  it("prints the logo top right, above the plaques, twice their size, on the wall and clear of the niche", () => {
+    expect(LOGO.width).toBeCloseTo(2 * PLAQUE.width);
+    expect(LOGO.position[1] - LOGO.height / 2).toBeGreaterThan(PLAQUES[0].position[1] + PLAQUE.height / 2);
+    expect(LOGO.position[0] + LOGO.width / 2).toBeLessThanOrEqual(WALL.x + WALL.width / 2);
+    expect(LOGO.position[0] - LOGO.width / 2).toBeGreaterThan(NICHE.center[0] + NICHE.radius);
+    expect(LOGO.position[1] + LOGO.height / 2).toBeLessThan(WALL.height);
   });
 
   it("scatters terrazzo chips over the whole floor, not just a patch in the middle", () => {
