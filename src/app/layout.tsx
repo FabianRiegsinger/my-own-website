@@ -7,7 +7,7 @@ import "./globals.css";
 
 const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
 
-const title = "Fabian Riegsinger — Automotive Engineer → Agentic Builder";
+const title = "Fabian Riegsinger — Agentic Automotive Engineer";
 const description = cv.profile.summary.split(". ")[0] + ".";
 
 export const metadata: Metadata = {

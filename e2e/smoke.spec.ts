@@ -82,7 +82,7 @@ for (const path of ["/impressum", "/privacy"]) {
 
 test("metadata", async ({ page }) => {
   await page.goto("/");
-  await expect(page).toHaveTitle("Fabian Riegsinger — Automotive Engineer → Agentic Builder");
+  await expect(page).toHaveTitle("Fabian Riegsinger — Agentic Automotive Engineer");
   expect(await page.locator('meta[property="og:image"]').count()).toBeGreaterThan(0);
 });
 
