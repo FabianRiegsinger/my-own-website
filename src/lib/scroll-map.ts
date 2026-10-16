@@ -67,17 +67,17 @@ export const JOB_STATIONS: StationId[] = ["esas", "mobileye"];
 
 const byId = (id: StationId) => STATIONS.find((st) => st.id === id)!;
 
-function rangeWeight(offset: number, start: number, end: number, fade: number): number {
-  const o = clamp01(offset);
-  if (o >= start && o <= end) return 1;
-  const d = o < start ? start - o : o - end;
-  return clamp01(1 - d / fade);
-}
-
-/** 1 inside the station's range, linear fade to 0 over `fade` on either side. */
-export function stationWeight(offset: number, id: StationId, fade = 0.05): number {
+/**
+ * Station set visibility: 0 outside its page, fading in over the first `fade` of the page and out over the last, so
+ * two pages' sets are never on stage together (the very start and end of the site do not fade).
+ */
+export function stationWeight(offset: number, id: StationId, fade = 0.015): number {
   const s = byId(id);
-  return rangeWeight(offset, s.start, s.end, fade);
+  const o = clamp01(offset);
+  if (o < s.start || o > s.end) return 0;
+  const fadeIn = s.start === 0 ? 1 : (o - s.start) / fade;
+  const fadeOut = s.end === 1 ? 1 : (s.end - o) / fade;
+  return clamp01(Math.min(fadeIn, fadeOut));
 }
 
 /** Figure yaw: each page's own `yaw`, eased toward the next page's over the second half of the page (like the camera). */
