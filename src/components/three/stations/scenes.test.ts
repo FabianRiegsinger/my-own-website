@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { Color, Vector3 } from "three";
 import { STATIONS } from "@/lib/scroll-map";
-import { BELL, CAPS, capFlight, HANDLE, NICHE, PLAQUES, terrazzo, WALL } from "./Graduation";
+import { BELL, HANDLE, NICHE, PLAQUES, terrazzo, WALL } from "./Graduation";
 import { TEAM } from "./Team";
 import { CUSTOMER, FLEET } from "./Fleet";
 import { FOG, fogWeight, launchWeight, liftoff, PAD } from "./Launch";
@@ -45,24 +45,6 @@ describe("graduation wall", () => {
     expect(Math.max(...xs) - Math.min(...xs)).toBeGreaterThan(2.6); // floor is 3 wide
     expect(Math.max(...zs) - Math.min(...zs)).toBeGreaterThan(1.4); // and 1.8 deep
     expect(Math.min(...zs)).toBeGreaterThanOrEqual(WALL.z);
-  });
-
-  it("throws the caps up from above his head at a swing peak, in front of the wall, and lands them", () => {
-    const peak = Math.PI / 2 / 2.6;
-    CAPS.forEach((_, i) => {
-      const start = capFlight(i, peak + CAPS[i].delay);
-      expect(start.position[1]).toBeGreaterThan(1.8);
-      let highest = 0;
-      let landed = false;
-      for (let t = peak; t < peak + 2; t += 0.02) {
-        const f = capFlight(i, t);
-        expect(f.position[2]).toBeGreaterThan(WALL.z);
-        highest = Math.max(highest, f.position[1]);
-        landed ||= !f.airborne;
-      }
-      expect(highest).toBeGreaterThan(2.5);
-      expect(landed).toBe(true);
-    });
   });
 });
 

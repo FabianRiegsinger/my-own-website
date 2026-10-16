@@ -1,8 +1,8 @@
 "use client";
 
 import { useFrame } from "@react-three/fiber";
-import { useLayoutEffect, useMemo, useRef } from "react";
-import { BufferGeometry, CanvasTexture, Color, DoubleSide, Float32BufferAttribute, type Group, type InstancedMesh, LatheGeometry, Object3D, Vector2 } from "three";
+import { useMemo, useRef } from "react";
+import { BufferGeometry, CanvasTexture, DoubleSide, Float32BufferAttribute, type Group, LatheGeometry, Vector2 } from "three";
 import { cv } from "@/content/cv";
 import { stationWeight } from "@/lib/scroll-map";
 import { fade } from "../fade";
@@ -11,8 +11,8 @@ import { useStationOffset } from "../station-offset";
 /**
  * Graduation, after the photo at the Friedberg campus: a grey wall with a round niche holding a bronze bell that
  * graduates ring, a dark terrazzo floor. A set piece, not a backdrop, so the page's colour field still shows.
- * University marks (FH logo, crest) are left out on purpose. Every other ring throws mortarboard caps, confetti drifts
- * down, and two brass plaques on his left name the degrees.
+ * University marks (FH logo, crest) are left out on purpose. Two brass plaques on his left name the degrees; he wears
+ * gown and mortarboard and jumps for joy (GenMe, Gown).
  */
 export const WALL = { x: -0.2, z: -0.4, width: 3, height: 3 };
 /** Round niche in the wall, on Fabian's right (Mixamo rigs face +z, so his right is -x). */
@@ -23,36 +23,14 @@ export const HANDLE: [number, number, number] = [-0.55, 1.82, -0.1];
 
 const BELL_HEIGHT = 0.42;
 const FLOOR = { width: 3, depth: 1.8 };
-/** Bell swing rhythm (rad/s), shared with the ring pose in arm-pose.ts. */
-const RING_RATE = 2.6;
-const RING_PERIOD = (2 * Math.PI) / RING_RATE;
-/** Caps fly on every other ring, so the throw stays readable instead of constant. */
-export const THROW_CYCLE = RING_PERIOD * 2;
-const GRAVITY = 4.9;
 /** Plaques on the wall, on his left (+x), clear of the niche. */
 export const PLAQUES = cv.education.map((e, i) => ({ ...e, position: [0.72, 2.05 - i * 0.43, WALL.z + 0.012] as [number, number, number] }));
 const PLAQUE = { width: 0.62, height: 0.31 };
-const CONFETTI = 260;
-const CONFETTI_COLOURS = ["#80ba24", "#c4c6ca", "#686c72", "#f2f2ef"]; // THM green and the photo's greys
 
 /** Deterministic pseudo-random so every visit looks the same. */
 function rand(seed: number) {
   const x = Math.sin(seed * 9301 + 49297) * 233280;
   return x - Math.floor(x);
-}
-
-/** Cap launch velocities, seeded so every visit throws the same way. */
-export const CAPS = [0, 1, 2, 3].map((i) => ({ vx: (rand(i + 7) - 0.4) * 1.2, vy: 3 + rand(i + 11) * 0.8, vz: 0.3 + rand(i + 3) * 0.5, spin: (rand(i + 5) - 0.5) * 9, delay: i * 0.08 }));
-
-/** Seconds since the caps were last thrown (every other swing peak); GenMe cheers on the same beat. */
-export const sinceThrow = (t: number) => (((t - RING_PERIOD / 4) % THROW_CYCLE) + THROW_CYCLE) % THROW_CYCLE;
-
-/** Where cap `i` is at time `t`: thrown from above his head at each other swing peak, falling back to the floor. */
-export function capFlight(i: number, t: number) {
-  const c = CAPS[i];
-  const u = Math.max(0, sinceThrow(t) - c.delay);
-  const y = 1.9 + c.vy * u - GRAVITY * u * u;
-  return { position: [0.05 + c.vx * u, Math.max(0.02, y), 0.1 + c.vz * u] as [number, number, number], spin: c.spin * u, airborne: y > 0.02 };
 }
 
 /** Floor opacity at (x, z): the same linear edge ramps as the floor's alpha map (sides 25 %, front 45 %). */
@@ -182,10 +160,6 @@ function nicheShade() {
 
 export function Graduation() {
   const root = useRef<Group>(null);
-  const swing = useRef<Group>(null);
-  const clapper = useRef<Group>(null);
-  const caps = useRef<Group>(null);
-  const confetti = useRef<InstancedMesh>(null);
   const offset = useStationOffset();
 
   const bell = useMemo(() => new LatheGeometry(BELL_PROFILE.map(([r, y]) => new Vector2(r, y)), 64), []);
@@ -203,47 +177,10 @@ export function Graduation() {
     }),
     [],
   );
-  // Confetti flakes: seeded spot over the floor, fall speed, phase and tumble.
-  const flakes = useMemo(
-    () =>
-      Array.from({ length: CONFETTI }, (_, i) => ({
-        x: WALL.x + (rand(i * 3) - 0.5) * 2.4,
-        z: WALL.z + 0.2 + rand(i * 3 + 1) * 1.1,
-        speed: 0.35 + rand(i * 3 + 2) * 0.35,
-        phase: rand(i + 400) * 10,
-        tumble: rand(i + 900) * 6,
-      })),
-    [],
-  );
-  const dummy = useMemo(() => new Object3D(), []);
-  useLayoutEffect(() => {
-    flakes.forEach((_, i) => confetti.current?.setColorAt(i, new Color(CONFETTI_COLOURS[i % CONFETTI_COLOURS.length])));
-  }, [flakes]);
   const chips = useMemo(() => new BufferGeometry().setAttribute("position", new Float32BufferAttribute(terrazzo(), 3)), []);
 
-  useFrame(({ clock }) => {
-    if (!root.current || !swing.current || !clapper.current || !caps.current || !confetti.current) return;
-    fade(root.current, stationWeight(offset.current, "education"));
-    if (!root.current.visible) return;
-    const t = clock.elapsedTime;
-    // Swings when the arm tugs the handle (same rhythm as the ring pose in arm-pose.ts).
-    const swingAt = (s: number) => -0.12 * Math.max(0, Math.sin(s * RING_RATE));
-    swing.current.rotation.z = swingAt(t);
-    // The clapper hangs free: it trails the bell a beat late and overshoots, striking the sound bow on the way back.
-    clapper.current.rotation.z = 1.5 * swingAt(t - 0.16) - swing.current.rotation.z;
-    caps.current.children.forEach((cap, i) => {
-      const f = capFlight(i, t);
-      cap.visible = f.airborne;
-      cap.position.set(...f.position);
-      cap.rotation.set(f.spin * 0.6, f.spin, f.spin * 0.3);
-    });
-    flakes.forEach((f, i) => {
-      dummy.position.set(f.x + Math.sin(t * 1.3 + f.phase) * 0.08, 3.2 - ((t * f.speed + f.phase) % 3.4), f.z);
-      dummy.rotation.set(t * 2 + f.tumble, t * 1.4 + f.tumble, f.tumble);
-      dummy.updateMatrix();
-      confetti.current!.setMatrixAt(i, dummy.matrix);
-    });
-    confetti.current.instanceMatrix.needsUpdate = true;
+  useFrame(() => {
+    if (root.current) fade(root.current, stationWeight(offset.current, "education"));
   });
 
   const bellTop: [number, number, number] = [BELL[0], BELL[1] + BELL_HEIGHT / 2, BELL[2]];
@@ -263,7 +200,7 @@ export function Graduation() {
         <boxGeometry args={[0.05, 0.05, bellTop[2] - WALL.z]} />
         <meshStandardMaterial color="#2a2a2c" roughness={0.6} />
       </mesh>
-      <group ref={swing} position={bellTop}>
+      <group position={bellTop}>
         <mesh geometry={bell} position-y={-BELL_HEIGHT} castShadow>
           <meshPhysicalMaterial map={maps.bronze} metalness={0.9} roughness={0.32} clearcoat={0.4} clearcoatRoughness={0.25} envMapIntensity={1.4} side={DoubleSide} />
         </mesh>
@@ -278,7 +215,7 @@ export function Graduation() {
           <torusGeometry args={[0.032, 0.011, 10, 24]} />
           <meshStandardMaterial color="#7a5c2e" metalness={0.85} roughness={0.4} />
         </mesh>
-        <group ref={clapper} position-y={-0.03}>
+        <group position-y={-0.03}>
           <mesh position-y={-0.15}>
             <cylinderGeometry args={[0.007, 0.007, 0.3, 8]} />
             <meshStandardMaterial color="#2a2a2c" metalness={0.7} roughness={0.5} />
@@ -313,29 +250,6 @@ export function Graduation() {
           </mesh>
         </group>
       ))}
-      <group ref={caps}>
-        {CAPS.map((_, i) => (
-          <group key={i} visible={false}>
-            <mesh castShadow>
-              <boxGeometry args={[0.24, 0.014, 0.24]} />
-              <meshStandardMaterial color="#17181b" roughness={0.7} />
-            </mesh>
-            <mesh position-y={-0.04}>
-              <cylinderGeometry args={[0.075, 0.085, 0.07, 18]} />
-              <meshStandardMaterial color="#17181b" roughness={0.8} />
-            </mesh>
-            {/* Tassel in THM green. */}
-            <mesh position={[0.11, -0.05, 0.11]}>
-              <cylinderGeometry args={[0.006, 0.006, 0.1, 6]} />
-              <meshStandardMaterial color="#80ba24" roughness={0.6} />
-            </mesh>
-          </group>
-        ))}
-      </group>
-      <instancedMesh ref={confetti} args={[undefined, undefined, CONFETTI]}>
-        <planeGeometry args={[0.03, 0.018]} />
-        <meshStandardMaterial side={DoubleSide} roughness={0.8} />
-      </instancedMesh>
     </group>
   );
 }

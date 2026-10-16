@@ -3,12 +3,13 @@
 import { useGLTF } from "@react-three/drei";
 import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
-import { Box3, MathUtils, Raycaster, Vector2, MeshStandardMaterial, Quaternion, Vector3, type Group, type Material, type Mesh, type Object3D } from "three";
-import { cheerBeats, THROW_AT } from "@/lib/cheer";
+import { Box3, MathUtils, Matrix4, Raycaster, Vector2, MeshStandardMaterial, Quaternion, Vector3, type Group, type Material, type Mesh, type Object3D } from "three";
+import { JUMP_PERIOD, jumpBeats } from "@/lib/cheer";
 import { ENTRANCE, entrance, introStep } from "@/lib/entrance";
 import { heading, stationAt, stationWeight } from "@/lib/scroll-map";
+import { fade } from "./fade";
+import { Gown } from "./Gown";
 import { useStationOffset } from "./station-offset";
-import { sinceThrow, THROW_CYCLE } from "./stations/Graduation";
 
 const MODEL = "/models/me.glb";
 const HEIGHT = 1.8;
@@ -47,7 +48,7 @@ const CLICK_MS = 400;
 const GREET = 2.6; // s
 const GREET_TILT = 0.12; // head tilt (rad) while greeting
 const CHEER_V = 2.6; // rad up from arms-down: a V above the shoulders
-const HOP = 0.07; // world units
+const JUMP = 0.22; // world units
 /** Waving hand: palm turned to the viewer (supination, shared with the forearm twist bones), tilted a little inward. */
 const PALM_TURN = Math.PI / 2;
 const HAND_TILT = 0.2;
@@ -77,12 +78,15 @@ const atTop = () => window.scrollY < TOP_PX;
 
 const q = new Quaternion();
 const pq = new Quaternion();
+const toFrame = new Matrix4();
 
 /** One posed bone: its rest rotation and its parent's rotation relative to the model root (both fixed). */
 interface Joint {
   bone: Object3D;
   rest: Quaternion;
   parent: Quaternion;
+  /** Bind-pose transform relative to the model root. */
+  bind: Matrix4;
 }
 
 /**
@@ -105,7 +109,7 @@ function lowest(root: Object3D, bones: Object3D[]) {
 /**
  * Generated likeness of Fabian, rigged but without clips: walks in on the landing page (same choreography as the
  * mannequin Figure: walk in, turn, wave), then a procedural idle (arms down, breathing, weight shift); turns with the scroll.
- * On the education page he celebrates on each cap throw: wind-up, toss into a V with a hop, two punches at the sky, a breather.
+ * On the education page he wears gown and mortarboard (Gown) and jumps for joy: crouch, spring up with the arms in a V, land.
  */
 export function GenMe({ shadows }: { shadows: boolean }) {
   const { scene } = useGLTF(MODEL, "/draco/");
@@ -120,6 +124,7 @@ export function GenMe({ shadows }: { shadows: boolean }) {
   const spin = useRef({ angle: 0, dragging: false, x: 0, x0: 0, t0: 0 });
   const greet = useRef(-1); // seconds into a click greeting, -1 when none
   const headYaw = useRef(0);
+  const gown = useRef<Group>(null);
   const { camera, gl } = useThree();
   const { scale, offset: centre } = useMemo(() => {
     const box = new Box3().setFromObject(scene);
@@ -150,13 +155,18 @@ export function GenMe({ shadows }: { shadows: boolean }) {
     const joint = (name: string): Joint | null => {
       const bone = scene.getObjectByName(name);
       if (!bone?.parent) return null;
-      return { bone, rest: bone.quaternion.clone(), parent: inv.clone().multiply(bone.parent.getWorldQuaternion(new Quaternion())) };
+      return { bone, rest: bone.quaternion.clone(), parent: inv.clone().multiply(bone.parent.getWorldQuaternion(new Quaternion())), bind: scene.matrixWorld.clone().invert().multiply(bone.matrixWorld) };
     };
     const names = ["L_Upperarm", "R_Upperarm", "L_Forearm", "R_Forearm", "L_Thigh", "R_Thigh", "L_Calf", "R_Calf", "L_Foot", "R_Foot", "L_ToeBase", "R_ToeBase", "L_Hand", "R_Hand", "R_ForearmTwist01", "R_ForearmTwist02", "Hip", "Waist", "Spine02", "NeckTwist01", "NeckTwist02", "Head"] as const;
     const found = names.map(joint);
     return found.every(Boolean) ? (Object.fromEntries(names.map((n, i) => [n, found[i]!])) as Record<(typeof names)[number], Joint>) : null;
   }, [scene]);
   const feet = useMemo(() => (joints ? [joints.L_Foot, joints.R_Foot, joints.L_ToeBase, joints.R_ToeBase].map((j) => j.bone) : []), [joints]);
+  /** Undoes each bone's bind pose in the gown's frame (metres, as placed by `centre` and `scale`), so a piece follows its bone. */
+  const unbind = useMemo(() => {
+    const place = new Matrix4().compose(new Vector3(...centre), new Quaternion(), new Vector3(scale, scale, scale));
+    return joints ? Object.fromEntries(Object.entries(joints).map(([n, j]) => [n, place.clone().multiply(j.bind).invert()])) : {};
+  }, [joints, centre, scale]);
   /** Lowest foot joint in the bind pose (model units): the height it is held at so a sole always rests on the floor. */
   const ground = useMemo(() => lowest(scene, feet), [scene, feet]);
 
@@ -319,38 +329,32 @@ export function GenMe({ shadows }: { shadows: boolean }) {
       turn(joints.Head, X, GREET_TILT * greeting);
       turn(joints.Head, Z, -0.12 * Math.sin(Math.PI * MathUtils.clamp(gt / 0.8, 0, 1)));
     }
-    // Celebration (education page), on the cap throw's beat (stations/Graduation, lib/cheer). Gives way to walking and
-    // to a click greeting. Axes as above: upper arm X lifts (R -, L +) and Z swings forward; forearm Y bends the elbow.
-    const cheer = stationWeight(offset.current, "education") * (1 - w) * (1 - wave.current);
+    // Jump for joy (education page, lib/cheer). Gives way to walking and to a click greeting.
+    // Axes as above: upper arm X lifts (R -, L +) and Z swings forward; forearm Y bends the elbow.
+    const joy = stationWeight(offset.current, "education") * (1 - w) * (1 - wave.current);
     let hop = 0;
-    if (cheer > 0.001) {
-      const b = cheerBeats((sinceThrow(t) / THROW_CYCLE + THROW_AT) % 1);
-      const shake = 0.12 * Math.sin(t * 14) * b.up; // hands shaking in the air
-      // Wind-up: arms swung back, chest over the knees. Toss: both arms sweep up into a V, near straight.
-      const lift = cheer * CHEER_V * b.up;
+    if (joy > 0.001) {
+      const b = jumpBeats((t / JUMP_PERIOD) % 1);
+      // Arms swung back in the crouch, thrown up into a V, near straight, for the jump.
+      const lift = joy * CHEER_V * b.up;
       turn(joints.R_Upperarm, X, -lift);
       turn(joints.L_Upperarm, X, lift);
-      turn(joints.R_Upperarm, Z, cheer * (0.2 * b.up - 0.55 * b.windup));
-      turn(joints.L_Upperarm, Z, cheer * (0.2 * b.up - 0.55 * b.windup));
-      turn(joints.R_Forearm, Y, cheer * (shake - ELBOW * b.up));
-      turn(joints.L_Forearm, Y, cheer * (shake + ELBOW * b.up));
-      // "Yes!": right fist punched at the sky twice, the elbow cocked between punches.
-      turn(joints.R_Upperarm, X, -cheer * b.pump * (2.2 + 0.4 * b.beat));
-      turn(joints.R_Upperarm, Z, cheer * b.pump * 0.15);
-      turn(joints.R_Forearm, X, -cheer * b.pump * 0.9 * (1 - b.beat)); // rest frame, as for the wave: cocks the fist toward the head
-
-      // Body: leans in for the wind-up, opens up and looks after the caps, and up again with each punch.
-      turn(joints.Waist, Z, cheer * (-0.12 * b.crouch + 0.04 * b.up));
-      turn(joints.Spine02, Z, cheer * 0.06 * b.up);
-      turn(joints.Head, Z, cheer * (0.28 * b.up - 0.08 * b.crouch + 0.15 * b.pump));
-      turn(joints.Waist, X, cheer * 0.04 * Math.sin(t * 3) * b.up); // sways from foot to foot with his arms up
-      const knee = cheer * 0.3 * b.crouch;
+      turn(joints.R_Upperarm, Z, joy * (0.2 * b.up - 0.6 * b.windup));
+      turn(joints.L_Upperarm, Z, joy * (0.2 * b.up - 0.6 * b.windup));
+      turn(joints.R_Forearm, Y, -joy * ELBOW * b.up);
+      turn(joints.L_Forearm, Y, joy * ELBOW * b.up);
+      // Chest over the knees in the crouch, opening up and looking skyward in the air.
+      turn(joints.Waist, Z, joy * (-0.15 * b.crouch + 0.05 * b.up));
+      turn(joints.Spine02, Z, joy * 0.06 * b.up);
+      turn(joints.Head, Z, joy * (0.22 * b.up - 0.08 * b.crouch));
+      // Knees bend for take-off and landing (the floor clamp below lowers him); toes point down in the air.
+      const knee = joy * 0.35 * b.crouch;
       for (const [thigh, calf, foot] of [[joints.L_Thigh, joints.L_Calf, joints.L_Foot], [joints.R_Thigh, joints.R_Calf, joints.R_Foot]]) {
         turn(thigh, Z, knee);
         turn(calf, Z, -2 * knee);
-        turn(foot, Z, knee);
+        turn(foot, Z, knee - joy * 0.5 * b.air);
       }
-      hop = cheer * HOP * b.hop;
+      hop = joy * JUMP * b.air;
     }
     // Wave with his right hand (+z): upper arm out to the side, forearm up, swinging side to side at the elbow.
     const wv = wave.current;
@@ -368,6 +372,14 @@ export function GenMe({ shadows }: { shadows: boolean }) {
     }
     // Feet on the floor: the body drops as the legs spread (the natural gait bob) instead of the feet lifting off.
     if (m) m.position.y = centre[1] + (ground - lowest(m, feet)) * scale + hop;
+    // Gown: each piece follows its bone (pose relative to the gown's frame, times the inverse bind pose).
+    const gw = gown.current;
+    if (gw) fade(gw, stationWeight(offset.current, "education"));
+    if (gw?.visible && gw.parent) {
+      g.updateMatrixWorld(true);
+      toFrame.copy(gw.parent.matrixWorld).invert();
+      for (const piece of gw.children) piece.matrix.copy(toFrame).multiply(joints[piece.name as keyof typeof joints].bone.matrixWorld).multiply(unbind[piece.name]);
+    }
   });
 
   // The export faces +x; turn it to face the camera (+z).
@@ -376,6 +388,7 @@ export function GenMe({ shadows }: { shadows: boolean }) {
       <group ref={spinner}>
         <group rotation-y={-Math.PI / 2}>
           <primitive ref={model} object={scene} scale={scale} position={centre} />
+          <Gown ref={gown} shadows={shadows} />
         </group>
       </group>
     </group>

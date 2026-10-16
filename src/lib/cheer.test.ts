@@ -1,24 +1,26 @@
 import { describe, expect, it } from "vitest";
-import { cheerBeats, THROW_AT } from "./cheer";
+import { jumpBeats } from "./cheer";
 
-const at = (q: number) => cheerBeats(q);
+const at = (q: number) => jumpBeats(q);
 
-describe("celebration beats", () => {
-  it("winds up before the throw, arms up with a hop on it", () => {
-    expect(at(THROW_AT - 0.03).crouch).toBeGreaterThan(0.9);
-    expect(at(THROW_AT - 0.03).windup).toBeGreaterThan(0.9);
-    expect(at(THROW_AT + 0.045).hop).toBeGreaterThan(0.9);
-    expect(at(0.3).up).toBe(1);
+describe("jump for joy", () => {
+  it("crouches with the arms back before take-off, feet still on the floor", () => {
+    expect(at(0.25).crouch).toBeGreaterThan(0.9);
+    expect(at(0.25).windup).toBeGreaterThan(0.9);
+    expect(at(0.25).air).toBe(0);
   });
 
-  it("does not hold the arms up: fist pump, then a breather with nothing raised", () => {
-    expect(at(0.7).up).toBe(0);
-    expect(at(0.7).pump).toBe(1);
+  it("is highest mid-flight with the arms up, and lands on bent knees", () => {
+    expect(at(0.44).air).toBeGreaterThan(0.99);
+    expect(at(0.44).up).toBe(1);
+    expect(at(0.44).crouch).toBe(0);
+    expect(at(0.62).air).toBe(0);
+    expect(at(0.62).crouch).toBeGreaterThan(0.5);
+  });
+
+  it("stands at rest with the arms down before the next jump, and loops without a jump", () => {
     const rest = at(0.95);
-    expect(Math.max(rest.crouch, rest.windup, rest.up, rest.hop, rest.pump)).toBe(0);
-  });
-
-  it("loops without a jump: start and end of the cycle match", () => {
+    expect(Math.max(rest.crouch, rest.windup, rest.up, rest.air)).toBe(0);
     expect(at(0)).toEqual(at(1));
   });
 });
