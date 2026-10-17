@@ -142,7 +142,7 @@ test("nine pages in order, each its own glass panel", async ({ page }) => {
 test("pages snap and panels fade in with scroll", async ({ page }) => {
   await page.goto("/");
   await expect(page.locator("canvas")).toBeAttached({ timeout: 10_000 }); // the 3D upgrade replaces the DOM: act on the final one
-  expect(await page.evaluate(() => getComputedStyle(document.documentElement).scrollSnapType)).toMatch(/^y( proximity)?$/); // proximity is the default, so browsers may omit it
+  expect(await page.evaluate(() => getComputedStyle(document.documentElement).scrollSnapType)).toBe("y mandatory"); // a scroll always settles on a page
   expect(await page.locator("#about").evaluate((el) => getComputedStyle(el).scrollSnapAlign)).toContain("start");
   const timeline = await page.locator("#about [data-glass]").evaluate((el) => getComputedStyle(el).getPropertyValue("animation-timeline"));
   expect(timeline).toContain("view");
