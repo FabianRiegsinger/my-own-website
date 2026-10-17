@@ -245,3 +245,12 @@ test("launch page counts down the next challenges and hands over to contact", as
   for (const t of ["T-3", "T-2", "T-1"]) await expect(launch).toContainText(t);
   await expect(launch.locator('a[href="#contact"]')).toBeAttached();
 });
+
+test("hero Contact button jumps straight to the contact page", async ({ page }) => {
+  await page.goto("/");
+  await page.locator("#hero").getByRole("link", { name: "Contact" }).click();
+  // Instant, not a smooth scroll through every page: already there on the next frame.
+  const offset = await page.evaluate(() => new Promise<number>((r) => requestAnimationFrame(() => r(document.getElementById("contact")!.getBoundingClientRect().top))));
+  expect(Math.abs(offset)).toBeLessThan(2);
+  expect(page.url()).toMatch(/#contact$/);
+});

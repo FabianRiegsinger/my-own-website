@@ -1,4 +1,5 @@
 import type { CV } from "@/content/types";
+import { ContactJumpLink } from "./JumpLink";
 import { Section } from "./Section";
 
 const PILL =
@@ -19,9 +20,7 @@ export function Hero({ cv, showFigure = false }: { cv: CV; showFigure?: boolean 
                 <path d="M12 5v14M6 13l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </a>
-            <a href="#contact" className={PILL}>
-              Contact
-            </a>
+            <ContactJumpLink className={PILL}>Contact</ContactJumpLink>
           </div>
         </div>
         {showFigure && (

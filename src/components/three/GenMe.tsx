@@ -8,6 +8,7 @@ import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeom
 import { JUMP_PERIOD, jumpBeats } from "@/lib/cheer";
 import { COUGHS, coughBeats, sootAt } from "@/lib/cough";
 import { ENTRANCE, entrance, introStep } from "@/lib/entrance";
+import { contactJump } from "@/lib/jump";
 import { heading, stationAt, stationWeight } from "@/lib/scroll-map";
 import { fade } from "./fade";
 import { Gown } from "./Gown";
@@ -462,8 +463,11 @@ export function GenMe({ shadows }: { shadows: boolean }) {
       hop = joy * JUMP * b.air;
     }
     // Contact page, after the launch: sooty, he coughs into his fist three times, then smiles and gives a thumbs-up
-    // (lib/cough). Starts once he has arrived, resets when he leaves. Axes as above.
-    const contact = stationWeight(offset.current, "contact");
+    // (lib/cough). Starts once he has arrived, resets when he leaves. Axes as above. Skipped (clean) when he jumped
+    // straight here from the hero, until he leaves the page.
+    const atContact = stationWeight(offset.current, "contact");
+    if (atContact < 0.2 && !contactJump.snap) contactJump.clean = false;
+    const contact = contactJump.clean ? 0 : atContact;
     if (contact < 0.2) coughT.current = -1;
     else if (coughT.current >= 0 || contact > 0.9) coughT.current = Math.max(0, coughT.current) + dt;
     const cb = coughBeats(coughT.current);

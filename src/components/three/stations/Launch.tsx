@@ -26,6 +26,7 @@ import {
   Vector3,
 } from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
+import { contactJump } from "@/lib/jump";
 import { STATIONS } from "@/lib/scroll-map";
 import { fade } from "../fade";
 import { useStationOffset } from "../station-offset";
@@ -344,7 +345,7 @@ export function Launch() {
 
   useFrame(({ clock }) => {
     if (fog.current) {
-      fade(fog.current, fogWeight(offset.current));
+      fade(fog.current, contactJump.clean ? 0 : fogWeight(offset.current)); // no launch seen, no fog
       // Slow sideways drift, so the fog lives without rising.
       if (fog.current.visible)
         fogPuffs.current.forEach((p, i) => p && (p.position.x = fogLayout[i].x + 0.15 * Math.sin(clock.elapsedTime * 0.25 + fogLayout[i].phase)));
