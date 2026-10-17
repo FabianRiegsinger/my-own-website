@@ -21,7 +21,9 @@ export function CameraRig() {
     const t = MathUtils.smoothstep(localProgress(offset.current), 0.5, 1);
     goalPos.fromArray(s.camera).lerp(pos.fromArray(next.camera), t);
     goalLook.fromArray(s.target).lerp(pos.fromArray(next.target), t);
-    const k = 1 - Math.exp(-3 * dt);
+    // First frame starts at the goal (k = 1): easing in from the Canvas default would tilt the view on load,
+    // so the figure seemed to step down while walking in.
+    const k = shift.current === null ? 1 : 1 - Math.exp(-3 * dt);
     camera.position.lerp(goalPos, k);
     look.lerp(goalLook, k);
     camera.lookAt(look);

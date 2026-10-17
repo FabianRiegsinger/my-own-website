@@ -1,8 +1,8 @@
 "use client";
 
-import { useFrame } from "@react-three/fiber";
-import { useLayoutEffect, useMemo, useRef } from "react";
-import { BufferGeometry, Float32BufferAttribute, type Group, type InstancedMesh, Matrix4, Quaternion, Vector3 } from "three";
+import { useFrame, useThree } from "@react-three/fiber";
+import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
+import { BufferGeometry, Float32BufferAttribute, type Group, type InstancedMesh, type LineSegments, Matrix4, Quaternion, Vector3 } from "three";
 import { STATIONS, stationWeight } from "@/lib/scroll-map";
 import { fade } from "../fade";
 import { sitePalette } from "./SkillCloud";
@@ -14,8 +14,13 @@ export const FOV_DEG = 35;
 const MAX_ASPECT = 21 / 9;
 /** How far behind the figure the sheet hangs. */
 const BEHIND = 4;
-const COUNT = 170;
+const COUNT = 260;
 const LINK = 1.6;
+/**
+ * Render layer of the sheet. ContactShadows draws everything its camera sees on layer 0 (castShadow is ignored), so
+ * on layer 0 the sheet would print blurred streaks on the floor; the scene camera enables this layer instead.
+ */
+const LAYER = 1;
 
 /** Deterministic pseudo-random so server/client and every visit look the same. */
 function rand(seed: number) {
@@ -47,6 +52,8 @@ export function AgentNetwork() {
   const root = useRef<Group>(null);
   const sway = useRef<Group>(null);
   const nodes = useRef<InstancedMesh>(null);
+  const edges = useRef<LineSegments>(null);
+  const camera = useThree((s) => s.camera);
   const offset = useStationOffset();
   const layout = useMemo(() => networkLayout(), []);
   const m = useMemo(() => new Matrix4(), []);
@@ -73,6 +80,12 @@ export function AgentNetwork() {
     return { points, lines, colors: points.map(tint) };
   }, [layout]);
 
+  useEffect(() => {
+    edges.current?.layers.set(LAYER);
+    nodes.current?.layers.set(LAYER);
+    camera.layers.enable(LAYER);
+  }, [camera]);
+
   useLayoutEffect(() => {
     colors.forEach((c, i) => nodes.current?.setColorAt(i, c));
   }, [colors]);
@@ -93,7 +106,7 @@ export function AgentNetwork() {
   return (
     <group ref={root} position={layout.center} quaternion={layout.quaternion}>
       <group ref={sway}>
-        <lineSegments geometry={lines}>
+        <lineSegments ref={edges} geometry={lines}>
           <lineBasicMaterial vertexColors opacity={0.4} toneMapped={false} />
         </lineSegments>
         <instancedMesh ref={nodes} args={[undefined, undefined, COUNT]}>

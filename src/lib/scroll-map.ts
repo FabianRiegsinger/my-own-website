@@ -30,7 +30,8 @@ export const STATIONS: Station[] = [
   { id: "esas", start: 0.36, end: 0.48, clip: "laptop", camera: [0.3, 1.9, 5.8], target: [0.1, 1.1, 0], shift: BESIDE_PANEL, yaw: 0.35 },
   { id: "mobileye", start: 0.48, end: 0.6, clip: "tablet", camera: [1.6, 2.3, 6.2], target: [0, 1.3, -2], shift: BESIDE_PANEL, yaw: -0.3 },
   { id: "agentic", start: 0.6, end: 0.74, clip: "typing", camera: [-3, 1.8, 4], target: [0, 1, 0], shift: 0.32, yaw: 0 },
-  { id: "skills", start: 0.74, end: 0.84, clip: "idle", camera: [0, 2.2, 6.4], target: [0, 1.2, 0], shift: BESIDE_PANEL, yaw: 0 },
+  // A touch right of centre: the word cloud is wider than him and must clear the panel on the left and the screen edge.
+  { id: "skills", start: 0.74, end: 0.84, clip: "idle", camera: [0, 2.2, 6.4], target: [0, 1.2, 0], shift: BESIDE_PANEL + 0.04, yaw: 0 },
   // What comes next: on the launch pad, looking up at the rocket (stations/Launch), which lifts off into contact.
   { id: "launch", start: 0.84, end: 0.93, clip: "idle", camera: [0.8, 1.2, 7.4], target: [-0.6, 2, 0], shift: BESIDE_PANEL, yaw: -0.4 },
   { id: "contact", start: 0.93, end: 1, clip: "wave", camera: [0, 1.3, 6], target: [0, 1, 0], shift: BESIDE_PANEL, yaw: 0 },
@@ -66,17 +67,17 @@ export const JOB_STATIONS: StationId[] = ["esas", "mobileye"];
 
 const byId = (id: StationId) => STATIONS.find((st) => st.id === id)!;
 
-function rangeWeight(offset: number, start: number, end: number, fade: number): number {
-  const o = clamp01(offset);
-  if (o >= start && o <= end) return 1;
-  const d = o < start ? start - o : o - end;
-  return clamp01(1 - d / fade);
-}
-
-/** 1 inside the station's range, linear fade to 0 over `fade` on either side. */
-export function stationWeight(offset: number, id: StationId, fade = 0.05): number {
+/**
+ * Station set visibility: 0 outside its page, fading in over the first `fade` of the page and out over the last, so
+ * two pages' sets are never on stage together (the very start and end of the site do not fade).
+ */
+export function stationWeight(offset: number, id: StationId, fade = 0.015): number {
   const s = byId(id);
-  return rangeWeight(offset, s.start, s.end, fade);
+  const o = clamp01(offset);
+  if (o < s.start || o > s.end) return 0;
+  const fadeIn = s.start === 0 ? 1 : (o - s.start) / fade;
+  const fadeOut = s.end === 1 ? 1 : (s.end - o) / fade;
+  return clamp01(Math.min(fadeIn, fadeOut));
 }
 
 /** Figure yaw: each page's own `yaw`, eased toward the next page's over the second half of the page (like the camera). */

@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { Color, Vector3 } from "three";
 import { STATIONS } from "@/lib/scroll-map";
-import { BELL, HANDLE, NICHE, WALL } from "./Graduation";
+import { BELL, BELL_HEIGHT, BELL_RADIUS, HANDLE, LOGO, PLAQUE, SWING, NICHE, PLAQUES, terrazzo, WALL } from "./Graduation";
 import { TEAM } from "./Team";
 import { CUSTOMER, FLEET } from "./Fleet";
-import { FOG, fogWeight, launchWeight, liftoff, PAD } from "./Launch";
+import { armSwing, clampRelease, FOG, fogWeight, launchWeight, liftoff, PAD } from "./Launch";
 import { cloudColor, cloudShape, cloudWords, packCloud, SITE_COLORS } from "./SkillCloud";
 
 const facing = (yaw: number) => new Vector3(Math.sin(yaw), 0, Math.cos(yaw));
@@ -21,10 +21,50 @@ describe("graduation wall", () => {
     expect(Math.hypot(BELL[0] - NICHE.center[0], BELL[1] - NICHE.center[1])).toBeLessThan(NICHE.radius);
   });
 
+  it("the bell hangs inside the recess, clear of its back, and swings without touching its side", () => {
+    expect(BELL[2] - BELL_RADIUS).toBeGreaterThan(WALL.z - NICHE.depth);
+    // Lip corners at full swing about the crown stay inside the niche's opening.
+    const pivot = [BELL[0], BELL[1] + BELL_HEIGHT / 2];
+    for (const a of [-SWING.amplitude, SWING.amplitude])
+      for (const x of [-BELL_RADIUS, BELL_RADIUS]) {
+        const px = pivot[0] + x * Math.cos(a) + BELL_HEIGHT * Math.sin(a);
+        const py = pivot[1] + x * Math.sin(a) - BELL_HEIGHT * Math.cos(a);
+        expect(Math.hypot(px - NICHE.center[0], py - NICHE.center[1])).toBeLessThan(NICHE.radius);
+      }
+  });
+
   it("the wall stands behind him and is a set piece, not a full backdrop (the colour field stays visible)", () => {
     expect(WALL.z).toBeLessThan(-0.2);
     expect(WALL.width).toBeLessThan(4);
     expect(NICHE.center[0] + NICHE.radius).toBeLessThan(0); // niche beside him, not behind his head
+  });
+
+  it("hangs a plaque per degree on his left, on the wall, clear of the niche and of each other", () => {
+    expect(PLAQUES.length).toBe(2);
+    for (const p of PLAQUES) {
+      expect(p.position[0] - 0.31).toBeGreaterThan(0.2); // left edge clears his body
+      expect(p.position[0] + 0.31).toBeLessThan(WALL.x + WALL.width / 2);
+      expect(p.position[2]).toBeGreaterThan(WALL.z);
+    }
+    expect(PLAQUES[0].position[1] - PLAQUES[1].position[1]).toBeGreaterThan(0.31);
+  });
+
+  it("prints the logo top right, above the plaques, twice their size, on the wall and clear of the niche", () => {
+    expect(LOGO.width).toBeCloseTo(2 * PLAQUE.width);
+    expect(LOGO.position[1] - LOGO.height / 2).toBeGreaterThan(PLAQUES[0].position[1] + PLAQUE.height / 2);
+    expect(LOGO.position[0] + LOGO.width / 2).toBeLessThanOrEqual(WALL.x + WALL.width / 2);
+    expect(LOGO.position[0] - LOGO.width / 2).toBeGreaterThan(NICHE.center[0] + NICHE.radius);
+    expect(LOGO.position[1] + LOGO.height / 2).toBeLessThan(WALL.height);
+  });
+
+  it("scatters terrazzo chips over the whole floor, not just a patch in the middle", () => {
+    const pos = terrazzo();
+    const xs = pos.filter((_, i) => i % 3 === 0);
+    const zs = pos.filter((_, i) => i % 3 === 2);
+    expect(xs.length).toBeGreaterThan(1500);
+    expect(Math.max(...xs) - Math.min(...xs)).toBeGreaterThan(2.6); // floor is 3 wide
+    expect(Math.max(...zs) - Math.min(...zs)).toBeGreaterThan(1.4); // and 1.8 deep
+    expect(Math.min(...zs)).toBeGreaterThanOrEqual(WALL.z);
   });
 });
 
@@ -138,6 +178,14 @@ describe("skill word cloud", () => {
 
 describe("launch pad", () => {
   const launch = STATIONS.find((s) => s.id === "launch")!;
+
+  it("swings the access arm clear before ignition, and the clamps let go only once it has lifted", () => {
+    expect(armSwing(launch.start)).toBe(0);
+    const firstMove = [...Array(200)].map((_, i) => launch.start + (i / 200) * (launch.end - launch.start)).find((o) => liftoff(o) > 0)!;
+    expect(armSwing(firstMove)).toBe(1);
+    expect(clampRelease(firstMove - 0.001)).toBe(0);
+    expect(clampRelease(launch.end)).toBe(1);
+  });
 
   it("holds the rocket on the pad while the launch page is read", () => {
     expect(liftoff(launch.start)).toBe(0);

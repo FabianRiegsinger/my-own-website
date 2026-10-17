@@ -15,18 +15,23 @@ const FONT = "/fonts/inter-700.typeface.json";
 /**
  * The word cloud hangs 1.6 m behind Fabian, its centre right behind his head as the skills camera sees it: the ray
  * from the camera (0, 2.2, 6.4) through his head (0, 1.65, 0) meets the cloud plane at about (0, 1.5). The unit
- * outline's visual centre sits at (0.15, 0.2), so the group is offset by that. CLOUD_SCALE keeps the right edge on
- * screen; the left part runs behind the frosted panel. Words shrink together until all fit inside the outline.
+ * outline's visual centre sits at (0.15, 0.2), so the group is offset by that. CLOUD_SCALE (with the skills page's
+ * view shift) keeps the whole cloud between the frosted panel and the right screen edge from 1280 px wide up.
+ * Words shrink together until all fit inside the outline.
  */
-const CLOUD_SCALE = 0.98;
+const CLOUD_SCALE = 0.86;
 const CLOUD_X = -0.15 * CLOUD_SCALE;
 const CLOUD_Y = 1.5 - 0.2 * CLOUD_SCALE;
 const CLOUD_Z = -1.6;
 /**
- * His face as the camera sees it on the cloud plane, kept free so no word runs right behind it. The Memoji head's
- * centre is ~1.72 m high; the camera ray through it meets the cloud plane at ~1.6 m (1.25x farther than the head).
+ * Him as the camera sees him on the cloud plane, kept free so no word runs behind him. The plane is 1.25x farther
+ * from the camera than he is, so a height y on him lands at 2.2 + (y - 2.2) * 1.25: head and neck (1.45 to 1.8 m)
+ * at 1.26 to 1.7, his body from the hips up (0.95 to 1.45 m) at 0.64 to 1.26, arms included in the width.
  */
-const HEAD_SPOT = { x: -CLOUD_X, y: 1.5 - CLOUD_Y, w: 0.55, h: 0.85 }; // head and neck
+const HEAD_SPOT = { x: -CLOUD_X, y: 1.48 - CLOUD_Y, w: 0.5, h: 0.48 };
+const BODY_SPOT = { x: -CLOUD_X, y: 0.9 - CLOUD_Y, w: 0.8, h: 0.75 };
+/** This skill sits centred right above his head; the others pack around it. */
+const CROWN = "FlexRay/CAN/Automotive Ethernet";
 
 /** Longest a word may run across the floor (metres); longer names get a smaller font. */
 const MAX_LENGTH = 3.6;
@@ -161,12 +166,16 @@ export function SkillCloud({ skills }: { skills: SkillGroup[] }) {
     const free = UNIT_CLOUD_AREA * CLOUD_SCALE ** 2;
     let k = Math.sqrt((0.5 * free) / built.reduce((a, w) => a + w.box.w * w.box.h, 0));
     let at: { x: number; y: number }[] | null = null;
+    const crown = built.findIndex((w) => w.name === CROWN);
     for (let tries = 0; !at; tries++, k *= 0.92) {
+      const boxes = built.map((w) => ({ w: w.box.w * k, h: w.box.h * k }));
+      const reserved = [HEAD_SPOT, BODY_SPOT];
+      const top = crown < 0 ? null : { x: HEAD_SPOT.x, y: HEAD_SPOT.y + (HEAD_SPOT.h + boxes[crown].h) / 2 + 0.03, ...boxes[crown] };
+      if (top) reserved.push(top);
       try {
-        at = packCloud(
-          built.map((w) => ({ w: w.box.w * k, h: w.box.h * k })),
-          { inside, reserved: [HEAD_SPOT] },
-        );
+        // The others pack around the reserved crown spot; the crown word goes back in at its own index.
+        const packed = packCloud(boxes.filter((_, i) => i !== crown), { inside, reserved });
+        at = top ? [...packed.slice(0, crown), { x: top.x, y: top.y }, ...packed.slice(crown)] : packed;
       } catch (e) {
         if (tries > 15) throw e;
       }
@@ -182,7 +191,7 @@ export function SkillCloud({ skills }: { skills: SkillGroup[] }) {
   useFrame(({ size }) => {
     if (!root.current) return;
     // Short fade: the launch page after it is shorter than the default fade, the cloud would still ghost behind the rocket.
-    fade(root.current, stationWeight(offset.current, "skills", 0.03));
+    fade(root.current, stationWeight(offset.current, "skills"));
     // Below the lg breakpoint the full-width panel covers the cloud; only stray letters would peek out at its edges.
     if (size.width < 1024) root.current.visible = false;
   });
