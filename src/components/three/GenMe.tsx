@@ -12,7 +12,7 @@ import { contactJump } from "@/lib/jump";
 import { heading, stationAt, stationWeight } from "@/lib/scroll-map";
 import { fade } from "./fade";
 import { Gown } from "./Gown";
-import { buildLaptop } from "./props";
+import { buildLaptop, buildTablet } from "./props";
 import { useStationOffset } from "./station-offset";
 
 const MODEL = "/models/me.glb";
@@ -201,6 +201,8 @@ export function GenMe({ shadows }: { shadows: boolean }) {
   const spin = useRef({ angle: 0, dragging: false, x: 0, x0: 0, t0: 0 });
   const laptop = useMemo(() => buildLaptop(), []);
   const laptopRef = useRef<Group>(null);
+  const tablet = useMemo(() => buildTablet(-1), []); // his right hand: -x once he faces +z
+  const tabletRef = useRef<Group>(null);
   const greet = useRef(-1); // seconds into a click greeting, -1 when none
   const headYaw = useRef(0);
   const gown = useRef<Group>(null);
@@ -527,6 +529,12 @@ export function GenMe({ shadows }: { shadows: boolean }) {
       turn(joints.L_Forearm, Y, -1.25 * lap);
       turn(joints.R_Forearm, Y, 1.25 * lap);
     }
+    // Mobileye: shows the customer (stations/Fleet, on his right) the fleet status on a tablet in his right hand.
+    const tab = stationWeight(offset.current, "mobileye") * (1 - w) * (1 - wave.current);
+    if (tab > 0.001) {
+      turn(joints.R_Upperarm, Z, 0.3 * tab);
+      turn(joints.R_Forearm, Y, 1.45 * tab);
+    }
     // Feet on the floor: the body drops as the legs spread (the natural gait bob) instead of the feet lifting off.
     if (m) m.position.y = centre[1] + (ground - lowest(m, feet)) * scale + hop;
     // Fist and cough puffs live in the gown's frame; place them from the posed bones.
@@ -563,6 +571,15 @@ export function GenMe({ shadows }: { shadows: boolean }) {
       spinner.current.worldToLocal(hand);
       laptop.position.set(hand.x, hand.y + 0.03, hand.z + 0.06);
     }
+    // Tablet in the right palm, a little toward the fingers.
+    const tb = tabletRef.current;
+    if (tb) tb.visible = tab > 0.5;
+    if (tb?.visible && spinner.current) {
+      g.updateMatrixWorld(true);
+      hand.setFromMatrixPosition(joints.R_Hand.bone.matrixWorld);
+      spinner.current.worldToLocal(hand);
+      tb.position.set(hand.x + 0.02, hand.y + 0.06, hand.z + 0.05);
+    }
     // Gown: each piece follows its bone (pose relative to the gown's frame, times the inverse bind pose).
     const gw = gown.current;
     if (gw) fade(gw, stationWeight(offset.current, "education"));
@@ -578,6 +595,7 @@ export function GenMe({ shadows }: { shadows: boolean }) {
     <group ref={group}>
       <group ref={spinner}>
         <primitive ref={laptopRef} object={laptop} visible={false} />
+        <primitive ref={tabletRef} object={tablet} visible={false} />
         <group rotation-y={-Math.PI / 2}>
           <primitive ref={model} object={scene} scale={scale} position={centre} />
           <Gown ref={gown} shadows={shadows} />

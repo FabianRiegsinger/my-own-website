@@ -131,6 +131,25 @@ function cone(radius: number, length: number, mat: Material) {
   return m;
 }
 
+/**
+ * Sedan body (hood, cabin, trunk) as a side profile extruded to its width, front at +x, 0.5 long: the hologram's ego
+ * car, and scaled up, the Mobileye test cars. `pane` is the glasshouse, a touch wider so it shows on both sides.
+ */
+export function sedanGeometry() {
+  const profile = new Shape();
+  const pts: [number, number][] = [[-0.25, 0.1], [-0.2, 0.12], [-0.12, 0.125], [-0.06, 0.19], [0.06, 0.19], [0.13, 0.125], [0.23, 0.11], [0.25, 0.075], [0.25, 0.04]];
+  profile.moveTo(-0.25, 0.04);
+  for (const [x, y] of pts) profile.lineTo(x, y);
+  const shell = new ExtrudeGeometry(profile, { depth: 0.2, bevelEnabled: true, bevelThickness: 0.01, bevelSize: 0.008, bevelSegments: 2 });
+  shell.translate(0, 0, -0.1);
+  const glass = new Shape();
+  glass.moveTo(-0.11, 0.128);
+  for (const [x, y] of [[-0.055, 0.183], [0.055, 0.183], [0.12, 0.128]] as [number, number][]) glass.lineTo(x, y);
+  const pane = new ExtrudeGeometry(glass, { depth: 0.216, bevelEnabled: false });
+  pane.translate(0, 0, -0.108);
+  return { shell, pane };
+}
+
 /** The ego car as a wireframe hologram: a sedan side profile (hood, cabin, trunk) extruded to its width, wheels, lights. */
 function egoCar() {
   const car = new Group();
@@ -142,20 +161,8 @@ function egoCar() {
     e.rotation.copy(m.rotation);
     car.add(m, e);
   };
-  // Side profile, front at +x.
-  const profile = new Shape();
-  const pts: [number, number][] = [[-0.25, 0.1], [-0.2, 0.12], [-0.12, 0.125], [-0.06, 0.19], [0.06, 0.19], [0.13, 0.125], [0.23, 0.11], [0.25, 0.075], [0.25, 0.04]];
-  profile.moveTo(-0.25, 0.04);
-  for (const [x, y] of pts) profile.lineTo(x, y);
-  const shell = new ExtrudeGeometry(profile, { depth: 0.2, bevelEnabled: true, bevelThickness: 0.01, bevelSize: 0.008, bevelSegments: 2 });
-  shell.translate(0, 0, -0.1);
+  const { shell, pane } = sedanGeometry();
   add(new Mesh(shell, glow(ACCENT, 0.22)), 25);
-  // Glasshouse: brighter panes over the cabin.
-  const glass = new Shape();
-  glass.moveTo(-0.11, 0.128);
-  for (const [x, y] of [[-0.055, 0.183], [0.055, 0.183], [0.12, 0.128]] as [number, number][]) glass.lineTo(x, y);
-  const pane = new ExtrudeGeometry(glass, { depth: 0.216, bevelEnabled: false });
-  pane.translate(0, 0, -0.108);
   car.add(new Mesh(pane, glow(ACCENT, 0.35)));
   for (const x of [-0.15, 0.15])
     for (const z of [-0.1, 0.1]) {
