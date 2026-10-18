@@ -37,7 +37,8 @@ const member = (id: Sensor, model: string, x: number, z: number, height: number,
 
 /**
  * The ESAS team, one entry per character. Each is a sculpted copy of Fabian's mesh (own haircut and face, no glasses,
- * untextured), shipped as its own file so any of them can be swapped independently.
+ * untextured), shipped as its own file so any of them can be swapped independently. Rebuilt from me.glb by
+ * scripts/build-colleagues.mjs.
  */
 export const TEAM: Member[] = [
   member("camera", "/models/colleague-camera.glb", 1.35, -0.35, 1.86, 1.1, 0.4), // buzz cut, square jaw
