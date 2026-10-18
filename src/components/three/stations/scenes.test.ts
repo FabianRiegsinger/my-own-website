@@ -96,6 +96,11 @@ describe("ESAS team", () => {
     for (const p of TEAM) expect(existsSync(`public${p.model}`)).toBe(true);
   });
 
+  it("nobody moves in step: each has their own idle phase and reaction lag", () => {
+    expect(new Set(TEAM.map((p) => p.phase)).size).toBe(TEAM.length);
+    expect(new Set(TEAM.map((p) => p.lag)).size).toBe(TEAM.length);
+  });
+
   it("Fabian faces the table", () => {
     const yaw = STATIONS.find((s) => s.id === "esas")!.yaw;
     expect(facing(yaw).dot(holo.clone().normalize())).toBeGreaterThan(0.95);

@@ -64,17 +64,23 @@ export interface Member {
   yaw: number;
   height: number;
   width: number;
+  /** Head size against the body, see Colleague. */
+  head: number;
   phase: number;
+  /** Seconds this character reacts behind the demo's beats (nodding, thinking, thumbs-up), so the group is not in step. */
+  lag: number;
 }
 
-const member = (id: Sensor, model: string, x: number, z: number, height: number, width: number, phase: number): Member => ({
+const member = (id: Sensor, model: string, x: number, z: number, height: number, width: number, head: number, phase: number, lag: number): Member => ({
   id,
   model,
   position: [x, 0, z],
   yaw: Math.atan2(HOLO[0] - x, HOLO[2] - z), // facing the table
   height,
   width,
+  head,
   phase,
+  lag,
 });
 
 /**
@@ -83,9 +89,9 @@ const member = (id: Sensor, model: string, x: number, z: number, height: number,
  * scripts/build-colleagues.mjs.
  */
 export const TEAM: Member[] = [
-  member("camera", "/models/colleague-camera.glb", 1.35, -0.35, 1.86, 1.1, 0.4), // buzz cut, square jaw
-  member("lidar", "/models/colleague-lidar.glb", 0.55, -0.75, 1.7, 0.9, 1.3), // smooth bob, narrow face
-  member("radar", "/models/colleague-radar.glb", -0.55, -0.55, 1.79, 1.14, 2.2), // short soft waves
+  member("camera", "/models/colleague-camera.glb", 1.35, -0.35, 1.86, 1.1, 1, 0.4, 0.15), // buzz cut, square jaw
+  member("lidar", "/models/colleague-lidar.glb", 0.55, -0.75, 1.7, 0.9, 1, 1.3, 0.45), // smooth bob, narrow face
+  member("radar", "/models/colleague-radar.glb", -0.55, -0.55, 1.79, 1.14, 0.8, 2.2, 0), // short soft waves, more human head
 ];
 
 /** ESAS: Fabian demos his sensor fusion on a hologram; each colleague owns one sensor stream. */
@@ -103,10 +109,11 @@ export function Team() {
     onPage.current = w > 0.5 ? onPage.current + dt : 0;
     const b = (beats.current = fusionBeats(onPage.current / FUSION_PLAY));
     poses.current.forEach((p, i) => {
-      p.point = b.point[i];
-      p.think = i === 1 ? b.think : 0; // the lidar owner stops to think when the streams disagree
-      p.nod = b.nod;
-      p.thumb = b.thumb;
+      const own = fusionBeats(Math.max(0, onPage.current - TEAM[i].lag) / FUSION_PLAY);
+      p.point = b.point[i]; // on the demo's beat: it hands their stream over
+      p.think = i === 1 ? own.think : 0; // the lidar owner stops to think when the streams disagree
+      p.nod = own.nod;
+      p.thumb = own.thumb;
     });
   });
 
@@ -116,7 +123,7 @@ export function Team() {
       <group ref={root}>
         <RoomWall />
         {TEAM.map((m, i) => (
-          <Colleague key={m.id} model={m.model} position={m.position} yaw={m.yaw} height={m.height} width={m.width} phase={m.phase} pose={() => poses.current[i]} />
+          <Colleague key={m.id} model={m.model} position={m.position} yaw={m.yaw} height={m.height} width={m.width} head={m.head} phase={m.phase} pose={() => poses.current[i]} />
         ))}
       </group>
       <FusionHologram at={HOLO} team={TEAM} beats={beats} />
