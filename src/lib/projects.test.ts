@@ -58,12 +58,12 @@ describe("selectProjects", () => {
 describe("getProjects", () => {
   it("falls back to overrides on 403", async () => {
     const f = (async () => new Response("rate limited", { status: 403 })) as typeof fetch;
-    expect((await getProjects(f)).map((p) => p.name)).toEqual(["snap-notes"]);
+    expect((await getProjects(f)).map((p) => p.name)).toEqual(["lime", "snap-notes"]);
   });
 
   it("falls back to overrides when no repo is tagged", async () => {
     const f = (async () => Response.json([repo({ name: "x", topics: [] })])) as typeof fetch;
-    expect((await getProjects(f)).map((p) => p.name)).toEqual(["snap-notes"]);
+    expect((await getProjects(f)).map((p) => p.name)).toEqual(["lime", "snap-notes"]);
   });
 
   it("falls back to overrides on network error", async () => {
@@ -71,8 +71,8 @@ describe("getProjects", () => {
       throw new TypeError("fetch failed");
     }) as typeof fetch;
     const out = await getProjects(f);
-    expect(out.map((p) => p.name)).toEqual(["snap-notes"]);
-    expect(out[0].url).toBe("https://github.com/FabianRiegsinger/snap-notes");
+    expect(out.map((p) => p.name)).toEqual(["lime", "snap-notes"]);
+    expect(out[0].url).toBe("https://github.com/FabianRiegsinger/lime");
   });
 
   it("sends GITHUB_TOKEN when set, to avoid shared-IP rate limits", async () => {

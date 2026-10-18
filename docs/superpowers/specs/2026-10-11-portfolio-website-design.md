@@ -85,7 +85,7 @@ absent in browsers without view timelines).
 | File | Responsibility |
 |---|---|
 | `src/app/page.tsx` | Server: load `cv` + projects, render `ExperienceGate` around `StaticPage` |
-| `src/app/layout.tsx` | Fonts, metadata, Open Graph, JSON-LD `Person`, preload of `figure.glb` |
+| `src/app/layout.tsx` | Fonts, metadata, Open Graph, JSON-LD `Person`, preload of `me.glb` (hero likeness) |
 | `src/app/impressum/page.tsx`, `src/app/privacy/page.tsx` | Legal templates, details filled by the owner |
 | `src/components/ExperienceGate.tsx` | Capability check, lazy 3D upgrade, error fallback, `data-experience` |
 | `src/components/StaticPage.tsx` | The nine sections (+ `ActivePage`); with the figure still when static |

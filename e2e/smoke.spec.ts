@@ -82,7 +82,7 @@ for (const path of ["/impressum", "/privacy"]) {
 
 test("metadata", async ({ page }) => {
   await page.goto("/");
-  await expect(page).toHaveTitle("Fabian Riegsinger — Automotive Engineer → Agentic Builder");
+  await expect(page).toHaveTitle("Fabian Riegsinger — Agentic Automotive Engineer");
   expect(await page.locator('meta[property="og:image"]').count()).toBeGreaterThan(0);
 });
 
@@ -142,7 +142,7 @@ test("nine pages in order, each its own glass panel", async ({ page }) => {
 test("pages snap and panels fade in with scroll", async ({ page }) => {
   await page.goto("/");
   await expect(page.locator("canvas")).toBeAttached({ timeout: 10_000 }); // the 3D upgrade replaces the DOM: act on the final one
-  expect(await page.evaluate(() => getComputedStyle(document.documentElement).scrollSnapType)).toMatch(/^y( proximity)?$/); // proximity is the default, so browsers may omit it
+  expect(await page.evaluate(() => getComputedStyle(document.documentElement).scrollSnapType)).toBe("y mandatory"); // a scroll always settles on a page
   expect(await page.locator("#about").evaluate((el) => getComputedStyle(el).scrollSnapAlign)).toContain("start");
   const timeline = await page.locator("#about [data-glass]").evaluate((el) => getComputedStyle(el).getPropertyValue("animation-timeline"));
   expect(timeline).toContain("view");
@@ -244,4 +244,13 @@ test("launch page counts down the next challenges and hands over to contact", as
   const launch = page.locator("#launch");
   for (const t of ["T-3", "T-2", "T-1"]) await expect(launch).toContainText(t);
   await expect(launch.locator('a[href="#contact"]')).toBeAttached();
+});
+
+test("hero Contact button jumps straight to the contact page", async ({ page }) => {
+  await page.goto("/");
+  await page.locator("#hero").getByRole("link", { name: "Contact" }).click();
+  // Instant, not a smooth scroll through every page: already there on the next frame.
+  const offset = await page.evaluate(() => new Promise<number>((r) => requestAnimationFrame(() => r(document.getElementById("contact")!.getBoundingClientRect().top))));
+  expect(Math.abs(offset)).toBeLessThan(2);
+  expect(page.url()).toMatch(/#contact$/);
 });

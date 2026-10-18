@@ -5,27 +5,37 @@ import { useEffect, useMemo, useRef } from "react";
 import {
   AdditiveBlending,
   BoxGeometry,
+  type BufferGeometry,
   CanvasTexture,
   ConeGeometry,
   CylinderGeometry,
+  DoubleSide,
   type Group,
   LatheGeometry,
+  MathUtils,
+  Matrix4,
   type Mesh,
   type PointLight,
   MeshBasicMaterial,
   MeshStandardMaterial,
+  Quaternion,
   SphereGeometry,
   type Sprite,
   SpriteMaterial,
   Vector2,
+  Vector3,
 } from "three";
+import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
+import { contactJump } from "@/lib/jump";
 import { STATIONS } from "@/lib/scroll-map";
 import { fade } from "../fade";
 import { useStationOffset } from "../station-offset";
 
 /**
  * Launch pad on Fabian's right (Mixamo rigs face +z, so his right is -x), behind him. The whole set is built in pad
- * units and scaled up: the rocket stands ~3.8 m, twice his height.
+ * units and scaled up: the rocket stands ~4 m, over twice his height. A modern two-stage launcher: sooty first stage
+ * with grid fins and folded landing legs, three engines, payload fairing; a lattice tower whose crew access arm swings
+ * away before ignition, and hold-down clamps that let go at it.
  */
 export const PAD = { x: -1.75, z: -1.9, radius: 0.85, height: 0.12, scale: 1.5 };
 
@@ -43,6 +53,16 @@ const GONE = 12;
 export function launchWeight(offset: number) {
   if (offset < launch.end) return Math.min(1, Math.max(0, (offset - launch.start) / 0.02));
   return Math.max(0, 1 - (offset - launch.end) / 0.015);
+}
+
+/** Crew access arm: 0 docked at the rocket, 1 swung clear; it retracts just before ignition. */
+export function armSwing(offset: number) {
+  return MathUtils.smoothstep(offset, IGNITION - 0.014, IGNITION - 0.003);
+}
+
+/** Hold-down clamps: 0 holding, 1 fallen open; they let go at ignition. */
+export function clampRelease(offset: number) {
+  return MathUtils.smoothstep(offset, IGNITION, IGNITION + 0.004);
 }
 
 /** Steepness of the climb: each fifth of it is e (~2.7x) faster than the one before. */
@@ -90,57 +110,202 @@ function puffTexture() {
   return new CanvasTexture(c);
 }
 
-/** Rocket stands on its nozzle this high above the pad deck. */
+/** Rocket stands on its engine bells this high above the pad deck. */
 const NOZZLE = 0.22;
 const STEAM = 12;
+/** Launcher layout (pad units, y = 0 at the engine skirt). */
+const R = 0.2;
+const STAGE1 = 1.4;
+const INTERSTAGE = { top: 1.56 };
+const STAGE2 = { top: 1.95 };
+const TIP = 2.55;
+/** The front (decals, patch) faces the launch page's camera: yaw of the camera seen from the pad. */
+const FACE = 0.27;
+/** Lattice tower footprint (pad units): centre, side and height. */
+const TOWER = { x: -0.72, z: -0.3, side: 0.22, height: 2.9 };
+const ARM_Y = PAD.height + NOZZLE + (INTERSTAGE.top + STAGE2.top) / 2;
+/** Access arm: pivot at the tower corner nearest the rocket, reaching to the stage's skin (yaw maps the arm's +x there). */
+const ARM = (() => {
+  const pivot: [number, number] = [TOWER.x + TOWER.side / 2, TOWER.z + TOWER.side / 2];
+  const dist = Math.hypot(pivot[0], pivot[1]);
+  return { pivot, length: dist - R - 0.01, yaw: Math.atan2(pivot[1], -pivot[0]) };
+})();
+
+/** Canvas texture for a surface that wraps all the way round: `w` x `h` pixels, drawn by `draw`. */
+function wrapTexture(w: number, h: number, draw: (ctx: CanvasRenderingContext2D) => void) {
+  const c = document.createElement("canvas");
+  c.width = w;
+  c.height = h;
+  draw(c.getContext("2d")!);
+  const t = new CanvasTexture(c);
+  t.colorSpace = "srgb";
+  t.anisotropy = 4;
+  return t;
+}
+
+/**
+ * First stage skin (u around from the back, so u = 0.5 faces front; v up): white, soot rising from the engines in
+ * streaks, panel seams, and the name running up the front. Sized so a pixel is square on the 0.2-radius, 1.4-tall hull.
+ */
+function stageSkin() {
+  const w = 1024;
+  const h = Math.round((w * STAGE1) / (2 * Math.PI * R));
+  return wrapTexture(w, h, (ctx) => {
+    ctx.fillStyle = "#f4f4f6";
+    ctx.fillRect(0, 0, w, h);
+    const soot = ctx.createLinearGradient(0, h, 0, h * 0.45);
+    soot.addColorStop(0, "rgba(110,98,86,0.85)");
+    soot.addColorStop(0.35, "rgba(140,128,116,0.45)");
+    soot.addColorStop(1, "rgba(160,150,140,0)");
+    ctx.fillStyle = soot;
+    ctx.fillRect(0, 0, w, h);
+    for (let i = 0; i < 140; i++) {
+      const x = rand(i + 300) * w;
+      const len = h * (0.1 + rand(i + 400) * 0.35);
+      ctx.fillStyle = `rgba(90,80,70,${0.06 + rand(i + 500) * 0.12})`;
+      ctx.fillRect(x, h - len, 1 + rand(i + 600) * 3, len);
+    }
+    ctx.fillStyle = "rgba(60,62,70,0.25)";
+    for (const f of [0.22, 0.48, 0.74]) ctx.fillRect(0, h * f, w, 2);
+    // Name up the front, reading bottom to top.
+    ctx.save();
+    ctx.translate(w / 2 + 22, h * 0.8);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillStyle = "#1b1c22";
+    ctx.font = '800 64px "Archivo", "Helvetica Neue", Arial, sans-serif';
+    ctx.fillText("RIEGSINGER", 0, 0);
+    ctx.restore();
+  });
+}
+
+/** Fairing skin (lathe: u around from the back, v up the profile): split seams at the sides, mission patch in front. */
+function fairingSkin() {
+  const w = 1024;
+  const h = 480;
+  return wrapTexture(w, h, (ctx) => {
+    ctx.fillStyle = "#f4f4f6";
+    ctx.fillRect(0, 0, w, h);
+    ctx.fillStyle = "rgba(60,62,70,0.45)";
+    for (const u of [0.25, 0.75]) ctx.fillRect(u * w - 1, 0, 3, h);
+    ctx.fillRect(0, h - 22, w, 3); // base joint
+    const [cx, cy] = [w / 2, h * 0.68];
+    ctx.fillStyle = "#ff6a1a";
+    ctx.beginPath();
+    ctx.arc(cx, cy, 46, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.fillStyle = "#f4f4f6";
+    ctx.beginPath();
+    ctx.arc(cx, cy, 34, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.fillStyle = "#7c5ce6";
+    ctx.beginPath();
+    ctx.arc(cx, cy, 24, 0, 2 * Math.PI);
+    ctx.fill();
+  });
+}
+
+/** Grid fin lattice: dark bars, open cells (cut out by alphaTest). */
+function gridTexture() {
+  const c = document.createElement("canvas");
+  c.width = c.height = 64;
+  const ctx = c.getContext("2d")!;
+  ctx.strokeStyle = "#2c2e34";
+  ctx.lineWidth = 3;
+  ctx.strokeRect(2, 2, 60, 60);
+  for (let i = 1; i < 6; i++) {
+    ctx.beginPath();
+    ctx.moveTo(0, 2 + i * 10);
+    ctx.lineTo(64, 2 + i * 10);
+    ctx.moveTo(2 + i * 10, 0);
+    ctx.lineTo(2 + i * 10, 64);
+    ctx.stroke();
+  }
+  return new CanvasTexture(c);
+}
+
+const UP = new Vector3(0, 1, 0);
+/** Square bar of thickness `t` from `a` to `b`. */
+function beam(a: Vector3, b: Vector3, t: number) {
+  const d = b.clone().sub(a);
+  const g = new BoxGeometry(t, d.length(), t);
+  return g.applyMatrix4(new Matrix4().compose(a.clone().add(b).multiplyScalar(0.5), new Quaternion().setFromUnitVectors(UP, d.normalize()), new Vector3(1, 1, 1)));
+}
+
+/** Lattice tower: four corner posts, a ring of beams every level and one diagonal brace per side, merged into one mesh. */
+function latticeTower() {
+  const { x, z, side, height } = TOWER;
+  const h = side / 2;
+  const corners = [[-h, -h], [h, -h], [h, h], [-h, h]].map(([dx, dz]) => [x + dx, z + dz]);
+  const parts: BufferGeometry[] = corners.map(([cx, cz]) => beam(new Vector3(cx, 0, cz), new Vector3(cx, height, cz), 0.028));
+  const STEP = 0.29;
+  for (let y = 0.1; y + STEP <= height; y += STEP)
+    corners.forEach(([ax, az], i) => {
+      const [bx, bz] = corners[(i + 1) % 4];
+      parts.push(beam(new Vector3(ax, y, az), new Vector3(bx, y, bz), 0.016));
+      parts.push(beam(new Vector3(ax, y, az), new Vector3(bx, y + STEP, bz), 0.012));
+    });
+  return mergeGeometries(parts)!;
+}
 
 function useParts() {
   return useMemo(() => {
-    const lathe = (pts: [number, number][]) =>
+    const lathe = (pts: [number, number][], phiStart = 0) =>
       new LatheGeometry(
         pts.map(([r, y]) => new Vector2(r, y)),
-        40,
+        48,
+        phiStart,
       );
     return {
       g: {
         pad: new CylinderGeometry(PAD.radius, PAD.radius + 0.08, PAD.height, 48),
-        tower: new BoxGeometry(0.14, 2.9, 0.14),
-        arm: new BoxGeometry(0.62, 0.06, 0.06),
-        body: lathe([
-          [0, 0],
-          [0.3, 0],
-          [0.33, 0.12],
-          [0.33, 1.55],
-          [0.3, 1.85],
-          [0, 1.85],
-        ]),
-        nose: lathe([
-          [0, 1.84],
-          [0.3, 1.84],
-          [0.24, 2.15],
-          [0.13, 2.4],
-          [0, 2.55],
-        ]),
-        band: new CylinderGeometry(0.335, 0.335, 0.08, 40),
-        window: new CylinderGeometry(0.1, 0.1, 0.04, 32),
-        fin: new BoxGeometry(0.035, 0.5, 0.34),
-        nozzle: new CylinderGeometry(0.17, 0.24, NOZZLE, 32, 1, true),
-        flame: new ConeGeometry(0.26, 1, 32, 1, true),
-        core: new ConeGeometry(0.12, 1, 24, 1, true),
-        glow: new SphereGeometry(0.3, 24, 16),
+        tower: latticeTower(),
+        arm: new BoxGeometry(1, 0.05, 0.07),
+        whiteRoom: new BoxGeometry(0.12, 0.11, 0.12),
+        // Open-ended cylinders starting at the back (thetaStart π), so the texture's centre faces front.
+        stage1: new CylinderGeometry(R, R, STAGE1, 48, 1, true, Math.PI),
+        interstage: new CylinderGeometry(R + 0.003, R + 0.003, INTERSTAGE.top - STAGE1, 48, 1, true),
+        stage2: new CylinderGeometry(R, R, STAGE2.top - INTERSTAGE.top, 48, 1, true),
+        // Fairing: a lip a touch wider than the stage, then an ogive to the tip.
+        fairing: lathe(
+          [
+            [R + 0.012, STAGE2.top],
+            [R + 0.015, STAGE2.top + 0.12],
+            [R + 0.008, STAGE2.top + 0.26],
+            [R - 0.03, STAGE2.top + 0.4],
+            [R - 0.1, STAGE2.top + 0.52],
+            [0.02, TIP - 0.005],
+            [0, TIP],
+          ],
+          Math.PI,
+        ),
+        skirt: new CylinderGeometry(R + 0.008, R + 0.012, 0.1, 48),
+        bell: lathe([[0.04, 0], [0.045, -0.04], [0.06, -0.11], [0.075, -NOZZLE + 0.04]]),
+        leg: new BoxGeometry(0.035, 0.78, 0.022),
+        foot: new BoxGeometry(0.06, 0.03, 0.035),
+        gridFin: new BoxGeometry(0.13, 0.012, 0.11),
+        clamp: new BoxGeometry(0.05, 0.22, 0.05),
+        flame: new ConeGeometry(0.22, 1, 32, 1, true),
+        core: new ConeGeometry(0.1, 1, 24, 1, true),
+        glow: new SphereGeometry(0.26, 24, 16),
+        diamond: new SphereGeometry(0.06, 16, 10),
         splash: new CylinderGeometry(1, 1, 0.01, 40),
       },
       m: {
         pad: new MeshStandardMaterial({ color: "#3a3d45", roughness: 0.8 }),
         tower: new MeshStandardMaterial({ color: "#5b5f6b", roughness: 0.6, metalness: 0.4 }),
+        whiteRoom: new MeshStandardMaterial({ color: "#e9eaee", roughness: 0.5 }),
         hull: new MeshStandardMaterial({ color: "#f4f4f6", roughness: 0.35 }),
-        orange: new MeshStandardMaterial({ color: "#ff6a1a", roughness: 0.4 }),
-        violet: new MeshStandardMaterial({ color: "#7c5ce6", roughness: 0.4 }),
-        glass: new MeshStandardMaterial({ color: "#1d2a4a", roughness: 0.1, metalness: 0.6 }),
-        nozzle: new MeshStandardMaterial({ color: "#2a2b30", roughness: 0.5, metalness: 0.7 }),
+        stage1: new MeshStandardMaterial({ map: stageSkin(), roughness: 0.4 }),
+        fairing: new MeshStandardMaterial({ map: fairingSkin(), roughness: 0.3 }),
+        black: new MeshStandardMaterial({ color: "#1f2025", roughness: 0.5 }),
+        carbon: new MeshStandardMaterial({ color: "#2a2b30", roughness: 0.45, metalness: 0.3 }),
+        grid: new MeshStandardMaterial({ map: gridTexture(), alphaTest: 0.5, transparent: true, side: DoubleSide, metalness: 0.6, roughness: 0.4 }),
+        nozzle: new MeshStandardMaterial({ color: "#2a2b30", roughness: 0.5, metalness: 0.7, side: DoubleSide }),
+        clamp: new MeshStandardMaterial({ color: "#c9a227", roughness: 0.6, metalness: 0.3 }),
         // Additive and unlit, so overlapping layers burn brighter toward the core.
         flame: new MeshBasicMaterial({ color: "#ff5a1a", toneMapped: false, transparent: true, opacity: 0.85, blending: AdditiveBlending, depthWrite: false }),
         core: new MeshBasicMaterial({ color: "#fff1b8", toneMapped: false, transparent: true, opacity: 0.95, blending: AdditiveBlending, depthWrite: false }),
+        diamond: new MeshBasicMaterial({ color: "#fff6d6", toneMapped: false, transparent: true, opacity: 0.8, blending: AdditiveBlending, depthWrite: false }),
         glow: new MeshBasicMaterial({ color: "#ffb347", toneMapped: false, transparent: true, opacity: 0.7, blending: AdditiveBlending, depthWrite: false }),
         steam: new SpriteMaterial({ map: puffTexture(), color: "#f2f0ee", opacity: 0.85, transparent: true, depthWrite: false }),
       },
@@ -155,6 +320,8 @@ export function Launch() {
   const flame = useRef<Group>(null);
   const light = useRef<PointLight>(null);
   const splash = useRef<Mesh>(null);
+  const arm = useRef<Group>(null);
+  const clamps = useRef<(Group | null)[]>([]);
   const puffs = useRef<(Sprite | null)[]>([]);
   const fog = useRef<Group>(null);
   const fogPuffs = useRef<(Sprite | null)[]>([]);
@@ -178,7 +345,7 @@ export function Launch() {
 
   useFrame(({ clock }) => {
     if (fog.current) {
-      fade(fog.current, fogWeight(offset.current));
+      fade(fog.current, contactJump.clean ? 0 : fogWeight(offset.current)); // no launch seen, no fog
       // Slow sideways drift, so the fog lives without rising.
       if (fog.current.visible)
         fogPuffs.current.forEach((p, i) => p && (p.position.x = fogLayout[i].x + 0.15 * Math.sin(clock.elapsedTime * 0.25 + fogLayout[i].phase)));
@@ -189,6 +356,9 @@ export function Launch() {
     const t = clock.elapsedTime;
     const lift = liftoff(offset.current) / PAD.scale; // in pad units
     const lit = offset.current > IGNITION;
+    if (arm.current) arm.current.rotation.y = ARM.yaw + 1.4 * armSwing(offset.current);
+    const open = clampRelease(offset.current);
+    clamps.current.forEach((c) => c && (c.rotation.z = -0.9 * open));
     rocket.current.position.y = PAD.height + NOZZLE + lift;
     // Once lit: a long, roaring plume that grows as the rocket climbs; nothing before.
     const flicker = 0.8 + 0.2 * Math.sin(t * 47) * Math.sin(t * 29);
@@ -229,26 +399,54 @@ export function Launch() {
       <group ref={root}>
         <group position={[PAD.x, 0, PAD.z]} scale={PAD.scale}>
           <mesh geometry={g.pad} material={m.pad} position-y={PAD.height / 2} receiveShadow castShadow />
-          {/* Service tower behind the rocket with two arms reaching over. */}
-          <mesh geometry={g.tower} material={m.tower} position={[-0.72, 1.45, -0.3]} castShadow />
-          {[1.2, 2.1].map((y) => (
-            <mesh key={y} geometry={g.arm} material={m.tower} position={[-0.42, y, -0.15]} rotation-y={-0.45} />
-          ))}
-          <group ref={rocket} position-y={PAD.height + NOZZLE}>
-            <mesh geometry={g.body} material={m.hull} castShadow />
-            <mesh geometry={g.nose} material={m.orange} castShadow />
-            <mesh geometry={g.band} material={m.violet} position-y={1.2} />
-            <mesh geometry={g.window} material={m.glass} position={[0, 1.45, 0.33]} rotation-x={Math.PI / 2} />
-            {[0, 1, 2].map((i) => {
-              const a = (i / 3) * Math.PI * 2 + Math.PI / 6;
-              return <mesh key={i} geometry={g.fin} material={m.orange} position={[Math.sin(a) * 0.36, 0.22, Math.cos(a) * 0.36]} rotation-y={a} castShadow />;
+          {/* Lattice service tower; the crew access arm (with its white room) docks at the second stage. */}
+          <mesh geometry={g.tower} material={m.tower} castShadow />
+          <group ref={arm} position={[ARM.pivot[0], ARM_Y, ARM.pivot[1]]} rotation-y={ARM.yaw}>
+            <mesh geometry={g.arm} material={m.tower} position-x={ARM.length / 2} scale-x={ARM.length} />
+            <mesh geometry={g.whiteRoom} material={m.whiteRoom} position-x={ARM.length - 0.06} />
+          </group>
+          {/* Hold-down clamps round the engines; they fall open outward at ignition. */}
+          {[0, 1, 2, 3].map((i) => {
+            const a = Math.PI / 4 + (i * Math.PI) / 2;
+            return (
+              <group key={i} ref={(el) => void (clamps.current[i] = el)} position={[Math.cos(a) * (R + 0.04), PAD.height, Math.sin(a) * (R + 0.04)]} rotation-y={-a}>
+                <mesh geometry={g.clamp} material={m.clamp} position={[-0.015, 0.11, 0]} castShadow />
+              </group>
+            );
+          })}
+          <group ref={rocket} position-y={PAD.height + NOZZLE} rotation-y={FACE}>
+            <mesh geometry={g.stage1} material={m.stage1} position-y={STAGE1 / 2} castShadow />
+            <mesh geometry={g.interstage} material={m.black} position-y={(STAGE1 + INTERSTAGE.top) / 2} castShadow />
+            <mesh geometry={g.stage2} material={m.hull} position-y={(INTERSTAGE.top + STAGE2.top) / 2} castShadow />
+            <mesh geometry={g.fairing} material={m.fairing} castShadow />
+            <mesh geometry={g.skirt} material={m.carbon} position-y={0} />
+            {/* Grid fins stowed flat at the top of the first stage, landing legs folded along it. */}
+            {[0, 1, 2, 3].map((i) => {
+              const a = (i * Math.PI) / 2;
+              return <mesh key={i} geometry={g.gridFin} material={m.grid} position={[Math.sin(a) * (R + 0.065), STAGE1 + 0.1, Math.cos(a) * (R + 0.065)]} rotation-y={a + Math.PI / 2} />;
             })}
-            <mesh geometry={g.nozzle} material={m.nozzle} position-y={-NOZZLE / 2} />
+            {[0, 1, 2, 3].map((i) => {
+              const a = Math.PI / 4 + (i * Math.PI) / 2;
+              return (
+                <group key={i} rotation-y={a}>
+                  <mesh geometry={g.leg} material={m.carbon} position={[0, 0.44, R + 0.012]} castShadow />
+                  <mesh geometry={g.foot} material={m.carbon} position={[0, 0.06, R + 0.03]} />
+                </group>
+              );
+            })}
+            {[0, 1, 2].map((i) => {
+              const a = Math.PI / 2 + (i * 2 * Math.PI) / 3;
+              return <mesh key={i} geometry={g.bell} material={m.nozzle} position={[Math.sin(a) * 0.09, -0.04, Math.cos(a) * 0.09]} />;
+            })}
             {/* Plume hangs down from the nozzle: orange outer cone, white-hot core, glow at the exit. Stretched by the frame loop. */}
             <group ref={flame} position-y={-NOZZLE} scale={0.001}>
               <mesh geometry={g.flame} material={m.flame} rotation-x={Math.PI} position-y={-0.5} />
               <mesh geometry={g.core} material={m.core} rotation-x={Math.PI} position-y={-0.3} scale-y={0.6} />
               <mesh geometry={g.glow} material={m.glow} scale-y={0.5} />
+              {/* Shock diamonds: bright knots down the plume, fading as they go. */}
+              {[0.12, 0.24, 0.36, 0.48].map((y, i) => (
+                <mesh key={y} geometry={g.diamond} material={m.diamond} position-y={-y} scale={[1 - i * 0.15, 0.5, 1 - i * 0.15]} />
+              ))}
             </group>
             {/* Lights the pad, the steam and Fabian orange once lit. */}
             <pointLight ref={light} color="#ff8a3d" intensity={0} distance={6} decay={1.5} position-y={-NOZZLE - 0.4} />

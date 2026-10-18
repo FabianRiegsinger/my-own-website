@@ -3,10 +3,10 @@ import type { CV } from "./types";
 export const cv: CV = {
   profile: {
     name: "Fabian Riegsinger",
-    headline: "Automotive System Integration & Software Engineer",
+    headline: "System Integration & Software Engineer",
     location: "Ingolstadt, Germany",
     summary:
-      "I'm a software engineer with over 8 years in automotive. I build autonomous-driving software in C++ and Python. For Mobileye, I work on site at AUDI on the Level 3 ADAS program, where I keep around 30 development vehicles running. Most days I sit between AUDI's engineers and Mobileye's R&D team. I write much of my code with AI agents.",
+      "I'm a software engineer with over 8 years of experience in the automotive industry. At ESAS automotive, I have built software for autonomous-driving stacks in C++ and Python. For Mobileye, I work on site directly with the customers on the Level 3 ADAS program, where I mainly maintain a large fleet of development vehicles running, while coordinating mission critical tasks with the OEM's engineers and Mobileye's R&D team. Recently, I have been incorporating agentic workflows in my daily work to drastically improve efficiency.",
     links: {
       github: "https://github.com/FabianRiegsinger",
       linkedin: "https://www.linkedin.com/in/fabian-riegsinger-736b78b7/",
@@ -51,13 +51,13 @@ export const cv: CV = {
       degree: "M.Sc. Information and Communication Engineering",
       school: "Technische Hochschule Mittelhessen, Friedberg",
       end: "2018-08",
-      note: "Thesis with AUDI AG on trajectory-planning evaluation metrics (1.0)",
+      note: "Thesis with AUDI AG on trajectory-planning evaluation metrics",
     },
     {
       degree: "B.Eng. Information and Communication Engineering",
       school: "Technische Hochschule Mittelhessen, Friedberg",
       end: "2016-09",
-      note: "Thesis with FAS GmbH on Kalman/particle-filter indoor localization (1.1)",
+      note: "Thesis with FAS GmbH on Kalman/particle-filter indoor localization",
     },
   ],
   skills: [

@@ -13,8 +13,9 @@
 
 html {
   scroll-behavior: smooth;
-  /* Each section is a page: settle on page starts, but never trap a reader inside a tall page. */
-  scroll-snap-type: y proximity;
+  /* Each section is a page: a scroll always settles on one (past halfway it carries on to the next), never between
+     two. A page taller than the screen still scrolls freely inside: mandatory snapping allows that by spec. */
+  scroll-snap-type: y mandatory;
 }
 
 /*

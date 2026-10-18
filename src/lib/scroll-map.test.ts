@@ -44,11 +44,21 @@ describe("scroll-map", () => {
     expect(toStationOffset(500, [])).toBe(0);
   });
 
-  it("station weight is 1 inside its range and fades to 0 outside", () => {
+  it("station weight is 1 inside its page, fades within the page's edges and is 0 outside", () => {
     expect(stationWeight(mid("skills"), "skills")).toBe(1);
     expect(stationWeight(0, "skills")).toBe(0);
-    expect(stationWeight(st("skills").start - 0.025, "skills")).toBeCloseTo(0.5);
+    expect(stationWeight(st("skills").start - 0.001, "skills")).toBe(0);
+    expect(stationWeight(st("skills").start + 0.0075, "skills")).toBeCloseTo(0.5);
+    expect(stationWeight(st("skills").end - 0.0075, "skills")).toBeCloseTo(0.5);
+    expect(stationWeight(0, "hero")).toBe(1);
     expect(stationWeight(1, "contact")).toBe(1);
+  });
+
+  it("never shows two pages' sets at once", () => {
+    for (let o = 0; o <= 1; o += 0.0005) {
+      const shown = STATIONS.filter((s) => stationWeight(o, s.id) > 0);
+      expect(shown.length).toBeLessThanOrEqual(1);
+    }
   });
 
   it("on the about page the figure thinks, turned part-way toward the text panel (screen left)", () => {
@@ -71,10 +81,12 @@ describe("scroll-map", () => {
 });
 
 describe("screen shift", () => {
-  it("centres the figure between the text panel's right edge and the screen edge, further right on the agentic page", () => {
+  it("centres the figure between the text panel's right edge and the screen edge, further right on the agentic and skills pages, left on esas (its team stands right of him)", () => {
     const between = (PANEL_EDGE + 1) / 2;
-    for (const s of STATIONS.filter((s) => s.id !== "agentic")) expect(0.5 + s.shift).toBeCloseTo(between);
+    for (const s of STATIONS.filter((s) => !["agentic", "skills", "esas"].includes(s.id))) expect(0.5 + s.shift).toBeCloseTo(between);
     expect(PANEL_EDGE).toBeCloseTo(0.39); // 3vw gutter + 36vw panel (Section/GlassPanel)
     expect(0.5 + st("agentic").shift).toBeGreaterThanOrEqual(0.75);
+    expect(0.5 + st("skills").shift).toBeGreaterThan(between);
+    expect(0.5 + st("esas").shift).toBeLessThan(between);
   });
 });

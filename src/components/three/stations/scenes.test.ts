@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { Color, Vector3 } from "three";
 import { STATIONS } from "@/lib/scroll-map";
-import { BELL, HANDLE, NICHE, WALL } from "./Graduation";
-import { TEAM } from "./Team";
+import { BELL, BELL_HEIGHT, BELL_RADIUS, HANDLE, LOGO, PLAQUE, SWING, NICHE, PLAQUES, terrazzo, WALL } from "./Graduation";
+import { existsSync } from "node:fs";
+import { SENSORS } from "@/lib/fusion";
+import { HOLO, TEAM, nodAt } from "./Team";
 import { CUSTOMER, FLEET } from "./Fleet";
-import { FOG, fogWeight, launchWeight, liftoff, PAD } from "./Launch";
+import { armSwing, clampRelease, FOG, fogWeight, launchWeight, liftoff, PAD } from "./Launch";
 import { cloudColor, cloudShape, cloudWords, packCloud, SITE_COLORS } from "./SkillCloud";
 
 const facing = (yaw: number) => new Vector3(Math.sin(yaw), 0, Math.cos(yaw));
@@ -21,26 +23,95 @@ describe("graduation wall", () => {
     expect(Math.hypot(BELL[0] - NICHE.center[0], BELL[1] - NICHE.center[1])).toBeLessThan(NICHE.radius);
   });
 
+  it("the bell hangs inside the recess, clear of its back, and swings without touching its side", () => {
+    expect(BELL[2] - BELL_RADIUS).toBeGreaterThan(WALL.z - NICHE.depth);
+    // Lip corners at full swing about the crown stay inside the niche's opening.
+    const pivot = [BELL[0], BELL[1] + BELL_HEIGHT / 2];
+    for (const a of [-SWING.amplitude, SWING.amplitude])
+      for (const x of [-BELL_RADIUS, BELL_RADIUS]) {
+        const px = pivot[0] + x * Math.cos(a) + BELL_HEIGHT * Math.sin(a);
+        const py = pivot[1] + x * Math.sin(a) - BELL_HEIGHT * Math.cos(a);
+        expect(Math.hypot(px - NICHE.center[0], py - NICHE.center[1])).toBeLessThan(NICHE.radius);
+      }
+  });
+
   it("the wall stands behind him and is a set piece, not a full backdrop (the colour field stays visible)", () => {
     expect(WALL.z).toBeLessThan(-0.2);
     expect(WALL.width).toBeLessThan(4);
     expect(NICHE.center[0] + NICHE.radius).toBeLessThan(0); // niche beside him, not behind his head
   });
+
+  it("hangs a plaque per degree on his left, on the wall, clear of the niche and of each other", () => {
+    expect(PLAQUES.length).toBe(2);
+    for (const p of PLAQUES) {
+      expect(p.position[0] - 0.31).toBeGreaterThan(0.2); // left edge clears his body
+      expect(p.position[0] + 0.31).toBeLessThan(WALL.x + WALL.width / 2);
+      expect(p.position[2]).toBeGreaterThan(WALL.z);
+    }
+    expect(PLAQUES[0].position[1] - PLAQUES[1].position[1]).toBeGreaterThan(0.31);
+  });
+
+  it("prints the logo top right, above the plaques, twice their size, on the wall and clear of the niche", () => {
+    expect(LOGO.width).toBeCloseTo(2 * PLAQUE.width);
+    expect(LOGO.position[1] - LOGO.height / 2).toBeGreaterThan(PLAQUES[0].position[1] + PLAQUE.height / 2);
+    expect(LOGO.position[0] + LOGO.width / 2).toBeLessThanOrEqual(WALL.x + WALL.width / 2);
+    expect(LOGO.position[0] - LOGO.width / 2).toBeGreaterThan(NICHE.center[0] + NICHE.radius);
+    expect(LOGO.position[1] + LOGO.height / 2).toBeLessThan(WALL.height);
+  });
+
+  it("scatters terrazzo chips over the whole floor, not just a patch in the middle", () => {
+    const pos = terrazzo();
+    const xs = pos.filter((_, i) => i % 3 === 0);
+    const zs = pos.filter((_, i) => i % 3 === 2);
+    expect(xs.length).toBeGreaterThan(1500);
+    expect(Math.max(...xs) - Math.min(...xs)).toBeGreaterThan(2.6); // floor is 3 wide
+    expect(Math.max(...zs) - Math.min(...zs)).toBeGreaterThan(1.4); // and 1.8 deep
+    expect(Math.min(...zs)).toBeGreaterThanOrEqual(WALL.z);
+  });
 });
 
 describe("ESAS team", () => {
-  it("stands around Fabian at talking distance, each facing him", () => {
-    expect(TEAM.length).toBeGreaterThanOrEqual(3);
+  const holo = new Vector3(...HOLO);
+
+  it("gathers around the hologram table, each facing it, behind Fabian and clear of the table", () => {
+    expect(TEAM.length).toBe(3);
     for (const p of TEAM) {
       const pos = new Vector3(...p.position);
-      expect(pos.length()).toBeGreaterThan(1);
-      expect(pos.length()).toBeLessThan(2.2);
-      expect(facing(p.yaw).dot(pos.clone().negate().normalize())).toBeGreaterThan(0.95);
+      expect(pos.distanceTo(holo)).toBeGreaterThan(0.8);
+      expect(pos.distanceTo(holo)).toBeLessThan(1.8);
+      expect(facing(p.yaw).dot(holo.clone().sub(pos).normalize())).toBeGreaterThan(0.99);
+      expect(pos.z).toBeLessThan(0); // never nearer the camera than Fabian
+      expect(pos.x).toBeLessThan(1.5); // on screen right of him, not cut by the edge
     }
   });
 
-  it("nobody stands inside anybody else", () => {
-    TEAM.forEach((a, i) => TEAM.slice(i + 1).forEach((b) => expect(new Vector3(...a.position).distanceTo(new Vector3(...b.position))).toBeGreaterThan(0.7)));
+  it("nobody stands inside anybody else, Fabian included", () => {
+    const all = [new Vector3(), ...TEAM.map((p) => new Vector3(...p.position))];
+    all.forEach((a, i) => all.slice(i + 1).forEach((b) => expect(a.distanceTo(b)).toBeGreaterThan(0.7)));
+  });
+
+  it("each character is its own model file, so any one can be replaced alone", () => {
+    expect(new Set(TEAM.map((p) => p.model)).size).toBe(TEAM.length);
+    expect(TEAM.map((p) => p.id)).toEqual([...SENSORS]);
+    for (const p of TEAM) expect(existsSync(`public${p.model}`)).toBe(true);
+  });
+
+  it("nobody moves in step: each nods now and then, at their own moments", () => {
+    expect(new Set(TEAM.map((p) => p.phase)).size).toBe(TEAM.length);
+    const nods = TEAM.map((p) => Array.from({ length: 600 }, (_, i) => nodAt(i * 0.1, p.phase)));
+    for (const n of nods) {
+      const share = n.filter((v) => v > 0).length / n.length;
+      expect(share).toBeGreaterThan(0.05); // they do nod
+      expect(share).toBeLessThan(0.4); // but only from time to time
+      expect(Math.max(...n)).toBeLessThanOrEqual(1);
+    }
+    expect(nods[0]).not.toEqual(nods[1]);
+    expect(nods[1]).not.toEqual(nods[2]);
+  });
+
+  it("Fabian faces the table", () => {
+    const yaw = STATIONS.find((s) => s.id === "esas")!.yaw;
+    expect(facing(yaw).dot(holo.clone().normalize())).toBeGreaterThan(0.95);
   });
 });
 
@@ -138,6 +209,14 @@ describe("skill word cloud", () => {
 
 describe("launch pad", () => {
   const launch = STATIONS.find((s) => s.id === "launch")!;
+
+  it("swings the access arm clear before ignition, and the clamps let go only once it has lifted", () => {
+    expect(armSwing(launch.start)).toBe(0);
+    const firstMove = [...Array(200)].map((_, i) => launch.start + (i / 200) * (launch.end - launch.start)).find((o) => liftoff(o) > 0)!;
+    expect(armSwing(firstMove)).toBe(1);
+    expect(clampRelease(firstMove - 0.001)).toBe(0);
+    expect(clampRelease(launch.end)).toBe(1);
+  });
 
   it("holds the rocket on the pad while the launch page is read", () => {
     expect(liftoff(launch.start)).toBe(0);

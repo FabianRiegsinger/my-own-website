@@ -3,6 +3,7 @@
 import { useFrame } from "@react-three/fiber";
 import { useEffect, useRef, type RefObject } from "react";
 import { MathUtils } from "three";
+import { contactJump } from "@/lib/jump";
 import { toStationOffset } from "@/lib/scroll-map";
 import { useStationOffset } from "./station-offset";
 
@@ -30,7 +31,9 @@ export function ScrollTracker({ content }: { content: RefObject<HTMLDivElement |
       height: s.offsetHeight,
     }));
     const target = toStationOffset(window.scrollY + window.innerHeight / 2, spans.current);
-    offsetRef.current = MathUtils.damp(offsetRef.current, target, 6, dt);
+    // A direct jump lands at once rather than sweeping through every station between.
+    offsetRef.current = contactJump.snap ? target : MathUtils.damp(offsetRef.current, target, 6, dt);
+    contactJump.snap = false;
   });
   return null;
 }
