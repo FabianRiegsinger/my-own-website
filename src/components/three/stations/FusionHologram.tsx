@@ -258,7 +258,11 @@ function build(team: { position: Vec3; height: number }[]) {
 }
 type Parts = { root: Group; holo: Group; zones: Mesh[]; target: Mesh; dots: Mesh[]; fused: LineSegments; fusedTag: Sprite; trail: Line; tags: Sprite[]; links: Mesh[]; beam: Line; hist: Vector3[] };
 
+/** Per stream (camera, lidar, radar): how far a link starts toward the viewer; only the camera's ran through its owner. */
+const LINK_FORWARD = [0.4, 0, 0];
+
 const tp = new Vector3();
+const eye = new Vector3();
 const a = new Vector3();
 const b = new Vector3();
 
@@ -272,7 +276,7 @@ export function FusionHologram({ at, team, beats }: { at: Vec3; team: { position
   const ref = useRef<Group>(null);
   const yaw = STATIONS.find((s) => s.id === "esas")!.yaw;
 
-  useFrame(({ clock }) => {
+  useFrame(({ clock, camera }) => {
     const w = stationWeight(offset.current, "esas");
     const bt = beats.current;
     const g = ref.current;
@@ -330,7 +334,11 @@ export function FusionHologram({ at, team, beats }: { at: Vec3; team: { position
       const l = set.links[k];
       l.visible = bt.sensor[k] > 0.01;
       setOpacity(l.material as Material, w * bt.sensor[k]);
-      if (l.visible) setRod(l, a.set(m.position[0], m.height + 0.1, m.position[2]), set.holo.localToWorld(b.copy(tp).setY(0.1)));
+      if (!l.visible) return;
+      // Start under the tag, slid toward the viewer along the view ray (same spot on screen) so the line clears its owner's head.
+      a.set(m.position[0], m.height + 0.1, m.position[2]);
+      a.add(g.worldToLocal(eye.copy(camera.position)).sub(a).normalize().multiplyScalar(LINK_FORWARD[k]));
+      setRod(l, a, set.holo.localToWorld(b.copy(tp).setY(0.1)));
     });
   });
 
