@@ -26,7 +26,7 @@ function RoomWall() {
   const wallFade = useMemo(() => edgeFade({ left: 0.22, right: 0.22, top: 0.3, bottom: 0 }), []);
   const { panes, pane, height, frame } = GLAZING;
   const span = panes * pane;
-  const frameMat = <meshStandardMaterial color="#6e7279" roughness={0.6} />;
+  const frameMat = <meshStandardMaterial color="#b4b8be" roughness={0.6} />;
   return (
     <group position={[ROOM_WALL.x, 0, ROOM_WALL.z]} rotation-y={ROOM_WALL.yaw}>
       <mesh position-y={ROOM_WALL.height / 2} receiveShadow>
