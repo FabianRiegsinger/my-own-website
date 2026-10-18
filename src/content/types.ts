@@ -39,11 +39,19 @@ export interface Agentic {
   workUse: string;
 }
 
+/** "What comes next": a countdown of the challenges he is heading for, last step hands over to contact. */
+export interface Next {
+  intro: string;
+  steps: { label: string; title: string; body: string }[];
+  liftoff: string;
+}
+
 export interface CV {
   profile: Profile;
   experience: Experience[];
   education: Education[];
   skills: SkillGroup[];
   agentic: Agentic;
+  next: Next;
   additional: { title: string; year: string }[];
 }

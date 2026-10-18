@@ -12,6 +12,7 @@ vi.mock("@/lib/capabilities", async (orig) => ({
 afterEach(() => {
   cleanup();
   env.hasWebGL = true;
+  delete document.documentElement.dataset.experience;
 });
 
 describe("ExperienceGate", () => {
@@ -36,5 +37,27 @@ describe("ExperienceGate", () => {
     };
     render(<ExperienceGate cv={cv} projects={[]} Experience={Experience}><p>static</p></ExperienceGate>);
     expect(await screen.findByText("static")).toBeTruthy();
+  });
+
+  it("marks the page as settled on static when 3D is not possible", () => {
+    env.hasWebGL = false;
+    render(<ExperienceGate cv={cv} projects={[]} Experience={() => <p>3d</p>}><p>static</p></ExperienceGate>);
+    expect(document.documentElement.dataset.experience).toBe("static");
+  });
+
+  it("does not mark the page static while upgrading to 3D", async () => {
+    render(<ExperienceGate cv={cv} projects={[]} Experience={() => <p>3d</p>}><p>static</p></ExperienceGate>);
+    await screen.findByText("3d");
+    expect(document.documentElement.dataset.experience).toBeUndefined();
+  });
+
+  it("marks the page static when the experience throws", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const Experience = () => {
+      throw new Error("model 404");
+    };
+    render(<ExperienceGate cv={cv} projects={[]} Experience={Experience}><p>static</p></ExperienceGate>);
+    await screen.findByText("static");
+    expect(document.documentElement.dataset.experience).toBe("static");
   });
 });

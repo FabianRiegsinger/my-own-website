@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { cv } from "./cv";
+import { JOB_STATIONS } from "@/lib/scroll-map";
 
 function strings(v: unknown): string[] {
   if (typeof v === "string") return [v];
@@ -35,5 +36,9 @@ describe("cv", () => {
 
   it("agentic tools", () => {
     expect(cv.agentic.tools).toEqual(["Claude Code", "Cursor"]);
+  });
+
+  it("every job has its own career page", () => {
+    expect(cv.experience).toHaveLength(JOB_STATIONS.length);
   });
 });

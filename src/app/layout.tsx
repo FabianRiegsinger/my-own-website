@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import { preload } from "react-dom";
 import { cv } from "@/content/cv";
 import { SITE_URL } from "@/lib/site";
 import "./globals.css";
 
 const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
 
-const title = "Fabian Riegsinger — Automotive Engineer → Agentic Builder";
+const title = "Fabian Riegsinger — Agentic Automotive Engineer";
 const description = cv.profile.summary.split(". ")[0] + ".";
 
 export const metadata: Metadata = {
@@ -29,6 +30,8 @@ const personJsonLd = {
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
+  // Start the hero likeness download with the HTML, not after the 3D code has loaded (same request useGLTF makes).
+  preload("/models/me.glb", { as: "fetch", crossOrigin: "anonymous" });
   return (
     <html lang="en" className={`${inter.variable} h-full antialiased`}>
       <body className="min-h-full bg-bg text-ink font-sans">

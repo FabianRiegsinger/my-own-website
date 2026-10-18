@@ -1,23 +1,39 @@
 "use client";
 
 import { useFrame } from "@react-three/fiber";
-import type { RefObject } from "react";
+import { useEffect, useRef, type RefObject } from "react";
 import { MathUtils } from "three";
+import { contactJump } from "@/lib/jump";
 import { toStationOffset } from "@/lib/scroll-map";
 import { useStationOffset } from "./station-offset";
 
+type Span = { top: number; height: number };
+
 /** Maps native page scroll (viewport centre) onto the station scale, damped for smooth 3D motion. */
 export function ScrollTracker({ content }: { content: RefObject<HTMLDivElement | null> }) {
-  const offset = useStationOffset();
+  const offsetRef = useStationOffset();
+  // Section spans in page coordinates; only re-measured when the content's layout changes, not every frame.
+  const spans = useRef<Span[] | null>(null);
+
+  useEffect(() => {
+    const el = content.current;
+    if (!el) return;
+    const observer = new ResizeObserver(() => (spans.current = null));
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [content]);
+
   useFrame((_, dt) => {
     const el = content.current;
     if (!el) return;
-    const sections = [...el.querySelectorAll<HTMLElement>("section")].map((s) => ({
+    spans.current ??= [...el.querySelectorAll<HTMLElement>("section")].map((s) => ({
       top: s.getBoundingClientRect().top + window.scrollY,
       height: s.offsetHeight,
     }));
-    const target = toStationOffset(window.scrollY + window.innerHeight / 2, sections);
-    offset.current = MathUtils.damp(offset.current, target, 6, dt);
+    const target = toStationOffset(window.scrollY + window.innerHeight / 2, spans.current);
+    // A direct jump lands at once rather than sweeping through every station between.
+    offsetRef.current = contactJump.snap ? target : MathUtils.damp(offsetRef.current, target, 6, dt);
+    contactJump.snap = false;
   });
   return null;
 }
