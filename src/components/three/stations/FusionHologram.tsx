@@ -133,14 +133,15 @@ function cone(radius: number, length: number, mat: Material) {
 
 /**
  * Sedan body (hood, cabin, trunk) as a side profile extruded to its width, front at +x, 0.5 long: the hologram's ego
- * car, and scaled up, the Mobileye test cars. `pane` is the glasshouse, a touch wider so it shows on both sides.
+ * car, and scaled up, the Mobileye test cars. `pane` is the glasshouse. `round` is the bevel: larger rounds the body's
+ * edges for a solid car, at the cost of growing it by that much all round.
  */
-export function sedanGeometry() {
+export function sedanGeometry(round = 0.008) {
   const profile = new Shape();
   const pts: [number, number][] = [[-0.25, 0.1], [-0.2, 0.12], [-0.12, 0.125], [-0.06, 0.19], [0.06, 0.19], [0.13, 0.125], [0.23, 0.11], [0.25, 0.075], [0.25, 0.04]];
   profile.moveTo(-0.25, 0.04);
   for (const [x, y] of pts) profile.lineTo(x, y);
-  const shell = new ExtrudeGeometry(profile, { depth: 0.2, bevelEnabled: true, bevelThickness: 0.01, bevelSize: 0.008, bevelSegments: 2 });
+  const shell = new ExtrudeGeometry(profile, { depth: 0.2, bevelEnabled: true, bevelThickness: round * 1.25, bevelSize: round, bevelSegments: round > 0.008 ? 4 : 2 });
   shell.translate(0, 0, -0.1);
   const glass = new Shape();
   glass.moveTo(-0.11, 0.128);
