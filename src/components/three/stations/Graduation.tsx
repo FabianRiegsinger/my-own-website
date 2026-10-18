@@ -173,7 +173,7 @@ function thmLogo() {
 }
 
 /** Alpha map that is opaque in the middle and fades to clear over the given fraction of each edge. */
-function edgeFade(edges: { left: number; right: number; top: number; bottom: number }, hole?: { u: number; v: number; r: number }) {
+export function edgeFade(edges: { left: number; right: number; top: number; bottom: number }, hole?: { u: number; v: number; r: number }) {
   const size = 512;
   const c = document.createElement("canvas");
   c.width = c.height = size;
