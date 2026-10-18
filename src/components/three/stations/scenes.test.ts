@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import { Color, Vector3 } from "three";
 import { STATIONS } from "@/lib/scroll-map";
 import { BELL, BELL_HEIGHT, BELL_RADIUS, HANDLE, LOGO, PLAQUE, SWING, NICHE, PLAQUES, terrazzo, WALL } from "./Graduation";
-import { TEAM } from "./Team";
+import { existsSync } from "node:fs";
+import { SENSORS } from "@/lib/fusion";
+import { HOLO, TEAM } from "./Team";
 import { CUSTOMER, FLEET } from "./Fleet";
 import { armSwing, clampRelease, FOG, fogWeight, launchWeight, liftoff, PAD } from "./Launch";
 import { cloudColor, cloudShape, cloudWords, packCloud, SITE_COLORS } from "./SkillCloud";
@@ -69,18 +71,34 @@ describe("graduation wall", () => {
 });
 
 describe("ESAS team", () => {
-  it("stands around Fabian at talking distance, each facing him", () => {
-    expect(TEAM.length).toBeGreaterThanOrEqual(3);
+  const holo = new Vector3(...HOLO);
+
+  it("gathers around the hologram table, each facing it, behind Fabian and clear of the table", () => {
+    expect(TEAM.length).toBe(3);
     for (const p of TEAM) {
       const pos = new Vector3(...p.position);
-      expect(pos.length()).toBeGreaterThan(1);
-      expect(pos.length()).toBeLessThan(2.2);
-      expect(facing(p.yaw).dot(pos.clone().negate().normalize())).toBeGreaterThan(0.95);
+      expect(pos.distanceTo(holo)).toBeGreaterThan(0.8);
+      expect(pos.distanceTo(holo)).toBeLessThan(1.8);
+      expect(facing(p.yaw).dot(holo.clone().sub(pos).normalize())).toBeGreaterThan(0.99);
+      expect(pos.z).toBeLessThan(0); // never nearer the camera than Fabian
+      expect(pos.x).toBeLessThan(1.5); // on screen right of him, not cut by the edge
     }
   });
 
-  it("nobody stands inside anybody else", () => {
-    TEAM.forEach((a, i) => TEAM.slice(i + 1).forEach((b) => expect(new Vector3(...a.position).distanceTo(new Vector3(...b.position))).toBeGreaterThan(0.7)));
+  it("nobody stands inside anybody else, Fabian included", () => {
+    const all = [new Vector3(), ...TEAM.map((p) => new Vector3(...p.position))];
+    all.forEach((a, i) => all.slice(i + 1).forEach((b) => expect(a.distanceTo(b)).toBeGreaterThan(0.7)));
+  });
+
+  it("each character is its own model file, so any one can be replaced alone", () => {
+    expect(new Set(TEAM.map((p) => p.model)).size).toBe(TEAM.length);
+    expect(TEAM.map((p) => p.id)).toEqual([...SENSORS]);
+    for (const p of TEAM) expect(existsSync(`public${p.model}`)).toBe(true);
+  });
+
+  it("Fabian faces the table", () => {
+    const yaw = STATIONS.find((s) => s.id === "esas")!.yaw;
+    expect(facing(yaw).dot(holo.clone().normalize())).toBeGreaterThan(0.95);
   });
 });
 

@@ -12,6 +12,7 @@ import { contactJump } from "@/lib/jump";
 import { heading, stationAt, stationWeight } from "@/lib/scroll-map";
 import { fade } from "./fade";
 import { Gown } from "./Gown";
+import { buildLaptop } from "./props";
 import { useStationOffset } from "./station-offset";
 
 const MODEL = "/models/me.glb";
@@ -157,7 +158,7 @@ function reach(upper: Object3D, fore: Object3D, hand: Object3D, target: Vector3,
 }
 
 /** One posed bone: its rest rotation and its parent's rotation relative to the model root (both fixed). */
-interface Joint {
+export interface Joint {
   bone: Object3D;
   rest: Quaternion;
   parent: Quaternion;
@@ -169,7 +170,7 @@ interface Joint {
  * Turns `j.bone` by `angle` about a model-space `axis`, on top of the rotations already applied this frame.
  * The axis is mapped into the parent's frame, so the same call works for any bone.
  */
-function turn(j: Joint, axis: Vector3, angle: number) {
+export function turn(j: Joint, axis: Vector3, angle: number) {
   q.setFromAxisAngle(axis, angle);
   pq.copy(j.parent).invert().multiply(q).multiply(j.parent);
   j.bone.quaternion.premultiply(pq);
@@ -177,7 +178,7 @@ function turn(j: Joint, axis: Vector3, angle: number) {
 
 const v = new Vector3();
 /** Lowest of `bones` in `root`'s own (unscaled model) frame. */
-function lowest(root: Object3D, bones: Object3D[]) {
+export function lowest(root: Object3D, bones: Object3D[]) {
   root.updateMatrixWorld(true);
   return Math.min(...bones.map((b) => root.worldToLocal(b.getWorldPosition(v)).y));
 }
@@ -198,6 +199,8 @@ export function GenMe({ shadows }: { shadows: boolean }) {
   const model = useRef<Object3D>(null);
   const spinner = useRef<Group>(null);
   const spin = useRef({ angle: 0, dragging: false, x: 0, x0: 0, t0: 0 });
+  const laptop = useMemo(() => buildLaptop(), []);
+  const laptopRef = useRef<Group>(null);
   const greet = useRef(-1); // seconds into a click greeting, -1 when none
   const headYaw = useRef(0);
   const gown = useRef<Group>(null);
@@ -516,6 +519,14 @@ export function GenMe({ shadows }: { shadows: boolean }) {
       // Then, within the palm's plane, tilt inward and let the hand follow the swing a beat late.
       turn(joints.R_Hand, X, -wv * (HAND_TILT + 0.15 * Math.sin(t * WAVE_HZ * TAU - 0.8)));
     }
+    // ESAS: holds the laptop running the fusion demo (stations/Team): forearms level and forward, the laptop on them.
+    const lap = stationWeight(offset.current, "esas") * (1 - w) * (1 - wave.current);
+    if (lap > 0.001) {
+      turn(joints.L_Upperarm, Z, 0.35 * lap);
+      turn(joints.R_Upperarm, Z, 0.35 * lap);
+      turn(joints.L_Forearm, Y, -1.25 * lap);
+      turn(joints.R_Forearm, Y, 1.25 * lap);
+    }
     // Feet on the floor: the body drops as the legs spread (the natural gait bob) instead of the feet lifting off.
     if (m) m.position.y = centre[1] + (ground - lowest(m, feet)) * scale + hop;
     // Fist and cough puffs live in the gown's frame; place them from the posed bones.
@@ -543,6 +554,15 @@ export function GenMe({ shadows }: { shadows: boolean }) {
         (p.material as Material).opacity = 0.85 * (1 - age / PUFF_LIFE);
       });
     }
+    // Laptop rests across both wrists, a little forward toward the fingers (in the spinner's frame, facing +z).
+    const laptop = laptopRef.current;
+    if (laptop) laptop.visible = lap > 0.5;
+    if (laptop?.visible && spinner.current) {
+      g.updateMatrixWorld(true);
+      hand.setFromMatrixPosition(joints.L_Hand.bone.matrixWorld).add(wrist.setFromMatrixPosition(joints.R_Hand.bone.matrixWorld)).multiplyScalar(0.5);
+      spinner.current.worldToLocal(hand);
+      laptop.position.set(hand.x, hand.y + 0.03, hand.z + 0.06);
+    }
     // Gown: each piece follows its bone (pose relative to the gown's frame, times the inverse bind pose).
     const gw = gown.current;
     if (gw) fade(gw, stationWeight(offset.current, "education"));
@@ -557,6 +577,7 @@ export function GenMe({ shadows }: { shadows: boolean }) {
   return (
     <group ref={group}>
       <group ref={spinner}>
+        <primitive ref={laptopRef} object={laptop} visible={false} />
         <group rotation-y={-Math.PI / 2}>
           <primitive ref={model} object={scene} scale={scale} position={centre} />
           <Gown ref={gown} shadows={shadows} />
