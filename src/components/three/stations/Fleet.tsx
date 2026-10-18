@@ -2,7 +2,7 @@
 
 import { useFrame } from "@react-three/fiber";
 import { useMemo, useRef } from "react";
-import { BoxGeometry, CanvasTexture, CircleGeometry, CylinderGeometry, type Group, MeshStandardMaterial, PlaneGeometry, RepeatWrapping } from "three";
+import { BoxGeometry, CanvasTexture, CircleGeometry, CylinderGeometry, type Group, MeshStandardMaterial, RepeatWrapping } from "three";
 import { stationWeight } from "@/lib/scroll-map";
 import { Colleague, type ColleaguePose } from "../Colleague";
 import { fade } from "../fade";
