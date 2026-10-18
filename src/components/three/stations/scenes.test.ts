@@ -4,7 +4,7 @@ import { STATIONS } from "@/lib/scroll-map";
 import { BELL, BELL_HEIGHT, BELL_RADIUS, HANDLE, LOGO, PLAQUE, SWING, NICHE, PLAQUES, terrazzo, WALL } from "./Graduation";
 import { existsSync } from "node:fs";
 import { SENSORS } from "@/lib/fusion";
-import { HOLO, TEAM } from "./Team";
+import { HOLO, TEAM, nodAt } from "./Team";
 import { CUSTOMER, FLEET } from "./Fleet";
 import { armSwing, clampRelease, FOG, fogWeight, launchWeight, liftoff, PAD } from "./Launch";
 import { cloudColor, cloudShape, cloudWords, packCloud, SITE_COLORS } from "./SkillCloud";
@@ -96,9 +96,17 @@ describe("ESAS team", () => {
     for (const p of TEAM) expect(existsSync(`public${p.model}`)).toBe(true);
   });
 
-  it("nobody moves in step: each has their own idle phase and reaction lag", () => {
+  it("nobody moves in step: each nods now and then, at their own moments", () => {
     expect(new Set(TEAM.map((p) => p.phase)).size).toBe(TEAM.length);
-    expect(new Set(TEAM.map((p) => p.lag)).size).toBe(TEAM.length);
+    const nods = TEAM.map((p) => Array.from({ length: 600 }, (_, i) => nodAt(i * 0.1, p.phase)));
+    for (const n of nods) {
+      const share = n.filter((v) => v > 0).length / n.length;
+      expect(share).toBeGreaterThan(0.05); // they do nod
+      expect(share).toBeLessThan(0.4); // but only from time to time
+      expect(Math.max(...n)).toBeLessThanOrEqual(1);
+    }
+    expect(nods[0]).not.toEqual(nods[1]);
+    expect(nods[1]).not.toEqual(nods[2]);
   });
 
   it("Fabian faces the table", () => {

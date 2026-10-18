@@ -66,12 +66,11 @@ export interface Member {
   width: number;
   /** Head size against the body, see Colleague. */
   head: number;
+  /** Seeds their breathing and when they nod, so the group never moves in step. */
   phase: number;
-  /** Seconds this character reacts behind the demo's beats (nodding, thinking, thumbs-up), so the group is not in step. */
-  lag: number;
 }
 
-const member = (id: Sensor, model: string, x: number, z: number, height: number, width: number, head: number, phase: number, lag: number): Member => ({
+const member = (id: Sensor, model: string, x: number, z: number, height: number, width: number, head: number, phase: number): Member => ({
   id,
   model,
   position: [x, 0, z],
@@ -80,8 +79,21 @@ const member = (id: Sensor, model: string, x: number, z: number, height: number,
   width,
   head,
   phase,
-  lag,
 });
+
+/** 0..1: a short nod now and then, at irregular moments that differ per `seed` (pure: no state to keep). */
+export function nodAt(t: number, seed: number) {
+  const SLOT = 5;
+  const NOD = 1.6;
+  const k = Math.floor(t / SLOT);
+  const r = (n: number) => {
+    const v = Math.sin(k * 12.9898 + seed * 78.233 + n * 37.719) * 43758.5453;
+    return v - Math.floor(v);
+  };
+  if (r(1) < 0.4) return 0; // some slots pass without a nod
+  const s = t - k * SLOT - r(2) * (SLOT - NOD);
+  return s > 0 && s < NOD ? Math.sin((Math.PI * s) / NOD) : 0;
+}
 
 /**
  * The ESAS team, one entry per character. Each is a sculpted copy of Fabian's mesh (own haircut and face, no glasses,
@@ -89,9 +101,9 @@ const member = (id: Sensor, model: string, x: number, z: number, height: number,
  * scripts/build-colleagues.mjs.
  */
 export const TEAM: Member[] = [
-  member("camera", "/models/colleague-camera.glb", 1.35, -0.35, 1.86, 1.1, 1, 0.4, 0.15), // buzz cut, square jaw
-  member("lidar", "/models/colleague-lidar.glb", 0.55, -0.75, 1.7, 0.9, 1, 1.3, 0.45), // smooth bob, narrow face
-  member("radar", "/models/colleague-radar.glb", -0.55, -0.55, 1.79, 1.14, 0.8, 2.2, 0), // short soft waves, ears showing, more human head
+  member("camera", "/models/colleague-camera.glb", 1.35, -0.35, 1.86, 1.1, 1, 0.4), // buzz cut, square jaw
+  member("lidar", "/models/colleague-lidar.glb", 0.55, -0.75, 1.7, 0.9, 1, 1.3), // smooth bob, narrow face
+  member("radar", "/models/colleague-radar.glb", -0.55, -0.55, 1.79, 1.14, 0.8, 2.2), // short soft waves, ears showing, more human head
 ];
 
 /** ESAS: Fabian demos his sensor fusion on a hologram; each colleague owns one sensor stream. */
@@ -102,18 +114,15 @@ export function Team() {
   const beats = useRef(fusionBeats(0));
   const onPage = useRef(0);
 
-  useFrame((_, dt) => {
+  useFrame(({ clock }, dt) => {
     const w = stationWeight(offset.current, "esas");
     if (root.current) fade(root.current, w);
     // Plays once from arrival (scroll snaps the page still, so time drives it, not scroll), resets on leaving.
     onPage.current = w > 0.5 ? onPage.current + dt : 0;
-    const b = (beats.current = fusionBeats(onPage.current / FUSION_PLAY));
+    beats.current = fusionBeats(onPage.current / FUSION_PLAY);
+    // The team only looks on, nodding now and then; the demo itself is Fabian's.
     poses.current.forEach((p, i) => {
-      const own = fusionBeats(Math.max(0, onPage.current - TEAM[i].lag) / FUSION_PLAY);
-      p.point = b.point[i]; // on the demo's beat: it hands their stream over
-      p.think = i === 1 ? own.think : 0; // the lidar owner stops to think when the streams disagree
-      p.nod = own.nod;
-      p.thumb = own.thumb;
+      p.nod = nodAt(clock.elapsedTime, TEAM[i].phase);
     });
   });
 

@@ -29,7 +29,7 @@ export interface ColleagueProps {
   modelYaw?: number;
   /** Head size against the body (scales the Head bone): below 1 tones down the cartoon proportions. */
   head?: number;
-  /** Seeds this character's idle (breathing rate, glances, weight shift), so a group never moves in step. */
+  /** Seeds this character's breathing rate, so a group does not breathe in step. */
   phase: number;
   /** Read every frame. */
   pose: () => ColleaguePose;
@@ -79,12 +79,9 @@ export function Colleague({ model, height, width, position, yaw, modelYaw = -Mat
 
   const ref = useRef<Group>(null);
   // Pseudo-random from the phase: pure, and different for each character.
-  const idle = useMemo(() => {
-    const r = (k: number) => {
-      const v = Math.sin(phase * 127.1 + k * 311.7) * 43758.5453;
-      return v - Math.floor(v);
-    };
-    return { rate: 0.8 + 0.4 * r(1), look: 0.1 + 0.15 * r(2), lookRate: 0.25 + 0.35 * r(3), shift: 0.3 + 0.5 * r(4), tilt: 0.04 * (r(5) - 0.5) };
+  const rate = useMemo(() => {
+    const v = Math.sin(phase * 127.1 + 311.7) * 43758.5453;
+    return 0.8 + 0.4 * (v - Math.floor(v));
   }, [phase]);
 
   useFrame(({ clock }) => {
@@ -94,8 +91,8 @@ export function Colleague({ model, height, width, position, yaw, modelYaw = -Mat
     const w = pose();
     const t = clock.elapsedTime + phase;
     for (const n of BONES) j[n].bone.quaternion.copy(j[n].rest);
-    const breath = Math.sin(t * 1.6 * idle.rate);
-    // Idle as GenMe: arms down from the T-pose, elbows a touch forward, breathing, weight shifting.
+    const breath = Math.sin(t * 1.6 * rate);
+    // Idle as GenMe: arms down from the T-pose, elbows a touch forward, breathing.
     turn(j.L_Upperarm, X, -1.4 + 0.03 * breath);
     turn(j.R_Upperarm, X, 1.4 - 0.03 * breath);
     turn(j.L_Forearm, Y, -0.2);
@@ -103,10 +100,6 @@ export function Colleague({ model, height, width, position, yaw, modelYaw = -Mat
     turn(j.L_Hand, X, -0.15);
     turn(j.R_Hand, X, 0.15);
     turn(j.Spine02, Z, -0.02 * breath);
-    turn(j.Waist, X, 0.02 * Math.sin(t * idle.shift));
-    // Glancing around now and then (two waves, so it never repeats evenly), the head carried with its own slight tilt.
-    turn(j.Head, Y, idle.look * Math.sin(t * idle.lookRate) * Math.sin(t * idle.lookRate * 0.37 + 1));
-    turn(j.Head, X, idle.tilt);
     // Pointing ahead with the right arm (Z swings the arm forward).
     turn(j.R_Upperarm, Z, 1.35 * w.point);
     turn(j.R_Upperarm, X, -0.25 * w.point);

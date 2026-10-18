@@ -102,6 +102,24 @@ function setLine(l: Line, pts: Vector3[]) {
   p.needsUpdate = true;
 }
 
+/** A thin tube for a line that must read thicker than WebGL's 1px lines; placed by `setRod`. */
+function rod(color: string, radius: number) {
+  const g = new CylinderGeometry(radius, radius, 1, 8, 1, true);
+  g.translate(0, 0.5, 0);
+  const m = new Mesh(g, new MeshBasicMaterial({ color, transparent: true, depthTest: false, depthWrite: false }));
+  m.material.userData.base = 1;
+  m.frustumCulled = false;
+  m.renderOrder = 9;
+  return m;
+}
+const UP = new Vector3(0, 1, 0);
+function setRod(r: Mesh, from: Vector3, to: Vector3) {
+  r.position.copy(from);
+  const d = to.clone().sub(from);
+  r.scale.set(1, d.length(), 1);
+  r.quaternion.setFromUnitVectors(UP, d.normalize());
+}
+
 /** Cone from the car's sensor mount, widening ahead (+x). */
 function cone(radius: number, length: number, mat: Material) {
   const g = new ConeGeometry(radius, length, 32, 1, true);
@@ -228,7 +246,7 @@ function build(team: { position: Vec3; height: number }[]) {
     s.position.set(m.position[0], m.height + 0.22, m.position[2]);
     return s;
   });
-  const links = team.map((_, k) => line(STREAM[k], 2));
+  const links = team.map((_, k) => rod(STREAM[k], 0.006));
   const beam = line(ACCENT, 2);
   beam.material.userData.base = 0.5;
   // One world-space group holds it all; the parts ride along in userData for the frame loop.
@@ -237,7 +255,7 @@ function build(team: { position: Vec3; height: number }[]) {
   world.userData.parts = { root, holo, zones, target, dots, fused, fusedTag, trail, tags, links, beam, hist: [] as Vector3[] };
   return world;
 }
-type Parts = { root: Group; holo: Group; zones: Mesh[]; target: Mesh; dots: Mesh[]; fused: LineSegments; fusedTag: Sprite; trail: Line; tags: Sprite[]; links: Line[]; beam: Line; hist: Vector3[] };
+type Parts = { root: Group; holo: Group; zones: Mesh[]; target: Mesh; dots: Mesh[]; fused: LineSegments; fusedTag: Sprite; trail: Line; tags: Sprite[]; links: Mesh[]; beam: Line; hist: Vector3[] };
 
 const tp = new Vector3();
 const a = new Vector3();
@@ -311,7 +329,7 @@ export function FusionHologram({ at, team, beats }: { at: Vec3; team: { position
       const l = set.links[k];
       l.visible = bt.sensor[k] > 0.01;
       setOpacity(l.material as Material, w * bt.sensor[k]);
-      if (l.visible) setLine(l, [a.set(m.position[0], m.height + 0.1, m.position[2]), set.holo.localToWorld(b.copy(tp).setY(0.1))]);
+      if (l.visible) setRod(l, a.set(m.position[0], m.height + 0.1, m.position[2]), set.holo.localToWorld(b.copy(tp).setY(0.1)));
     });
   });
 
