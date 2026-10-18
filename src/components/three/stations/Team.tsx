@@ -2,7 +2,7 @@
 
 import { useFrame } from "@react-three/fiber";
 import { useMemo, useRef } from "react";
-import { CanvasTexture, type Group } from "three";
+import type { Group } from "three";
 import { FUSION_PLAY, fusionBeats, type Sensor } from "@/lib/fusion";
 import { stationWeight } from "@/lib/scroll-map";
 import { Colleague, type ColleaguePose } from "../Colleague";
@@ -16,43 +16,14 @@ export const HOLO: [number, number, number] = [0.75, 0, 0.45];
 
 /**
  * Back wall of the meeting room, behind the team and turned (yaw) so the room reads in depth; fades out at the sides
- * and top like the graduation wall. Floor-to-ceiling glazing in its middle: PANES panes of PANE width, slim frames.
+ * and top like the graduation wall. Floor-to-ceiling glazing in its middle: clear, uncoloured panes in slim frames.
  */
 export const ROOM_WALL = { x: 0.4, z: -1.35, width: 3.6, height: 2.8, yaw: 0.35 };
 export const GLAZING = { panes: 4, pane: 0.5, height: 2.6, frame: 0.028 };
 
-/** Glass seen from inside: sky fading to haze, a faint far skyline, one soft diagonal reflection. */
-function glassTexture() {
-  const c = document.createElement("canvas");
-  c.width = 128;
-  c.height = 512;
-  const ctx = c.getContext("2d")!;
-  const sky = ctx.createLinearGradient(0, 0, 0, c.height);
-  sky.addColorStop(0, "#a9c8e4");
-  sky.addColorStop(0.62, "#dce8f2");
-  sky.addColorStop(1, "#eef2f4");
-  ctx.fillStyle = sky;
-  ctx.fillRect(0, 0, c.width, c.height);
-  ctx.fillStyle = "rgba(150, 165, 180, 0.35)";
-  for (let x = 0, i = 0; x < c.width; i++) {
-    const w = 10 + ((i * 37) % 23);
-    const h = 30 + ((i * 53) % 70);
-    ctx.fillRect(x, c.height * 0.66 - h, w, h + c.height * 0.34);
-    x += w + 2;
-  }
-  ctx.fillStyle = "rgba(255, 255, 255, 0.25)";
-  ctx.beginPath();
-  ctx.moveTo(c.width * 0.2, 0);
-  ctx.lineTo(c.width * 0.55, 0);
-  ctx.lineTo(c.width * 0.05, c.height);
-  ctx.lineTo(-c.width * 0.3, c.height);
-  ctx.fill();
-  return new CanvasTexture(c);
-}
-
 /** The angled back wall with its windows. */
 function RoomWall() {
-  const maps = useMemo(() => ({ wall: edgeFade({ left: 0.22, right: 0.22, top: 0.3, bottom: 0 }), glass: glassTexture() }), []);
+  const wallFade = useMemo(() => edgeFade({ left: 0.22, right: 0.22, top: 0.3, bottom: 0 }), []);
   const { panes, pane, height, frame } = GLAZING;
   const span = panes * pane;
   const frameMat = <meshStandardMaterial color="#5a5e65" roughness={0.5} metalness={0.4} />;
@@ -60,12 +31,12 @@ function RoomWall() {
     <group position={[ROOM_WALL.x, 0, ROOM_WALL.z]} rotation-y={ROOM_WALL.yaw}>
       <mesh position-y={ROOM_WALL.height / 2} receiveShadow>
         <planeGeometry args={[ROOM_WALL.width, ROOM_WALL.height]} />
-        <meshStandardMaterial color="#f2f2ef" roughness={0.95} alphaMap={maps.wall} transparent depthWrite={false} />
+        <meshStandardMaterial color="#f2f2ef" roughness={0.95} alphaMap={wallFade} transparent depthWrite={false} />
       </mesh>
       {Array.from({ length: panes }, (_, i) => (
         <mesh key={i} position={[-span / 2 + pane * (i + 0.5), height / 2, 0.005]}>
           <planeGeometry args={[pane, height]} />
-          <meshStandardMaterial map={maps.glass} roughness={0.15} metalness={0.1} transparent opacity={0.92} depthWrite={false} />
+          <meshStandardMaterial color="#ffffff" roughness={0.1} transparent opacity={0.25} depthWrite={false} />
         </mesh>
       ))}
       {Array.from({ length: panes + 1 }, (_, i) => (
