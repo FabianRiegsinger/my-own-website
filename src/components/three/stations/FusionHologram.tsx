@@ -11,6 +11,7 @@ import {
   CylinderGeometry,
   DoubleSide,
   EdgesGeometry,
+  ExtrudeGeometry,
   GridHelper,
   Group,
   Line,
@@ -20,6 +21,7 @@ import {
   MeshBasicMaterial,
   MeshStandardMaterial,
   PlaneGeometry,
+  Shape,
   SphereGeometry,
   Sprite,
   SpriteMaterial,
@@ -110,19 +112,76 @@ function cone(radius: number, length: number, mat: Material) {
   return m;
 }
 
+/** The ego car as a wireframe hologram: a sedan side profile (hood, cabin, trunk) extruded to its width, wheels, lights. */
+function egoCar() {
+  const car = new Group();
+  const edge = new LineBasicMaterial({ color: ACCENT, transparent: true });
+  edge.userData.base = 1;
+  const add = (m: Mesh, threshold = 20) => {
+    const e = new LineSegments(new EdgesGeometry(m.geometry, threshold), edge);
+    e.position.copy(m.position);
+    e.rotation.copy(m.rotation);
+    car.add(m, e);
+  };
+  // Side profile, front at +x.
+  const profile = new Shape();
+  const pts: [number, number][] = [[-0.25, 0.1], [-0.2, 0.12], [-0.12, 0.125], [-0.06, 0.19], [0.06, 0.19], [0.13, 0.125], [0.23, 0.11], [0.25, 0.075], [0.25, 0.04]];
+  profile.moveTo(-0.25, 0.04);
+  for (const [x, y] of pts) profile.lineTo(x, y);
+  const shell = new ExtrudeGeometry(profile, { depth: 0.2, bevelEnabled: true, bevelThickness: 0.01, bevelSize: 0.008, bevelSegments: 2 });
+  shell.translate(0, 0, -0.1);
+  add(new Mesh(shell, glow(ACCENT, 0.22)), 25);
+  // Glasshouse: brighter panes over the cabin.
+  const glass = new Shape();
+  glass.moveTo(-0.11, 0.128);
+  for (const [x, y] of [[-0.055, 0.183], [0.055, 0.183], [0.12, 0.128]] as [number, number][]) glass.lineTo(x, y);
+  const pane = new ExtrudeGeometry(glass, { depth: 0.216, bevelEnabled: false });
+  pane.translate(0, 0, -0.108);
+  car.add(new Mesh(pane, glow(ACCENT, 0.35)));
+  for (const x of [-0.15, 0.15])
+    for (const z of [-0.1, 0.1]) {
+      const w = new Mesh(new CylinderGeometry(0.045, 0.045, 0.035, 20), glow(ACCENT, 0.4));
+      w.rotation.x = Math.PI / 2;
+      w.position.set(x, 0.045, z);
+      add(w, 30);
+    }
+  for (const [x, c] of [[0.257, "#ffffff"], [-0.257, "#ff4d5a"]] as [number, string][])
+    for (const z of [-0.07, 0.07]) {
+      const l = new Mesh(new BoxGeometry(0.008, 0.018, 0.05), glow(c, 0.9));
+      l.position.set(x, 0.09, z);
+      car.add(l);
+    }
+  return car;
+}
+
 function build(team: { position: Vec3; height: number }[]) {
   const root = new Group();
   // Transparent so the page fade reaches them; still depth-writing, so they sort like solids.
   const prop = new MeshStandardMaterial({ color: "#b6b9c1", roughness: 0.9, transparent: true });
   const propDark = new MeshStandardMaterial({ color: "#8b9099", roughness: 0.9, transparent: true });
-  const top = new Mesh(new CylinderGeometry(0.5, 0.5, 0.05, 48), prop);
+  const top = new Mesh(new CylinderGeometry(0.5, 0.48, 0.05, 64), prop);
   top.position.y = 0.75;
-  const stem = new Mesh(new CylinderGeometry(0.06, 0.1, 0.73, 16), propDark);
-  stem.position.y = 0.365;
-  for (const m of [top, stem]) m.castShadow = m.receiveShadow = true;
-  const pad = new Mesh(new CylinderGeometry(0.34, 0.34, 0.012, 48), glow(ACCENT, 0.5));
+  // A darker rim round the top's edge, a collar under it, the stem tapering to a weighted foot.
+  const rim = new Mesh(new TorusGeometry(0.495, 0.018, 12, 96), propDark);
+  rim.rotation.x = Math.PI / 2;
+  rim.position.y = 0.757;
+  const collar = new Mesh(new CylinderGeometry(0.16, 0.08, 0.06, 32), propDark);
+  collar.position.y = 0.695;
+  const stem = new Mesh(new CylinderGeometry(0.05, 0.08, 0.66, 24), propDark);
+  stem.position.y = 0.36;
+  const foot = new Mesh(new CylinderGeometry(0.24, 0.27, 0.03, 48), propDark);
+  foot.position.y = 0.015;
+  for (const m of [top, rim, collar, stem, foot]) m.castShadow = m.receiveShadow = true;
+  // The projector: a glowing pad inset in the top, ringed by a brighter emitter and a faint outer guide ring.
+  const pad = new Mesh(new CylinderGeometry(0.34, 0.34, 0.012, 64), glow(ACCENT, 0.45));
   pad.position.y = 0.782;
-  root.add(top, stem, pad);
+  const emitter = new Mesh(new TorusGeometry(0.345, 0.006, 8, 96), glow(ACCENT, 0.9));
+  emitter.rotation.x = Math.PI / 2;
+  emitter.position.y = 0.789;
+  const guide = new Mesh(new TorusGeometry(0.42, 0.002, 6, 96), glow(ACCENT, 0.35));
+  guide.rotation.x = Math.PI / 2;
+  guide.position.y = 0.777;
+  root.add(top, rim, collar, stem, foot, pad, emitter, guide);
 
   // Hologram: the ego car on a strip of road, an object crossing ahead of it.
   const holo = new Group();
@@ -133,21 +192,8 @@ function build(team: { position: Vec3; height: number }[]) {
   grid.scale.z = 0.6;
   (grid.material as Material).transparent = true;
   (grid.material as Material).userData.base = 0.18;
-  const car = new Group();
+  const car = egoCar();
   car.position.x = -0.42;
-  const edge = new LineBasicMaterial({ color: ACCENT, transparent: true });
-  edge.userData.base = 1;
-  const body = glow(ACCENT, 0.25);
-  for (const [w, h, d, y, x] of [
-    [0.5, 0.1, 0.22, 0.07, 0],
-    [0.26, 0.08, 0.2, 0.16, -0.03],
-  ]) {
-    const b = new Mesh(new BoxGeometry(w, h, d), body);
-    b.position.set(x, y, 0);
-    const e = new LineSegments(new EdgesGeometry(b.geometry), edge);
-    e.position.copy(b.position);
-    car.add(b, e);
-  }
   holo.add(road, grid, car);
 
   const ring = new Mesh(new TorusGeometry(0.55, 0.005, 8, 72), glow(STREAM[1]));
