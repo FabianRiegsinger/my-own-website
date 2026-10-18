@@ -111,8 +111,9 @@ const shellAt = (d, scale, pad) => {
  * Moves the head (and body) by `fn(p, d, i, hair, headWeight)`; eyes and mouth (their own islands) follow `face`, the
  * face's overall reshaping, so the skin never cuts through them.
  */
-function sculpt(fn, face) {
+function sculpt(fn, face, shell) {
   const P = Float32Array.from(P0);
+  const H = new Float32Array(n);
   for (let i = 0; i < n; i++) {
     const main = m.island[i] === MAIN;
     if (!main && (GLASSES.has(m.island[i]) || m.headW[i] <= 0.5)) continue;
@@ -120,10 +121,39 @@ function sculpt(fn, face) {
     const d = p.map((v, k) => v - C[k]);
     // Above the hairline everything counts as hair (the quiff's strands too), so no old strand pokes through a new cut.
     const h = isHead(i) ? Math.max(hair[i], smooth((p[1] - 0.88) / 0.02)) : hair[i];
+    if (main) H[i] = h;
     const q = main ? fn(p, d, i, h, m.headW[i]) : face?.(p);
     if (q) P.set(q, i * 3);
   }
+  if (shell) relaxHair(P, H, shell);
   return P;
+}
+
+/**
+ * The quiff's strands fold over each other once pushed onto a shell (flat creased patches): smooth the hair (Laplacian,
+ * by its weight) and put it back on the shell, `shell(u)` being the radius in direction `u` from C.
+ */
+function relaxHair(P, H, shell, iterations = 6) {
+  for (let it = 0; it < iterations; it++) {
+    const Q = Float32Array.from(P);
+    for (let i = 0; i < n; i++) {
+      if (H[i] <= 0) continue;
+      const avg = [0, 0, 0];
+      for (const j of nb[i]) for (let k = 0; k < 3; k++) avg[k] += P[j * 3 + k] / nb[i].size;
+      const q = lerp3([P[i * 3], P[i * 3 + 1], P[i * 3 + 2]], avg, 0.6 * H[i]);
+      const d = q.map((v, k) => v - C[k]);
+      const L = Math.hypot(...d) || 1;
+      const u = d.map((v) => v / L);
+      Q.set(lerp3(q, C.map((c, k) => c + u[k] * shell(u)), H[i]), i * 3);
+    }
+    P.set(Q);
+  }
+}
+
+/** Radar's hair surface: the skull shell, slightly fuller, with low ripples running front to back. */
+function radarHair(u) {
+  const { r } = shellAt(u, 1.07, 0.006);
+  return r * (1 + 0.045 * Math.sin(Math.atan2(u[2], u[0]) * 5 + u[1] * 3));
 }
 
 const VARIANTS = {
@@ -157,30 +187,19 @@ const VARIANTS = {
     },
     ([x, y, z]) => [x, y, z * (1 - 0.07 * smooth((0.86 - y) / 0.1))],
   ),
-  // Big curls on a wide, bumpy shell. Full beard along the jaw and chin, lips kept clear.
+  // Short, soft waves: a little fuller than the skull, swept back in a few broad ripples. Slightly broader face.
   radar: sculpt(
     (p, d, i, h, hw) => {
       let q = p;
       if (h > 0) {
-        const { u, r } = shellAt(d, 1.15, 0.01);
-        const th = Math.acos(Math.max(-1, Math.min(1, u[1])));
-        const ph = Math.atan2(u[2], u[0]);
-        const curl = 1 + 0.09 * Math.sin(th * 6) * Math.sin(ph * 5); // coarse enough to survive the subdivision
-        q = lerp3(p, C.map((c, k) => c + u[k] * r * curl), h);
+        const { u } = shellAt(d, 1, 0);
+        q = lerp3(p, C.map((c, k) => c + u[k] * radarHair(u)), h);
       }
-      let [x, y, z] = q;
-      if (hw > 0.5) z *= 1.04;
-      const lips = x > 0.085 && y > 0.752 && Math.abs(z) < 0.045;
-      if (hw > 0.5 && h === 0 && !lips && y < 0.795 && x > -0.05) {
-        const b = smooth((0.795 - y) / 0.03) * smooth((x + 0.05) / 0.06);
-        const r = Math.hypot(x - C[0], z) || 1;
-        x += (0.013 * b * (x - C[0])) / r;
-        z += (0.013 * b * z) / r;
-        y -= 0.008 * b * smooth((0.745 - y) / 0.03);
-      }
-      return [x, y, z];
+      const [x, y, z] = q;
+      return [x, y, hw > 0.5 ? z * 1.02 : z];
     },
-    ([x, y, z]) => [x, y, z * 1.04],
+    ([x, y, z]) => [x, y, z * 1.02],
+    (u) => radarHair(u),
   ),
 };
 
