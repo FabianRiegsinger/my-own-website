@@ -91,7 +91,7 @@ const member = (id: Sensor, model: string, x: number, z: number, height: number,
 export const TEAM: Member[] = [
   member("camera", "/models/colleague-camera.glb", 1.35, -0.35, 1.86, 1.1, 1, 0.4, 0.15), // buzz cut, square jaw
   member("lidar", "/models/colleague-lidar.glb", 0.55, -0.75, 1.7, 0.9, 1, 1.3, 0.45), // smooth bob, narrow face
-  member("radar", "/models/colleague-radar.glb", -0.55, -0.55, 1.79, 1.14, 0.8, 2.2, 0), // short soft waves, more human head
+  member("radar", "/models/colleague-radar.glb", -0.55, -0.55, 1.79, 1.14, 0.8, 2.2, 0), // short soft waves, ears showing, more human head
 ];
 
 /** ESAS: Fabian demos his sensor fusion on a hologram; each colleague owns one sensor stream. */
