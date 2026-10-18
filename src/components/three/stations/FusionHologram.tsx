@@ -102,11 +102,12 @@ function setLine(l: Line, pts: Vector3[]) {
   p.needsUpdate = true;
 }
 
-/** A thin tube for a line that must read thicker than WebGL's 1px lines; placed by `setRod`. */
+/** A thin tube for a line that must read thicker than WebGL's 1px lines; placed by `setRod`. Depth-tested, so it
+ * passes behind whoever stands in front of it. */
 function rod(color: string, radius: number) {
   const g = new CylinderGeometry(radius, radius, 1, 8, 1, true);
   g.translate(0, 0.5, 0);
-  const m = new Mesh(g, new MeshBasicMaterial({ color, transparent: true, depthTest: false, depthWrite: false }));
+  const m = new Mesh(g, new MeshBasicMaterial({ color, transparent: true, depthWrite: false }));
   m.material.userData.base = 1;
   m.frustumCulled = false;
   m.renderOrder = 9;
