@@ -3,7 +3,7 @@
 import { useGLTF } from "@react-three/drei";
 import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
-import { Box3, BufferAttribute, CanvasTexture, CapsuleGeometry, MathUtils, Matrix4, Raycaster, Vector2, MeshStandardMaterial, Quaternion, SkinnedMesh, type Sprite, Vector3, type Group, type Material, type Mesh, type Object3D } from "three";
+import { Box3, Euler, BufferAttribute, CanvasTexture, CapsuleGeometry, MathUtils, Matrix4, Raycaster, Vector2, MeshStandardMaterial, Quaternion, SkinnedMesh, type Sprite, Vector3, type Group, type Material, type Mesh, type Object3D } from "three";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import { JUMP_PERIOD, jumpBeats } from "@/lib/cheer";
 import { COUGHS, coughBeats, sootAt } from "@/lib/cough";
@@ -12,7 +12,7 @@ import { contactJump } from "@/lib/jump";
 import { heading, stationAt, stationWeight } from "@/lib/scroll-map";
 import { fade } from "./fade";
 import { Gown } from "./Gown";
-import { buildLaptop, buildTablet } from "./props";
+import { buildLaptop, buildTablet, TABLET } from "./props";
 import { useStationOffset } from "./station-offset";
 
 const MODEL = "/models/me.glb";
@@ -58,9 +58,6 @@ const PALM_TURN = Math.PI / 2;
 const HAND_TILT = 0.2;
 /** Tablet hand (Mobileye): palm turned up to carry the tablet flat on it (a little past a quarter turn: level, not tipped sideways). */
 const PALM_UP = Math.PI / 2 + 0.2;
-/** Wrist to palm centre, where the tablet rests, and its centre's height above the hand bone (clears palm and thumb). */
-const PALM_REACH = 0.08;
-const PALM_LIFT = 0.022;
 const DEG = Math.PI / 180;
 const TAU = 2 * Math.PI;
 
@@ -98,6 +95,7 @@ const palmDown = new Vector3();
 const palmSide = new Vector3();
 const fingers = new Vector3();
 const palmFrame = new Matrix4();
+const tilt = new Euler();
 const ta = new Vector3();
 const tb = new Vector3();
 const tc = new Vector3();
@@ -601,7 +599,13 @@ export function GenMe({ shadows }: { shadows: boolean }) {
       fingers.normalize();
       palmSide.crossVectors(fingers, palmDown);
       tb.quaternion.setFromRotationMatrix(palmFrame.makeBasis(palmSide, fingers, palmDown));
-      tb.position.setFromMatrixPosition(toFrame).addScaledVector(fingers, PALM_REACH).addScaledVector(palmDown, -PALM_LIFT);
+      tb.quaternion.multiply(q.setFromEuler(tilt.set(TABLET.pitch * DEG, TABLET.roll * DEG, TABLET.yaw * DEG)));
+      tb.scale.setScalar(TABLET.scale);
+      tb.position
+        .setFromMatrixPosition(toFrame)
+        .addScaledVector(fingers, TABLET.reach)
+        .addScaledVector(palmSide, TABLET.side)
+        .addScaledVector(palmDown, -TABLET.lift);
     }
     // Gown: each piece follows its bone (pose relative to the gown's frame, times the inverse bind pose).
     const gw = gown.current;
