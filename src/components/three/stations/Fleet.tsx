@@ -16,15 +16,18 @@ type Spot = { position: [number, number, number]; yaw: number };
 /** The customer (an AUDI engineer), a step to Fabian's side, facing him. */
 export const CUSTOMER = { position: [-1, 0, -0.2] as [number, number, number], yaw: Math.atan2(1, 0.2) };
 
-/** Three test cars nosed into angled bays behind the conversation, side profile toward the camera. */
+/** Test cars nosed into angled bays behind the conversation, side profile toward the camera; the left two stand behind
+ *  the text panel, so the row reads as running on past it. */
 export const FLEET: Spot[] = [
-  { position: [-2.9, 0, -5.8], yaw: 0.9 },
-  { position: [-0.5, 0, -6.4], yaw: 0.9 },
-  { position: [1.9, 0, -7], yaw: 0.9 },
+  { position: [-9.2, 0, -4.6], yaw: 0.9 },
+  { position: [-6.8, 0, -5.2], yaw: 0.9 },
+  { position: [-4.4, 0, -5.8], yaw: 0.9 },
+  { position: [-2, 0, -6.4], yaw: 0.9 },
+  { position: [0.4, 0, -7], yaw: 0.9 },
 ];
 
 /** Back wall of the test garage, a roller door behind each bay; fades out at the sides and top like the ESAS wall. */
-export const GARAGE = { z: -9, x: -0.5, width: 11, height: 3.4, door: { width: 2, height: 2.3 } };
+export const GARAGE = { z: -9, x: -4.4, width: 16, height: 3.4, door: { width: 2, height: 2.3 } };
 
 /** Hologram units (0.5 long) to a car a little under life size, as the rest of the Memoji-scale scene. */
 const CAR_SCALE = 5.8;

@@ -578,7 +578,7 @@ export function GenMe({ shadows }: { shadows: boolean }) {
       g.updateMatrixWorld(true);
       hand.setFromMatrixPosition(joints.R_Hand.bone.matrixWorld);
       spinner.current.worldToLocal(hand);
-      tb.position.set(hand.x + 0.02, hand.y + 0.06, hand.z + 0.05);
+      tb.position.set(hand.x + 0.02, hand.y + 0.09, hand.z + 0.05);
     }
     // Gown: each piece follows its bone (pose relative to the gown's frame, times the inverse bind pose).
     const gw = gown.current;
