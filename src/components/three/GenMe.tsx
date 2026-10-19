@@ -56,6 +56,10 @@ const JUMP = 0.22; // world units
 /** Waving hand: palm turned to the viewer (supination, shared with the forearm twist bones), tilted a little inward. */
 const PALM_TURN = Math.PI / 2;
 const HAND_TILT = 0.2;
+/** Tablet hand (Mobileye): palm turned up to carry the tablet flat on it. */
+const PALM_UP = Math.PI / 2;
+/** Wrist to palm centre, where the tablet rests. */
+const PALM_REACH = 0.06;
 const DEG = Math.PI / 180;
 const TAU = 2 * Math.PI;
 
@@ -201,7 +205,11 @@ export function GenMe({ shadows }: { shadows: boolean }) {
   const spin = useRef({ angle: 0, dragging: false, x: 0, x0: 0, t0: 0 });
   const laptop = useMemo(() => buildLaptop(), []);
   const laptopRef = useRef<Group>(null);
-  const tablet = useMemo(() => buildTablet(-1), []); // his right hand: -x once he faces +z
+  const tablet = useMemo(() => {
+    const t = buildTablet(-1); // his right hand: -x once he faces +z
+    t.rotation.x = 1.3; // nearly flat on the palm, tipped a little toward his face
+    return t;
+  }, []);
   const tabletRef = useRef<Group>(null);
   const greet = useRef(-1); // seconds into a click greeting, -1 when none
   const headYaw = useRef(0);
@@ -534,6 +542,11 @@ export function GenMe({ shadows }: { shadows: boolean }) {
     if (tab > 0.001) {
       turn(joints.R_Upperarm, Z, 0.3 * tab);
       turn(joints.R_Forearm, Y, 1.45 * tab);
+      // Palm up under the tablet: hand straightened (undoes the hang), turned about the forearm like the wave's palm turn.
+      turn(joints.R_Hand, X, -HAND_IN * tab);
+      turn(joints.R_ForearmTwist01, Z, (tab * PALM_UP) / 3);
+      turn(joints.R_ForearmTwist02, Z, (tab * PALM_UP) / 3);
+      turn(joints.R_Hand, Z, tab * PALM_UP);
     }
     // Feet on the floor: the body drops as the legs spread (the natural gait bob) instead of the feet lifting off.
     if (m) m.position.y = centre[1] + (ground - lowest(m, feet)) * scale + hop;
@@ -571,14 +584,17 @@ export function GenMe({ shadows }: { shadows: boolean }) {
       spinner.current.worldToLocal(hand);
       laptop.position.set(hand.x, hand.y + 0.03, hand.z + 0.06);
     }
-    // Tablet in the right palm, a little toward the fingers.
+    // Tablet lying on the upturned right palm: centred a little past the wrist toward the fingers, just above the skin.
     const tb = tabletRef.current;
     if (tb) tb.visible = tab > 0.5;
     if (tb?.visible && spinner.current) {
       g.updateMatrixWorld(true);
       hand.setFromMatrixPosition(joints.R_Hand.bone.matrixWorld);
+      wrist.setFromMatrixPosition(joints.R_Forearm.bone.matrixWorld);
       spinner.current.worldToLocal(hand);
-      tb.position.set(hand.x + 0.02, hand.y + 0.09, hand.z + 0.05);
+      spinner.current.worldToLocal(wrist);
+      hand.add(wrist.sub(hand).normalize().multiplyScalar(-PALM_REACH));
+      tb.position.set(hand.x, hand.y + 0.03, hand.z);
     }
     // Gown: each piece follows its bone (pose relative to the gown's frame, times the inverse bind pose).
     const gw = gown.current;
