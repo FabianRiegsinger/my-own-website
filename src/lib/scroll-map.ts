@@ -15,6 +15,9 @@ export interface Station {
   yaw: number;
 }
 
+/** Side-by-side layout, as the `desk` CSS variant (globals.css): landscape from 768px. */
+export const isDesktop = ({ width, height }: { width: number; height: number }) => width >= 768 && width > height;
+
 /** Right edge of the glass text panel on desktop, as a fraction of the width: 3vw gutter + 36vw panel (GlassPanel). */
 export const PANEL_EDGE = 0.39;
 /** Shift that stands the figure midway between the panel's right edge and the screen's right edge. */

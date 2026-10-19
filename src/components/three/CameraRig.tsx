@@ -3,11 +3,8 @@
 import { useFrame } from "@react-three/fiber";
 import { useMemo, useRef } from "react";
 import { MathUtils, Vector3 } from "three";
-import { localProgress, stationAt, STATIONS } from "@/lib/scroll-map";
+import { isDesktop, localProgress, stationAt, STATIONS } from "@/lib/scroll-map";
 import { useStationOffset } from "./station-offset";
-
-/** Matches the `lg` breakpoint where the glass panels narrow to the left 36vw (GlassPanel). */
-const DESKTOP = 1024;
 
 /** Eases the camera from the current station's pose toward the next one as the section scrolls by. */
 export function CameraRig() {
@@ -32,7 +29,7 @@ export function CameraRig() {
     // First frame starts at the goal, so the figure never slides sideways on load.
     shift.current = shift.current === null ? goalShift : MathUtils.lerp(shift.current, goalShift, k);
     if (!("setViewOffset" in camera)) return;
-    if (size.width >= DESKTOP && Math.abs(shift.current) > 1e-4) {
+    if (isDesktop(size) && Math.abs(shift.current) > 1e-4) {
       camera.setViewOffset(size.width, size.height, -shift.current * size.width, 0, size.width, size.height);
     } else camera.clearViewOffset();
   });
