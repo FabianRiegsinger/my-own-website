@@ -3,13 +3,14 @@
 import { useGLTF } from "@react-three/drei";
 import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
-import { Box3, Euler, BufferAttribute, CanvasTexture, CapsuleGeometry, MathUtils, Matrix4, Raycaster, Vector2, MeshStandardMaterial, Quaternion, SkinnedMesh, type Sprite, Vector3, type Group, type Material, type Mesh, type Object3D } from "three";
+import { Box3, Euler, BufferAttribute, CanvasTexture, CapsuleGeometry, Color, MathUtils, Matrix4, Raycaster, Vector2, MeshStandardMaterial, Quaternion, SkinnedMesh, type Sprite, Vector3, type Group, type Material, type Mesh, type Object3D } from "three";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import { JUMP_PERIOD, jumpBeats } from "@/lib/cheer";
 import { COUGHS, coughBeats, sootAt } from "@/lib/cough";
 import { ENTRANCE, entrance, introStep } from "@/lib/entrance";
 import { contactJump } from "@/lib/jump";
 import { heading, stationAt, stationWeight } from "@/lib/scroll-map";
+import { Badge, BRANDS } from "./Badge";
 import { fade } from "./fade";
 import { Gown } from "./Gown";
 import { buildLaptop, buildTablet, TABLET } from "./props";
@@ -17,6 +18,10 @@ import { useStationOffset } from "./station-offset";
 
 const MODEL = "/models/me.glb";
 const HEIGHT = 1.8;
+/** His shirt in the texture (sRGB) and the height band it covers (metres): those texels take the page's brand colour. */
+const SHIRT_REF = [0.149, 0.11, 0.176];
+const SHIRT_BAND = [0.86, 1.28];
+const shirt = { color: { value: new Color() }, amount: { value: 0 }, band: { value: new Vector2() } };
 
 // Model space of the export: faces +x, up +y, his left arm points -z in the T-pose.
 const X = new Vector3(1, 0, 0);
@@ -195,7 +200,7 @@ export function lowest(root: Object3D, bones: Object3D[]) {
  * mannequin Figure: walk in, turn, wave), then a procedural idle (arms down, breathing, weight shift); turns with the scroll.
  * On the education page he wears gown and mortarboard (Gown) and jumps for joy: crouch, spring up with the arms in a V, land.
  */
-export function GenMe({ shadows }: { shadows: boolean }) {
+export function GenMe({ shadows, calm = false }: { shadows: boolean; calm?: boolean }) {
   const { scene } = useGLTF(MODEL, "/draco/");
   const group = useRef<Group>(null);
   const offset = useStationOffset();
@@ -216,6 +221,7 @@ export function GenMe({ shadows }: { shadows: boolean }) {
   const greet = useRef(-1); // seconds into a click greeting, -1 when none
   const headYaw = useRef(0);
   const gown = useRef<Group>(null);
+  const badges = useRef<(Group | null)[]>([]);
   const fist = useRef<Group>(null);
   const thumb = useRef<Mesh>(null);
   const puffs = useRef<(Sprite | null)[]>([]);
@@ -238,10 +244,35 @@ export function GenMe({ shadows }: { shadows: boolean }) {
         // Faint self-glow in the texture's own colours lifts the shadow side evenly; reflections alone only brighten lit faces.
         m.material = new MeshStandardMaterial({ map, normalMap, metalness: 0, roughness: 0.85, envMapIntensity: 1.2, emissive: 0xffffff, emissiveMap: map, emissiveIntensity: 0.35 });
         m.material.userData.matte = true;
+        // Brand shirt: shirt-coloured texels inside the shirt's band (bind-pose height, so it rides along when he moves)
+        // take the page's colour, keeping the texture's folds as brightness; the self-glow follows the new colour.
+        m.material.onBeforeCompile = (sh) => {
+          Object.assign(sh.uniforms, { shirtColor: shirt.color, shirtAmount: shirt.amount, shirtBand: shirt.band });
+          sh.vertexShader = sh.vertexShader
+            .replace("#include <common>", "#include <common>\nvarying float vBindY;")
+            .replace("#include <begin_vertex>", "#include <begin_vertex>\nvBindY = position.y;");
+          sh.fragmentShader = sh.fragmentShader
+            .replace("#include <common>", "#include <common>\nvarying float vBindY;\nuniform vec3 shirtColor;\nuniform float shirtAmount;\nuniform vec2 shirtBand;")
+            .replace(
+              "#include <map_fragment>",
+              `#include <map_fragment>
+              {
+                vec3 srgb = pow(max(diffuseColor.rgb, 0.0), vec3(1.0 / 2.2));
+                vec3 ref = vec3(${SHIRT_REF.join(", ")});
+                float near = 1.0 - smoothstep(0.16, 0.3, distance(srgb, ref));
+                float band = smoothstep(shirtBand.x, shirtBand.x + 0.01, vBindY) * (1.0 - smoothstep(shirtBand.y - 0.01, shirtBand.y, vBindY));
+                float shade = clamp(dot(srgb, vec3(0.299, 0.587, 0.114)) / dot(ref, vec3(0.299, 0.587, 0.114)), 0.6, 1.5);
+                diffuseColor.rgb = mix(diffuseColor.rgb, shirtColor * shade, near * band * shirtAmount);
+              }`,
+            )
+            .replace("#include <emissivemap_fragment>", "totalEmissiveRadiance *= diffuseColor.rgb;");
+        };
       }),
     [scene],
   );
   useMemo(() => scene.traverse((o) => ((o as Mesh).isMesh && o.name !== "soot" ? (o.castShadow = shadows) : undefined)), [scene, shadows]);
+  // The shader sees bind-pose positions in the export's units.
+  useMemo(() => shirt.band.value.set(SHIRT_BAND[0] / scale, SHIRT_BAND[1] / scale), [scale]);
 
   // Captured from the bind (T-)pose before anything is turned.
   const joints = useMemo(() => {
@@ -291,9 +322,9 @@ export function GenMe({ shadows }: { shadows: boolean }) {
   /** Lowest foot joint in the bind pose (model units): the height it is held at so a sole always rests on the floor. */
   const ground = useMemo(() => lowest(scene, feet), [scene, feet]);
 
-  // At the top of the page start off-screen right before the first frame; anywhere else already in place.
+  // At the top of the page start off-screen right before the first frame; anywhere else (or calm) already in place.
   useLayoutEffect(() => {
-    const top = atTop();
+    const top = atTop() && !calm;
     intro.current.done = !top;
     if (top && group.current) {
       const s = entrance(0);
@@ -301,7 +332,7 @@ export function GenMe({ shadows }: { shadows: boolean }) {
       group.current.rotation.y = s.heading;
       walk.current = 1; // already mid-walk when he comes into view, not easing into it
     }
-  }, []);
+  }, [calm]);
 
   // Click and hold on him, then drag sideways to spin him about his centre. The canvas sits behind the page and takes
   // no pointer events, so this listens on the window and hit-tests his bounding box (cheap enough for every move).
@@ -373,7 +404,8 @@ export function GenMe({ shadows }: { shadows: boolean }) {
       it.done = s.done;
     } else {
       g.position.x = MathUtils.damp(g.position.x, 0, 6, dt);
-      g.rotation.y = MathUtils.damp(g.rotation.y, heading(offset.current), 4, dt);
+      // Calm: turns with the camera cut instead of easing round between pages.
+      g.rotation.y = calm ? stationAt(offset.current).yaw : MathUtils.damp(g.rotation.y, heading(offset.current), 4, dt);
       walking = stationAt(offset.current).clip === "walk" ? 1 : 0;
     }
     const sp = spin.current;
@@ -607,14 +639,29 @@ export function GenMe({ shadows }: { shadows: boolean }) {
         .addScaledVector(palmSide, TABLET.side)
         .addScaledVector(palmDown, -TABLET.lift);
     }
-    // Gown: each piece follows its bone (pose relative to the gown's frame, times the inverse bind pose).
+    // Gown and badges: each piece follows its bone (pose relative to their frame, times the inverse bind pose).
+    const follow = (piece: Object3D) => piece.matrix.copy(toFrame).multiply(joints[piece.name as keyof typeof joints].bone.matrixWorld).multiply(unbind[piece.name]);
     const gw = gown.current;
     if (gw) fade(gw, stationWeight(offset.current, "education"));
     if (gw?.visible && gw.parent) {
       g.updateMatrixWorld(true);
       toFrame.copy(gw.parent.matrixWorld).invert();
-      for (const piece of gw.children) piece.matrix.copy(toFrame).multiply(joints[piece.name as keyof typeof joints].bone.matrixWorld).multiply(unbind[piece.name]);
+      gw.children.forEach(follow);
     }
+    // Brand shirt and badge of the career page being read (one at a time: their weights never overlap).
+    shirt.amount.value = 0;
+    BRANDS.forEach((b, i) => {
+      const w = stationWeight(offset.current, b.id);
+      if (w > 0) shirt.color.value.set(b.shirt);
+      shirt.amount.value += w;
+      const bd = badges.current[i];
+      if (bd) fade(bd, w);
+      if (bd?.visible && bd.parent) {
+        g.updateMatrixWorld(true);
+        toFrame.copy(bd.parent.matrixWorld).invert();
+        bd.children.forEach(follow);
+      }
+    });
   });
 
   // The export faces +x; turn it to face the camera (+z).
@@ -626,6 +673,7 @@ export function GenMe({ shadows }: { shadows: boolean }) {
         <group rotation-y={-Math.PI / 2}>
           <primitive ref={model} object={scene} scale={scale} position={centre} />
           <Gown ref={gown} shadows={shadows} />
+          {BRANDS.map((b, i) => b.badge && <Badge key={b.id} ref={(el) => void (badges.current[i] = el)} name={b.badge} color={b.shirt} />)}
           {/* Stand-in right fist (knuckles to the camera), with a thumb for the thumbs-up; placed each frame. */}
           <group ref={fist} visible={false}>
             <mesh geometry={FIST} castShadow={shadows}>
