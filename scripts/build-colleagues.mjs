@@ -243,8 +243,9 @@ function weld(P, J, W, I) {
   return out;
 }
 
-/** Subdivision levels per vertex, by island: the head 2, the body 1, small parts in the head (eyes, mouth) none,
- * since Loop's smoothing would shrink them into their sockets. */
+/** Subdivision levels per vertex, by island: head and body 1 (a second level on the head looked no smoother on the
+ * page and doubled the download), small parts in the head (eyes, mouth) none, since Loop's smoothing would shrink them
+ * into their sockets. */
 function islandLevels({ P, I }) {
   const n = P.length / 3;
   const par = Int32Array.from({ length: n }, (_, i) => i);
@@ -262,7 +263,7 @@ function islandLevels({ P, I }) {
   }
   return Uint8Array.from({ length: n }, (_, i) => {
     const o = st.get(find(i));
-    return o.y / o.n > 0.72 ? (o.n <= 400 ? 0 : 2) : 1;
+    return o.y / o.n > 0.72 && o.n <= 400 ? 0 : 1;
   });
 }
 
