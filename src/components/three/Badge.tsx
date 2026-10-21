@@ -6,7 +6,7 @@ import type { StationId } from "@/lib/scroll-map";
 
 /**
  * Brand colour of each career page (as the page tints in globals.css): his shirt takes it on that page (GenMe), and on
- * the job pages a white patch with the company name in that colour sits on each sleeve, as text, never a logo.
+ * the job pages a white patch with the company name in that colour sits on his left chest, as text, never a logo.
  */
 export const BRANDS: { id: StationId; shirt: string; badge?: string }[] = [
   { id: "education", shirt: "#80ba24" },
@@ -15,11 +15,10 @@ export const BRANDS: { id: StationId; shirt: string; badge?: string }[] = [
 ];
 
 /**
- * Patch on the top of the upper arm in the T-pose, which is its outer side once the arm hangs (metres): `z` out along
- * the arm, `y` just above the sleeve, `x` the arm's centre; `w` across the arm, `h` along it; `slope` rises toward the
- * shoulder with the deltoid, so neither end sinks into the sleeve.
+ * Patch on his left chest (metres): `x` just in front of the shirt, `y` below the collar, `z` toward his left; `w` wide,
+ * `h` tall; `lean` follows the chest sloping back toward the collar, `curve` the shirt turning away toward his side.
  */
-const PATCH = { x: -0.016, y: 1.238, z: 0.18, w: 0.065, h: 0.042, slope: 0.4 };
+const PATCH = { x: 0.103, y: 1.15, z: -0.07, w: 0.075, h: 0.045, lean: 0.25, curve: 0.4 };
 
 function patchTexture(name: string, color: string) {
   const c = document.createElement("canvas");
@@ -42,31 +41,25 @@ function patchTexture(name: string, color: string) {
 }
 
 /**
- * Sleeve patches for one company, modelled in his bind pose like the Gown (metres, facing +x, his left arm along -z);
- * each child group is named after the bone it rides on and GenMe moves it with that bone every frame.
+ * Chest patch for one company, modelled in his bind pose like the Gown (metres, facing +x, his left arm along -z);
+ * the child group is named after the bone it rides on and GenMe moves it with that bone every frame.
  */
 export const Badge = forwardRef<Group, { name: string; color: string }>(function Badge({ name, color }, ref) {
   const map = useMemo(() => patchTexture(name, color), [name, color]);
-  // Text reads upright from beside him once the arm hangs: up toward the shoulder, left to right as seen from outside.
-  const turn = useMemo(
-    () =>
-      ([1, -1] as const).map((side) =>
-        new Quaternion().setFromRotationMatrix(
-          new Matrix4().makeBasis(new Vector3(side, 0, 0), new Vector3(0, PATCH.slope, -side).normalize(), new Vector3(0, 1, side * PATCH.slope).normalize()),
-        ),
-      ),
-    [],
-  );
+  // Text reads left to right from the front (-z is the viewer's right), tilted onto the chest's slope.
+  const turn = useMemo(() => {
+    const right = new Vector3(-PATCH.curve, 0, -1).normalize();
+    const out = right.clone().cross(new Vector3(-PATCH.lean, 1, 0)).normalize();
+    return new Quaternion().setFromRotationMatrix(new Matrix4().makeBasis(right, out.clone().cross(right), out));
+  }, []);
   return (
     <group ref={ref}>
-      {([1, -1] as const).map((side, i) => (
-        <group key={side} name={side > 0 ? "R_Upperarm" : "L_Upperarm"} matrixAutoUpdate={false}>
-          <mesh position={[PATCH.x, PATCH.y, side * PATCH.z]} quaternion={turn[i]}>
-            <planeGeometry args={[PATCH.w, PATCH.h]} />
-            <meshStandardMaterial map={map} transparent alphaTest={0.5} roughness={0.7} />
-          </mesh>
-        </group>
-      ))}
+      <group name="Spine02" matrixAutoUpdate={false}>
+        <mesh position={[PATCH.x, PATCH.y, PATCH.z]} quaternion={turn}>
+          <planeGeometry args={[PATCH.w, PATCH.h]} />
+          <meshStandardMaterial map={map} transparent alphaTest={0.5} roughness={0.7} />
+        </mesh>
+      </group>
     </group>
   );
 });
