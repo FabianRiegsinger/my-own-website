@@ -109,15 +109,22 @@ function OnBody({ children }: { children: ReactNode }) {
  * Sleeve along +y (length `len`, radius `radius(s)` for s = 0..1 along it), with soft pleats that deepen toward the
  * opening (`pleat`: relative depth there) and a bag that hangs below the arm at the open end (`bag`: relative extra
  * radius on the underside). `side` is the arm (+1 his right): the underside is lathe +z on the right, -z on the left,
- * which the mesh's quarter turn about x maps to world down.
+ * which the mesh's quarter turn about x maps to world down. The start is closed by a rounded dome, so it never shows
+ * as an open tube.
  */
 export function sleeveGeometry(len: number, radius: (s: number) => number, pleat: number, bag: number, side: 1 | -1) {
   const RINGS = 16;
-  const g = new LatheGeometry(Array.from({ length: RINGS + 1 }, (_, i) => new Vector2(radius(i / RINGS), (i / RINGS) * len)), 64);
+  const DOME = 8;
+  const r0 = radius(0);
+  const dome = Array.from({ length: DOME }, (_, i) => {
+    const a = (i / DOME) * (Math.PI / 2);
+    return new Vector2(r0 * Math.sin(a), -0.6 * r0 * Math.cos(a));
+  });
+  const g = new LatheGeometry([...dome, ...Array.from({ length: RINGS + 1 }, (_, i) => new Vector2(radius(i / RINGS), (i / RINGS) * len))], 64);
   const p = g.attributes.position;
   for (let i = 0; i < p.count; i++) {
     const [x, y, z] = [p.getX(i), p.getY(i), p.getZ(i)];
-    const s = y / len;
+    const s = Math.max(0, y / len);
     const phi = Math.atan2(x, z);
     const under = Math.max(0, side * Math.cos(phi)) ** 2;
     const k = 1 + pleat * s * s * Math.sin(9 * phi) + bag * s ** 3 * under;
@@ -154,7 +161,7 @@ export const Gown = forwardRef<Group, { shadows: boolean }>(function Gown({ shad
   const shapes = useMemo(
     () =>
       ([-1, 1] as const).map((side) => ({
-        upper: sleeveGeometry(0.22, (s) => 0.086 + 0.014 * Math.sin(Math.PI * s), 0.05, 0, side),
+        upper: sleeveGeometry(0.245, (s) => 0.086 + 0.014 * Math.sin(Math.PI * s), 0.05, 0, side),
         lower: sleeveGeometry(0.16, (s) => 0.09 + 0.06 * s ** 1.6, 0.06, 0.3, side),
       })),
     [],
@@ -163,7 +170,7 @@ export const Gown = forwardRef<Group, { shadows: boolean }>(function Gown({ shad
   const sleeves = (side: 1 | -1, y: number) => (
     <>
       <group name={side < 0 ? "L_Upperarm" : "R_Upperarm"} matrixAutoUpdate={false}>
-        <Sleeve z0={side * 0.14} y={y} geometry={shapes[(side + 1) / 2].upper} shadows={shadows} />
+        <Sleeve z0={side * 0.115} y={y} geometry={shapes[(side + 1) / 2].upper} shadows={shadows} />
         {/* Shoulder: covers the joint whichever way the arm turns, flattened so it never rises above the yoke. */}
         <mesh position={[0.015, y - 0.01, side * 0.16]} scale={[1, 0.8, 1]} castShadow={shadows}>
           <sphereGeometry args={[0.085, 32, 20]} />
