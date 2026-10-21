@@ -6,8 +6,11 @@ import { MathUtils, Vector3 } from "three";
 import { isDesktop, localProgress, stationAt, STATIONS } from "@/lib/scroll-map";
 import { useStationOffset } from "./station-offset";
 
-/** Eases the camera from the current station's pose toward the next one as the section scrolls by. */
-export function CameraRig() {
+/**
+ * Eases the camera from the current station's pose toward the next one as the section scrolls by. `calm` (reduced
+ * motion): holds each station's pose and cuts to the next at the page boundary, no glide.
+ */
+export function CameraRig({ calm = false }: { calm?: boolean }) {
   const offset = useStationOffset();
   const shift = useRef<number | null>(null);
 
@@ -15,12 +18,12 @@ export function CameraRig() {
   useFrame(({ camera, size }, dt) => {
     const s = stationAt(offset.current);
     const next = STATIONS[STATIONS.indexOf(s) + 1] ?? s;
-    const t = MathUtils.smoothstep(localProgress(offset.current), 0.5, 1);
+    const t = calm ? 0 : MathUtils.smoothstep(localProgress(offset.current), 0.5, 1);
     goalPos.fromArray(s.camera).lerp(pos.fromArray(next.camera), t);
     goalLook.fromArray(s.target).lerp(pos.fromArray(next.target), t);
     // First frame starts at the goal (k = 1): easing in from the Canvas default would tilt the view on load,
     // so the figure seemed to step down while walking in.
-    const k = shift.current === null ? 1 : 1 - Math.exp(-3 * dt);
+    const k = shift.current === null || calm ? 1 : 1 - Math.exp(-3 * dt);
     camera.position.lerp(goalPos, k);
     look.lerp(goalLook, k);
     camera.lookAt(look);

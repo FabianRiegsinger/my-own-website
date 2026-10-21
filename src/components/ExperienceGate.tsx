@@ -9,6 +9,8 @@ export interface ExperienceProps {
   cv: CV;
   projects: Project[];
   lowPower: boolean;
+  /** Reduced motion: the camera cuts between pages instead of gliding, and the landing walk-in is skipped. */
+  calm: boolean;
   onFail: () => void;
 }
 
@@ -47,6 +49,7 @@ export function ExperienceGate({
 }) {
   const [mode, setMode] = useState<"static" | "3d">("static");
   const [lowPower, setLowPower] = useState(false);
+  const [calm, setCalm] = useState(false);
 
   useEffect(() => {
     const env = detectEnv();
@@ -54,6 +57,7 @@ export function ExperienceGate({
     // Device detection needs the browser, so it can only run after hydration: the server and first client render stay static.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setLowPower(env.isMobile);
+    setCalm(env.reducedMotion);
     setMode("3d");
   }, []);
 
@@ -61,7 +65,7 @@ export function ExperienceGate({
   return (
     <FallbackBoundary fallback={children}>
       <Suspense fallback={children}>
-        <Experience cv={cv} projects={projects} lowPower={lowPower} onFail={() => {
+        <Experience cv={cv} projects={projects} lowPower={lowPower} calm={calm} onFail={() => {
             markStatic();
             setMode("static");
           }} />
