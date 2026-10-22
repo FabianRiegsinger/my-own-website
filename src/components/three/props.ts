@@ -39,7 +39,7 @@ export function buildLaptop(): Group {
 /**
  * Where the tablet rests on Fabian's upturned palm (GenMe, Mobileye), in the hand's frame: `reach` toward the fingertips,
  * `side` toward the thumb, `lift` up off the hand bone (metres); `pitch`/`roll`/`yaw` (degrees) turn it about its short
- * side, long side and screen normal; `scale` grows it. Live-tunable with `?tune` on the page (TabletTuner).
+ * side, long side and screen normal; `scale` grows it.
  */
 export const TABLET = { reach: -0.042, side: 0.15, lift: 0.039, pitch: 0, roll: 0, yaw: 87, scale: 1.7 };
 
