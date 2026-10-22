@@ -18,7 +18,14 @@ export default function Privacy() {
         Angemessenheitsbeschluss bzw. Standardvertragsklauseln prüfen.]
       </p>
       <h2>Cookies und Tracking</h2>
-      <p>Diese Website setzt keine Cookies und verwendet keine Analyse- oder Tracking-Dienste.</p>
+      <p>
+        Diese Website setzt keine Cookies. Zur Reichweitenmessung nutzt sie Vercel Web Analytics (Vercel Inc., Anschrift
+        siehe oben). Dabei werden aufgerufene Seite, Referrer, Land, Browser, Betriebssystem und Gerätetyp erfasst. Es
+        werden keine Cookies gesetzt; Besucher werden über einen täglich wechselnden Hash aus IP-Adresse und Anfrage
+        unterschieden, der nach 24 Stunden verworfen wird, sodass keine seitenübergreifende Wiedererkennung möglich ist.
+        Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an der Auswertung der Nutzung der
+        Website). [TO FILL: Angaben mit der aktuellen Vercel-Dokumentation zu Web Analytics abgleichen.]
+      </p>
       <h2>Externe Inhalte</h2>
       <p>
         Die Projektliste wird serverseitig von der GitHub-API geladen; dabei werden keine Daten der Besucher an GitHub
