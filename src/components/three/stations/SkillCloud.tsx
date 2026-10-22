@@ -6,7 +6,7 @@ import { Color, type Group, MeshStandardMaterial } from "three";
 import { FontLoader } from "three/examples/jsm/loaders/FontLoader.js";
 import { TextGeometry } from "three/examples/jsm/geometries/TextGeometry.js";
 import type { Level, SkillGroup } from "@/content/types";
-import { stationWeight } from "@/lib/scroll-map";
+import { isDesktop, stationWeight } from "@/lib/scroll-map";
 import { fade } from "../fade";
 import { useStationOffset } from "../station-offset";
 
@@ -192,8 +192,8 @@ export function SkillCloud({ skills }: { skills: SkillGroup[] }) {
     if (!root.current) return;
     // Short fade: the launch page after it is shorter than the default fade, the cloud would still ghost behind the rocket.
     fade(root.current, stationWeight(offset.current, "skills"));
-    // Below the lg breakpoint the full-width panel covers the cloud; only stray letters would peek out at its edges.
-    if (size.width < 1024) root.current.visible = false;
+    // Without the side-by-side layout the full-width panel covers the cloud; only stray letters would peek out at its edges.
+    if (!isDesktop(size)) root.current.visible = false;
   });
 
   // Upright, facing the camera, extruded toward it; vertical words turned a quarter to read bottom to top.

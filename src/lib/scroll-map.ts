@@ -15,6 +15,9 @@ export interface Station {
   yaw: number;
 }
 
+/** Side-by-side layout, as the `desk` CSS variant (globals.css): landscape from 768px. */
+export const isDesktop = ({ width, height }: { width: number; height: number }) => width >= 768 && width > height;
+
 /** Right edge of the glass text panel on desktop, as a fraction of the width: 3vw gutter + 36vw panel (GlassPanel). */
 export const PANEL_EDGE = 0.39;
 /** Shift that stands the figure midway between the panel's right edge and the screen's right edge. */
@@ -28,7 +31,7 @@ export const STATIONS: Station[] = [
   // Career pages are scenes (see stations/): ringing the bell at graduation, a sensor-fusion demo with the team at ESAS (turned toward the hologram on his right), walking the AUDI customer through the test fleet in its garage at Mobileye, tablet in hand.
   { id: "education", start: 0.24, end: 0.36, clip: "ring", camera: [0.4, 1.4, 5.4], target: [0, 1.5, 0], shift: BESIDE_PANEL, yaw: 0 },
   { id: "esas", start: 0.36, end: 0.48, clip: "laptop", camera: [0.3, 1.9, 5.8], target: [0.1, 1.1, 0], shift: BESIDE_PANEL - 0.055, yaw: 0.8 }, // the team stands on his right: shifted so the group, not he, is centred
-  { id: "mobileye", start: 0.48, end: 0.6, clip: "tablet", camera: [1.6, 2.3, 6.2], target: [0, 1.3, -2], shift: BESIDE_PANEL, yaw: -0.3 },
+  { id: "mobileye", start: 0.48, end: 0.6, clip: "tablet", camera: [1.6, 2.3, 6.2], target: [0, 1.3, -2], shift: BESIDE_PANEL + 0.11, yaw: -0.8 }, // the camera looks past him to the fleet: shifted so he and the customer, not he, are centred
   { id: "agentic", start: 0.6, end: 0.74, clip: "typing", camera: [-3, 1.8, 4], target: [0, 1, 0], shift: 0.32, yaw: 0 },
   // A touch right of centre: the word cloud is wider than him and must clear the panel on the left and the screen edge.
   { id: "skills", start: 0.74, end: 0.84, clip: "idle", camera: [0, 2.2, 6.4], target: [0, 1.2, 0], shift: BESIDE_PANEL + 0.04, yaw: 0 },

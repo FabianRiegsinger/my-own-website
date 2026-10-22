@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 
 test("home loads", async ({ page }) => {
   await page.goto("/");
@@ -49,11 +49,20 @@ test("canvas mounts", async ({ page }) => {
   await expect(page.locator("canvas")).toBeVisible({ timeout: 10_000 });
 });
 
-test("reduced motion shows static page", async ({ page }) => {
-  await page.emulateMedia({ reducedMotion: "reduce" });
+/** No WebGL: the one thing that keeps the page static (reduced motion gets calm 3D). */
+const withoutWebGL = (page: Page) => page.addInitScript(() => (HTMLCanvasElement.prototype.getContext = () => null));
+
+test("no WebGL shows static page", async ({ page }) => {
+  await withoutWebGL(page);
   await page.goto("/");
   await expect(page.getByText("Mobileye Germany GmbH").first()).toBeVisible();
   await expect(page.locator("canvas")).toHaveCount(0);
+});
+
+test("reduced motion still gets the 3D page", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/");
+  await expect(page.locator("canvas")).toBeVisible({ timeout: 10_000 });
 });
 
 test("missing model falls back", async ({ page }) => {
@@ -180,7 +189,7 @@ test("hero fallback figure never flashes before the page decides between 3D and 
 });
 
 test("static page still shows the fallback figure", async ({ page }) => {
-  await page.emulateMedia({ reducedMotion: "reduce" });
+  await withoutWebGL(page);
   await page.goto("/");
   await expect(page.locator('img[src="/fallback.webp"]')).toBeVisible();
 });

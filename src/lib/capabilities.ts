@@ -4,8 +4,9 @@ export interface Env {
   isMobile: boolean;
 }
 
-export function canRender3D(env: Pick<Env, "hasWebGL" | "reducedMotion">): boolean {
-  return env.hasWebGL && !env.reducedMotion;
+/** WebGL is all 3D needs: reduced motion still gets it, calmed (camera cuts, no walk-in; see Experience3D's `calm`). */
+export function canRender3D(env: Pick<Env, "hasWebGL">): boolean {
+  return env.hasWebGL;
 }
 
 export function detectEnv(): Env {

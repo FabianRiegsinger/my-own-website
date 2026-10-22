@@ -25,8 +25,8 @@ export function GlassPanel({ children }: { children: ReactNode }) {
       data-glass
       onPointerMove={onMove}
       onPointerLeave={onLeave}
-      // lg:max-w-[36vw] inside the section's lg:px-[3vw] gutter = PANEL_EDGE in scroll-map; keep them in sync.
-      className="glass reveal w-full p-6 transition-transform duration-300 ease-out sm:p-10 lg:max-w-[36vw] lg:p-8"
+      // desk:max-w-[36vw] inside the section's desk:px-[3vw] gutter = PANEL_EDGE in scroll-map; keep them in sync.
+      className="glass reveal w-full p-6 transition-transform duration-300 ease-out sm:p-10 desk:max-w-[36vw] desk:p-8"
     >
       {children}
     </div>

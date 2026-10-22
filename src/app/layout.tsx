@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { preload } from "react-dom";
+import { ReducedMotionNotice } from "@/components/ReducedMotionNotice";
 import { cv } from "@/content/cv";
 import { SITE_URL } from "@/lib/site";
 import "./globals.css";
@@ -32,11 +33,15 @@ const personJsonLd = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   // Start the hero likeness download with the HTML, not after the 3D code has loaded (same request useGLTF makes).
   preload("/models/me.glb", { as: "fetch", crossOrigin: "anonymous" });
+  // Its Draco decoder too, which DRACOLoader would otherwise only request once the 3D code has run.
+  preload("/draco/draco_wasm_wrapper.js", { as: "fetch", crossOrigin: "anonymous" });
+  preload("/draco/draco_decoder.wasm", { as: "fetch", crossOrigin: "anonymous" });
   return (
     <html lang="en" className={`${inter.variable} h-full antialiased`}>
       <body className="min-h-full bg-bg text-ink font-sans">
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(personJsonLd) }} />
         {children}
+        <ReducedMotionNotice />
       </body>
     </html>
   );

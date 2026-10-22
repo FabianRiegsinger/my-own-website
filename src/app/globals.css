@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+/* Side-by-side layout (panel left, figure right): any landscape screen from 768px, so a desktop under Windows display
+   scaling (1920px at 200% = 960px wide) does not get the phone layout. Keep in sync with isDesktop (scroll-map). */
+@custom-variant desk (@media (min-width: 768px) and (orientation: landscape));
+
 @theme inline {
   --color-bg: #f5f5f7;
   --color-ink: #1d1d1f;

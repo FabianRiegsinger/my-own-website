@@ -17,7 +17,7 @@ import { SkillCloud } from "./stations/SkillCloud";
 import { Team } from "./stations/Team";
 
 /** Fixed full-screen 3D world behind natively scrolling text; scroll position drives camera, figure and stations. */
-export function Experience3D({ cv, projects, lowPower: initialLowPower, onFail }: ExperienceProps) {
+export function Experience3D({ cv, projects, lowPower: initialLowPower, calm, onFail }: ExperienceProps) {
   const [lowPower, setLowPower] = useState(initialLowPower);
   const content = useRef<HTMLDivElement>(null);
   const stationOffset = useRef(0);
@@ -41,9 +41,9 @@ export function Experience3D({ cv, projects, lowPower: initialLowPower, onFail }
           <hemisphereLight args={["#ffffff", "#f5f5f7", 0.8]} />
           <directionalLight position={[3, 6, 4]} intensity={1.2} castShadow={!lowPower} />
           <ScrollTracker content={content} />
-          <CameraRig />
+          <CameraRig calm={calm} />
           <Suspense fallback={null}>
-            <GenMe shadows={!lowPower} />
+            <GenMe shadows={!lowPower} calm={calm} />
           </Suspense>
           <Graduation />
           {/* Anything that loads (models, the label font) suspends here, inside the canvas; uncaught it would

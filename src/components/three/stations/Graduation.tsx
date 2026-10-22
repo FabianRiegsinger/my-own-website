@@ -29,6 +29,8 @@ export const BELL_RADIUS = 0.207;
 export const SWING = { amplitude: 0.5, omega: 3.2 };
 /** The clapper hangs free: it follows the bell this late (s) and further, until it strikes the sound bow. */
 const CLAPPER = { lag: 0.14, gain: 1.35, strike: 0.38 };
+/** The handle hangs from the mouth on a hinge: it trails the bell this late (s) and by this share of its angle. */
+const PULL = { lag: 0.34, gain: 0.8 };
 const FLOOR = { width: 3, depth: 1.8 };
 /** Plaques on the wall, on his left (+x), clear of the niche. */
 export const PLAQUES = cv.education.map((e, i) => ({ ...e, position: [0.72, 2.05 - i * 0.43, WALL.z + 0.012] as [number, number, number] }));
@@ -228,6 +230,7 @@ export function Graduation() {
   const confetti = useRef<InstancedMesh>(null);
   const swing = useRef<Group>(null);
   const clapper = useRef<Group>(null);
+  const pull = useRef<Group>(null);
   const offset = useStationOffset();
 
   const bell = useMemo(() => new LatheGeometry(BELL_PROFILE.map(([r, y]) => new Vector2(r, y)), 64), []);
@@ -268,7 +271,7 @@ export function Graduation() {
   const chips = useMemo(() => new BufferGeometry().setAttribute("position", new Float32BufferAttribute(terrazzo(), 3)), []);
 
   useFrame(({ clock }) => {
-    if (!root.current || !confetti.current || !swing.current || !clapper.current) return;
+    if (!root.current || !confetti.current || !swing.current || !clapper.current || !pull.current) return;
     fade(root.current, stationWeight(offset.current, "education"));
     if (!root.current.visible) return;
     const t = clock.elapsedTime;
@@ -276,6 +279,7 @@ export function Graduation() {
     const bellAt = (s: number) => pendulum(s, SWING.amplitude, SWING.omega);
     swing.current.rotation.z = bellAt(t);
     clapper.current.rotation.z = MathUtils.clamp(CLAPPER.gain * bellAt(t - CLAPPER.lag) - swing.current.rotation.z, -CLAPPER.strike, CLAPPER.strike);
+    pull.current.rotation.z = PULL.gain * bellAt(t - PULL.lag) - swing.current.rotation.z;
     flakes.forEach((f, i) => {
       dummy.position.set(f.x + Math.sin(t * 1.3 + f.phase) * 0.08, 3.2 - ((t * f.speed + f.phase) % 3.4), f.z);
       dummy.rotation.set(t * 2 + f.tumble, t * 1.4 + f.tumble, f.tumble);
@@ -337,11 +341,13 @@ export function Graduation() {
             <meshStandardMaterial color="#3b3226" metalness={0.7} roughness={0.45} />
           </mesh>
         </group>
-        {/* Handle hanging below the mouth: what he pulls in the photo. */}
-        <mesh position={[HANDLE[0] - BELL[0], (HANDLE[1] - bellTop[1]) / 2 - BELL_HEIGHT / 2, HANDLE[2] - BELL[2]]}>
-          <cylinderGeometry args={[0.012, 0.012, bellTop[1] - BELL_HEIGHT - HANDLE[1] + 0.06, 8]} />
-          <meshStandardMaterial color="#1f1f22" roughness={0.5} />
-        </mesh>
+        {/* Handle hanging below the mouth: what he pulls in the photo. Hinged at the mouth, so it swings on its own. */}
+        <group ref={pull} position={[HANDLE[0] - BELL[0], -BELL_HEIGHT, HANDLE[2] - BELL[2]]}>
+          <mesh position-y={(HANDLE[1] - bellTop[1] + BELL_HEIGHT) / 2}>
+            <cylinderGeometry args={[0.012, 0.012, bellTop[1] - BELL_HEIGHT - HANDLE[1] + 0.06, 8]} />
+            <meshStandardMaterial color="#1f1f22" roughness={0.5} />
+          </mesh>
+        </group>
       </group>
       <mesh position={[WALL.x, 0.001, WALL.z + FLOOR.depth / 2]} rotation-x={-Math.PI / 2} receiveShadow>
         <planeGeometry args={[FLOOR.width, FLOOR.depth]} />
