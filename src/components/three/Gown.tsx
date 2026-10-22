@@ -137,7 +137,7 @@ export function sleeveGeometry(len: number, radius: (s: number) => number, pleat
     const s = Math.max(0, y / len);
     const phi = Math.atan2(x, z);
     const under = Math.max(0, side * Math.cos(phi)) ** 2;
-    const k = 1 + pleat * s * s * Math.sin(9 * phi) + bag * s ** 3 * under;
+    const k = 1 + pleat * s * s * Math.sin(6 * phi) + bag * s ** 3 * under;
     p.setXYZ(i, x * k, y, z * k);
   }
   g.computeVertexNormals();
@@ -160,8 +160,8 @@ export const Gown = forwardRef<Group, { shadows: boolean }>(function Gown({ shad
     // The stole lies on whichever layer is outside at that height, over the crests of the skirt's pleats.
     const surface = (y: number) => Math.max(radiusAt(b, y), y <= 1 ? radiusAt(s, y) * (1 + skirtPleat(y)) : 0);
     return {
-      bodice: cloth(b, 22, bodicePleat),
-      skirt: cloth(s, 26, skirtPleat),
+      bodice: cloth(b, 15, bodicePleat),
+      skirt: cloth(s, 18, skirtPleat),
       stoles: ([-1, 1] as const).map((side) => stoleGeometry(side, surface)),
     };
   }, []);
