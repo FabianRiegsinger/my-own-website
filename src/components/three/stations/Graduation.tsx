@@ -30,7 +30,7 @@ export const SWING = { amplitude: 0.5, omega: 3.2 };
 /** The clapper hangs free: it follows the bell this late (s) and further, until it strikes the sound bow. */
 const CLAPPER = { lag: 0.14, gain: 1.35, strike: 0.38 };
 /** The handle hangs from the mouth on a hinge: it trails the bell this late (s) and by this share of its angle. */
-const PULL = { lag: 0.24, gain: 0.55 };
+const PULL = { lag: 0.34, gain: 0.8 };
 const FLOOR = { width: 3, depth: 1.8 };
 /** Plaques on the wall, on his left (+x), clear of the niche. */
 export const PLAQUES = cv.education.map((e, i) => ({ ...e, position: [0.72, 2.05 - i * 0.43, WALL.z + 0.012] as [number, number, number] }));
