@@ -30,10 +30,10 @@ const DEPTH = 0.82;
 const BODICE: [number, number][] = [[0.15, 0.72], [0.172, 0.8], [0.182, 0.9], [0.184, 1.04], [0.188, 1.14], [0.172, 1.205], [0.13, 1.24], [0.075, 1.262]];
 /**
  * Skirt over the bodice from the waist to mid-calf (rides on the pelvis), so leaning in or crouching never opens a gap.
- * Above the waist it lies flush on the bodice, as steep as it is, and tucks under it at the top: the two read as one
- * garment, with no rim or change of shading where the skirt begins.
+ * It tucks under the bodice at the waist, so the two read as one garment with no rim. Not higher: the skirt rides on the
+ * pelvis, and when he arches back in the jump anything above the waist pushes out through the chest and the stole.
  */
-const SKIRT: [number, number][] = [[0.18, 1.13], [0.1895, 1.1], [0.188, 1.0], [0.192, 0.92], [0.205, 0.8], [0.225, 0.6], [0.25, 0.4], [0.275, 0.2]];
+const SKIRT: [number, number][] = [[0.165, 1.0], [0.186, 0.95], [0.192, 0.92], [0.205, 0.8], [0.225, 0.6], [0.25, 0.4], [0.275, 0.2]];
 /** Skirt pleat depth (relative radius) at height y: none at the waist, deepest at the hem. */
 const skirtPleat = (y: number) => 0.045 * Math.max(0, (1 - y) / 0.8) ** 1.4;
 /** Back pleats of the bodice (the yoke gathers there), none on the chest where the stole lies. */
@@ -182,7 +182,7 @@ export const Gown = forwardRef<Group, { shadows: boolean }>(function Gown({ shad
     () =>
       ([-1, 1] as const).map((side) => ({
         upper: sleeveGeometry(0.245, (s) => 0.086 + 0.014 * Math.sin(Math.PI * s), 0.05, 0, side),
-        lower: sleeveGeometry(0.16, (s) => 0.09 + 0.06 * s ** 1.6, 0.06, 0.3, side),
+        lower: sleeveGeometry(0.16, (s) => 0.09 - 0.015 * s ** 1.6, 0.06, 0.3, side),
       })),
     [],
   );
