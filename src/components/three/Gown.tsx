@@ -103,8 +103,14 @@ function stoleGeometry(side: 1 | -1, surface: (y: number) => number) {
   return g;
 }
 
-/** Gown fabric: matte black with a soft sheen at grazing angles, so folds read instead of a flat silhouette. */
-const Fabric = () => <meshPhysicalMaterial color={BLACK} roughness={0.8} sheen={0.8} sheenColor="#5f6470" sheenRoughness={0.5} side={DoubleSide} />;
+/**
+ * Gown fabric: matte black with a faint neutral sheen at grazing angles, so folds read instead of a flat silhouette.
+ * Little of the room's light is reflected: the flared skirt and sleeves face up into the overhead light strip and would
+ * otherwise show a lighter, bluish black than the bodice.
+ */
+const Fabric = () => (
+  <meshPhysicalMaterial color={BLACK} roughness={0.85} envMapIntensity={0.35} sheen={0.3} sheenColor="#3a3c42" sheenRoughness={0.6} side={DoubleSide} />
+);
 
 /** Sits a lathe-space piece on the body: centred and flattened front to back like the gown. */
 function OnBody({ children }: { children: ReactNode }) {
