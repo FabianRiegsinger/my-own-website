@@ -12,6 +12,16 @@ import { mergeVertices } from "three/examples/jsm/utils/BufferGeometryUtils.js";
  */
 const BLACK = "#1b1c21";
 const GREEN = "#80ba24";
+/**
+ * Shoulder (upper arm) and elbow joints in the bind pose, per side (+1 his right), from the model's skeleton. His left
+ * shoulder sits 12 mm higher than his right, so each sleeve is placed from its own joints, not mirrored.
+ */
+const JOINTS = { [1]: { shoulder: [1.188, 0.1505], elbow: 0.33 }, [-1]: { shoulder: [1.2, -0.174], elbow: -0.358 } } as const;
+/**
+ * How far the sleeve starts inside the right shoulder joint. That part swings up above the shoulder as the arm hangs, so
+ * the left one starts nearer its higher joint by the difference: both shoulders end level.
+ */
+const INSET = 0.035;
 /** Body centre in the model frame, and how much flatter front to back than side to side the gown is. */
 const AXIS = { x: 0.01, z: -0.012 };
 const DEPTH = 0.82;
@@ -167,21 +177,25 @@ export const Gown = forwardRef<Group, { shadows: boolean }>(function Gown({ shad
     [],
   );
   const board = useMemo(() => new RoundedBoxGeometry(0.6, 0.022, 0.6, 3, 0.008), []);
-  const sleeves = (side: 1 | -1, y: number) => (
-    <>
-      <group name={side < 0 ? "L_Upperarm" : "R_Upperarm"} matrixAutoUpdate={false}>
-        <Sleeve z0={side * 0.115} y={y} geometry={shapes[(side + 1) / 2].upper} shadows={shadows} />
-        {/* Shoulder: covers the joint whichever way the arm turns, flattened so it never rises above the yoke. */}
-        <mesh position={[0.015, y - 0.01, side * 0.16]} scale={[1, 0.8, 1]} castShadow={shadows}>
-          <sphereGeometry args={[0.085, 32, 20]} />
-          <Fabric />
-        </mesh>
-      </group>
-      <group name={side < 0 ? "L_Forearm" : "R_Forearm"} matrixAutoUpdate={false}>
-        <Sleeve z0={side * 0.33} y={y} geometry={shapes[(side + 1) / 2].lower} shadows={shadows} />
-      </group>
-    </>
-  );
+  const sleeves = (side: 1 | -1) => {
+    const { shoulder: [y, z], elbow } = JOINTS[side];
+    const inset = INSET - (y - JOINTS[1].shoulder[0]);
+    return (
+      <>
+        <group name={side < 0 ? "L_Upperarm" : "R_Upperarm"} matrixAutoUpdate={false}>
+          <Sleeve z0={z - side * inset} y={y} geometry={shapes[(side + 1) / 2].upper} shadows={shadows} />
+          {/* Shoulder: covers the joint whichever way the arm turns, flattened so it never rises above the yoke. */}
+          <mesh position={[0.015, y - 0.01, z + side * (0.045 - inset)]} scale={[1, 0.8, 1]} castShadow={shadows}>
+            <sphereGeometry args={[0.085, 32, 20]} />
+            <Fabric />
+          </mesh>
+        </group>
+        <group name={side < 0 ? "L_Forearm" : "R_Forearm"} matrixAutoUpdate={false}>
+          <Sleeve z0={elbow} y={y} geometry={shapes[(side + 1) / 2].lower} shadows={shadows} />
+        </group>
+      </>
+    );
+  };
   return (
     <group ref={ref}>
       <group name="Spine02" matrixAutoUpdate={false}>
@@ -204,8 +218,8 @@ export const Gown = forwardRef<Group, { shadows: boolean }>(function Gown({ shad
           </mesh>
         </OnBody>
       </group>
-      {sleeves(-1, 1.2)}
-      {sleeves(1, 1.19)}
+      {sleeves(-1)}
+      {sleeves(1)}
       {/* Mortarboard on top of his head: skull cap, board, button, and the tassel hanging over his left side. */}
       <group name="Head" matrixAutoUpdate={false}>
         <mesh position={[-0.005, 1.745, AXIS.z]} castShadow={shadows}>
