@@ -24,6 +24,8 @@ const JOINTS = { [1]: { shoulder: [1.188, 0.1505], elbow: 0.33 }, [-1]: { should
 const INSET = 0.035;
 /** Sleeve radii in metres: `width` over the arm (upper sleeve and the top of the lower one), `opening` at the wrist. */
 const SLEEVE = { width: 0.066, opening: 0.104 };
+/** Forward offset (x) of the arm's axis, where sleeves and shoulder caps centre: his arms hang behind the bone line. */
+const ARM_X = -0.01;
 /** Body centre in the model frame, and how much flatter front to back than side to side the gown is. */
 const AXIS = { x: 0.01, z: -0.012 };
 const DEPTH = 0.82;
@@ -159,7 +161,7 @@ export function sleeveGeometry(len: number, radius: (s: number) => number, pleat
 /** Sleeve from `z0` along the arm (signed: - his left), at height `y`. */
 function Sleeve({ z0, y, geometry, shadows }: { z0: number; y: number; geometry: LatheGeometry; shadows: boolean }) {
   return (
-    <mesh geometry={geometry} position={[0.015, y, z0]} rotation-x={(Math.sign(z0) * Math.PI) / 2} castShadow={shadows}>
+    <mesh geometry={geometry} position={[ARM_X, y, z0]} rotation-x={(Math.sign(z0) * Math.PI) / 2} castShadow={shadows}>
       <Fabric />
     </mesh>
   );
@@ -197,7 +199,7 @@ export const Gown = forwardRef<Group, { shadows: boolean }>(function Gown({ shad
         <group name={side < 0 ? "L_Upperarm" : "R_Upperarm"} matrixAutoUpdate={false}>
           <Sleeve z0={z - side * inset} y={y} geometry={shapes[(side + 1) / 2].upper} shadows={shadows} />
           {/* Shoulder: covers the joint whichever way the arm turns, flattened so it never rises above the yoke. */}
-          <mesh position={[0.015, y - 0.01, z + side * (0.045 - inset)]} scale={[1, 0.8, 1]} castShadow={shadows}>
+          <mesh position={[ARM_X, y - 0.01, z + side * (0.045 - inset)]} scale={[1, 0.8, 1]} castShadow={shadows}>
             <sphereGeometry args={[0.085, 32, 20]} />
             <Fabric />
           </mesh>
