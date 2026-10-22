@@ -29,7 +29,7 @@ const DEPTH = 0.82;
 /** Bodice up to just under the chin (rides on the chest); [radius, height] from the waist up. */
 const BODICE: [number, number][] = [[0.15, 0.72], [0.172, 0.8], [0.182, 0.9], [0.184, 1.04], [0.188, 1.14], [0.172, 1.205], [0.13, 1.24], [0.075, 1.262]];
 /** Skirt over the bodice from the waist to mid-calf (rides on the pelvis), so leaning in or crouching never opens a gap. */
-const SKIRT: [number, number][] = [[0.19, 1.0], [0.197, 0.92], [0.205, 0.8], [0.235, 0.6], [0.275, 0.4], [0.31, 0.2]];
+const SKIRT: [number, number][] = [[0.19, 1.0], [0.197, 0.92], [0.205, 0.8], [0.225, 0.6], [0.25, 0.4], [0.275, 0.2]];
 /** Skirt pleat depth (relative radius) at height y: none at the waist, deepest at the hem. */
 const skirtPleat = (y: number) => 0.045 * Math.max(0, (1 - y) / 0.8) ** 1.4;
 /** Back pleats of the bodice (the yoke gathers there), none on the chest where the stole lies. */
