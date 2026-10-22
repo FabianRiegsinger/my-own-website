@@ -1,6 +1,6 @@
 "use client";
 
-import { forwardRef, useMemo, type ReactNode } from "react";
+import { forwardRef, useEffect, useMemo, useState, type ReactNode } from "react";
 import { BufferGeometry, DoubleSide, Float32BufferAttribute, type Group, LatheGeometry, SplineCurve, Vector2, Vector3 } from "three";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import { mergeVertices } from "three/examples/jsm/utils/BufferGeometryUtils.js";
@@ -22,6 +22,12 @@ const JOINTS = { [1]: { shoulder: [1.188, 0.1505], elbow: 0.33 }, [-1]: { should
  * the left one starts nearer its higher joint by the difference: both shoulders end level.
  */
 const INSET = 0.035;
+/**
+ * Sleeve radii in metres: `width` over the arm (upper sleeve and the top of the lower one), `opening` at the wrist.
+ * Live-tunable with `?tune` on the page (SleeveTuner), which fires `SLEEVE_TUNED` to rebuild them.
+ */
+export const SLEEVE = { width: 0.09, opening: 0.075 };
+export const SLEEVE_TUNED = "sleeve-tuned";
 /** Body centre in the model frame, and how much flatter front to back than side to side the gown is. */
 const AXIS = { x: 0.01, z: -0.012 };
 const DEPTH = 0.82;
@@ -178,13 +184,21 @@ export const Gown = forwardRef<Group, { shadows: boolean }>(function Gown({ shad
   // Upper sleeve: from the shoulder joint (any further in would swing up above the shoulder as the arm hangs), a little
   // full over the upper arm. Lower sleeve: the academic bell sleeve,
   // flaring and pleating toward the wrist, its open end bagging below the arm.
+  const [tuned, setTuned] = useState(0);
+  useEffect(() => {
+    const bump = () => setTuned((n) => n + 1);
+    addEventListener(SLEEVE_TUNED, bump);
+    return () => removeEventListener(SLEEVE_TUNED, bump);
+  }, []);
+  // shortcut: tuning leaves the old geometries undisposed; fine for a dev aid, dispose them if it ever ships to visitors.
   const shapes = useMemo(
     () =>
       ([-1, 1] as const).map((side) => ({
-        upper: sleeveGeometry(0.245, (s) => 0.086 + 0.014 * Math.sin(Math.PI * s), 0.05, 0, side),
-        lower: sleeveGeometry(0.16, (s) => 0.09 - 0.015 * s ** 1.6, 0.06, 0.3, side),
+        upper: sleeveGeometry(0.245, (s) => SLEEVE.width - 0.004 + 0.014 * Math.sin(Math.PI * s), 0.05, 0, side),
+        lower: sleeveGeometry(0.16, (s) => SLEEVE.width + (SLEEVE.opening - SLEEVE.width) * s ** 1.6, 0.06, 0.3, side),
       })),
-    [],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [tuned],
   );
   const board = useMemo(() => new RoundedBoxGeometry(0.6, 0.022, 0.6, 3, 0.008), []);
   const sleeves = (side: 1 | -1) => {

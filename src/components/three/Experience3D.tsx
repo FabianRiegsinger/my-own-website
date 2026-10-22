@@ -9,6 +9,7 @@ import { CameraRig } from "./CameraRig";
 import { GenMe } from "./GenMe";
 import { ScrollTracker } from "./ScrollTracker";
 import { StationOffset } from "./station-offset";
+import { SleeveTuner } from "./SleeveTuner";
 import { TabletTuner } from "./TabletTuner";
 import { AgentNetwork } from "./stations/AgentNetwork";
 import { Graduation } from "./stations/Graduation";
@@ -65,6 +66,7 @@ export function Experience3D({ cv, projects, lowPower: initialLowPower, calm, on
         <Sections cv={cv} projects={projects} />
       </main>
       <TabletTuner />
+      <SleeveTuner />
     </StationOffset.Provider>
   );
 }
