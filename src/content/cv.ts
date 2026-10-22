@@ -111,7 +111,7 @@ export const cv: CV = {
       "I spent eight years integrating and debugging software in test vehicles. Now I use AI agents for a large part of my coding.",
     tools: ["Claude Code", "Cursor"],
     workUse:
-      "I use Claude Code and Cursor every day, at work and on side projects. This website was built with Claude Code.",
+      "I use Claude Code and Cursor every day, at work and on private side projects. Even this website.",
   },
   next: {
     intro: "Eight years of software in test vehicles taught me how systems fail in the real world. Next, I want to work where AI is built at scale.",
@@ -124,12 +124,12 @@ export const cv: CV = {
       {
         label: "T-2",
         title: "Physical AI",
-        body: "Foundation models that perceive and act in cars and robots, where a wrong answer has physical consequences. My automotive years count here.",
+        body: "Foundation models that perceive and act in cars and robots, where a wrong answer has physical consequences. That is where my years in test vehicles help most.",
       },
       {
         label: "T-1",
         title: "A frontier AI team",
-        body: "Joining a big-tech AI team that builds the models, the infrastructure, and the products on top of them.",
+        body: "Joining a big-tech AI team that builds models and the products that run on them.",
       },
     ],
     liftoff: "Building something in this space? Let's talk.",
