@@ -6,7 +6,7 @@ export const cv: CV = {
     headline: "System Integration & Software Engineer",
     location: "Ingolstadt, Germany",
     summary:
-      "I'm a software engineer with over 8 years of experience in the automotive industry. At ESAS automotive, I have built software for autonomous-driving stacks in C++ and Python. For Mobileye, I work on site directly with the customers on the Level 3 ADAS program, where I mainly maintain a large fleet of development vehicles running, while coordinating mission critical tasks with the OEM's engineers and Mobileye's R&D team. Recently, I have been incorporating agentic workflows in my daily work to drastically improve efficiency.",
+      "I'm a software development and integration engineer with more than eight years of experience in the automotive industry. At ESAS Automotive I built software for autonomous-driving stacks in C++ and Python while taking on project lead responsibilities. For Mobileye I work on site at the customer on a Level 3 ADAS program, building and keeping a large fleet of development vehicles running and coordinating critical issues between the OEM's engineers and Mobileye's R&D team, while developing agentic software that automates test vehicle maintenance workflows.",
     links: {
       github: "https://github.com/FabianRiegsinger",
       linkedin: "https://www.linkedin.com/in/fabian-riegsinger-736b78b7/",
