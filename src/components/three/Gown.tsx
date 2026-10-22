@@ -28,8 +28,12 @@ const DEPTH = 0.82;
 
 /** Bodice up to just under the chin (rides on the chest); [radius, height] from the waist up. */
 const BODICE: [number, number][] = [[0.15, 0.72], [0.172, 0.8], [0.182, 0.9], [0.184, 1.04], [0.188, 1.14], [0.172, 1.205], [0.13, 1.24], [0.075, 1.262]];
-/** Skirt over the bodice from the waist to mid-calf (rides on the pelvis), so leaning in or crouching never opens a gap. */
-const SKIRT: [number, number][] = [[0.19, 1.0], [0.197, 0.92], [0.205, 0.8], [0.225, 0.6], [0.25, 0.4], [0.275, 0.2]];
+/**
+ * Skirt over the bodice from the waist to mid-calf (rides on the pelvis), so leaning in or crouching never opens a gap.
+ * Above the waist it lies flush on the bodice, as steep as it is, and tucks under it at the top: the two read as one
+ * garment, with no rim or change of shading where the skirt begins.
+ */
+const SKIRT: [number, number][] = [[0.18, 1.13], [0.1895, 1.1], [0.188, 1.0], [0.192, 0.92], [0.205, 0.8], [0.225, 0.6], [0.25, 0.4], [0.275, 0.2]];
 /** Skirt pleat depth (relative radius) at height y: none at the waist, deepest at the hem. */
 const skirtPleat = (y: number) => 0.045 * Math.max(0, (1 - y) / 0.8) ** 1.4;
 /** Back pleats of the bodice (the yoke gathers there), none on the chest where the stole lies. */
@@ -164,7 +168,7 @@ export const Gown = forwardRef<Group, { shadows: boolean }>(function Gown({ shad
     const b = smooth(BODICE);
     const s = smooth(SKIRT);
     // The stole lies on whichever layer is outside at that height, over the crests of the skirt's pleats.
-    const surface = (y: number) => Math.max(radiusAt(b, y), y <= 1 ? radiusAt(s, y) * (1 + skirtPleat(y)) : 0);
+    const surface = (y: number) => Math.max(radiusAt(b, y), y <= SKIRT[0][1] ? radiusAt(s, y) * (1 + skirtPleat(y)) : 0);
     return {
       bodice: cloth(b, 15, bodicePleat),
       skirt: cloth(s, 18, skirtPleat),
