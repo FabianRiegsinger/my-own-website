@@ -24,7 +24,7 @@ const LOOSE = 0.2;
 const NEIGHBOURS = 3;
 const MAX_WIRE = 1.2;
 /** A thought: one neuron fires, the spike hops along the wiring, each hop passing on with this chance. */
-const BURST_EVERY = 0.35;
+const BURST_EVERY = 0.7;
 const HOP_SECONDS = 0.09;
 const MAX_HOPS = 6;
 const PASS = 0.55;
@@ -172,7 +172,9 @@ export function AgentNetwork() {
     const glow = (i: number) => {
       const since = t - fireAt[i];
       const spike = since >= 0 ? Math.exp(-since * DECAY) : 0;
-      const idle = Math.pow(Math.max(0, Math.sin(t * 0.7 + i * 12.9)), 60) * 0.5; // the odd neuron flickers on its own
+      // the odd neuron flickers on its own: two waves at its own unrelated rates line up only now and then, at no fixed beat
+      const wave = Math.sin(t * (0.4 + rand(i + 2100)) + i * 12.9) * Math.sin(t * (0.3 + 0.8 * rand(i + 2300)) + i * 7.3);
+      const idle = Math.pow(Math.max(0, wave), 9) * 0.5;
       return Math.max(spike, idle);
     };
     points.forEach((p, i) => {
