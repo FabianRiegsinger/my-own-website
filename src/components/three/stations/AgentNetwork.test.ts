@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { Vector3 } from "three";
 import { STATIONS } from "@/lib/scroll-map";
-import { cascade, FOV_DEG, networkLayout } from "./AgentNetwork";
+import { cascade, crossing, FOV_DEG, networkLayout } from "./AgentNetwork";
 
 const agentic = STATIONS.find((s) => s.id === "agentic")!;
 const camera = new Vector3(...agentic.camera);
@@ -42,5 +42,25 @@ describe("cascade", () => {
   it("only spreads across wires the spike passes", () => {
     const hops = cascade(wires, 0, 6, (_, b) => b !== 2);
     expect([...hops.keys()].sort()).toEqual([0, 1, 5]);
+  });
+});
+
+describe("crossing", () => {
+  // a 20 x 5 grid of points, half a unit apart
+  const points = Array.from({ length: 100 }, (_, i) => new Vector3((i % 20) * 0.5 - 5, Math.floor(i / 20) * 0.5 - 1, 0));
+  const dir = new Vector3(1, 0, 0);
+  const path = crossing(points, 40, dir, new Vector3(), 4, (n) => n - 1);
+
+  it("runs from one side to the other", () => {
+    expect(points[path[0]].x).toBe(-5);
+    expect(points[path.at(-1)!].x).toBeGreaterThanOrEqual(4);
+  });
+
+  it("moves forward with every step", () => {
+    for (let k = 1; k < path.length; k++) expect(points[path[k]].x).toBeGreaterThan(points[path[k - 1]].x);
+  });
+
+  it("stops where nothing lies ahead", () => {
+    expect(crossing(points, 40, new Vector3(-1, 0, 0), new Vector3(), 4, () => 0)).toEqual([40]);
   });
 });

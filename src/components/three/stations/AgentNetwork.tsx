@@ -23,13 +23,20 @@ const LOOSE = 0.2;
 /** Each neuron wires to its nearest few, none longer than this. */
 const NEIGHBOURS = 3;
 const MAX_WIRE = 1.2;
-/** A thought: one neuron fires, the spike hops along the wiring, each hop passing on with this chance. */
-const BURST_EVERY = 0.7;
+/** A thought: an impulse crosses the whole network in a random direction, one neuron to the next, leaving a streak. */
+const CROSS_EVERY = 1.8;
+const CROSS_HOP_SECONDS = 0.035;
+/** How far one step of the impulse reaches ahead (sheet units). */
+const STEP = [0.4, 1.6] as const;
+/** Along the way it sparks into the wiring: up to this many hops, each passing on with this chance. */
+const SPARK_HOPS = 2;
+const SPARK_PASS = 0.3;
 const HOP_SECONDS = 0.09;
-const MAX_HOPS = 6;
-const PASS = 0.55;
-/** How fast a flash dies away, per second. */
+/** Streak segments kept at once (ring buffer); more than two crossings ever overlap. */
+const TRAIL = 400;
+/** How fast a flash dies away, per second; the streak fades faster than the neurons. */
 const DECAY = 3.5;
+const TRAIL_DECAY = 6;
 /** At rest a neuron is its palette colour this far toward the page background, so only firing ones stand out. */
 const REST = 0.75;
 /** Wire opacity at rest and while carrying a spike. */
@@ -87,6 +94,25 @@ export function cascade(wires: number[][], seed: number, maxHops: number, pass: 
   return hops;
 }
 
+/**
+ * The neurons an impulse visits crossing from `from` in direction `dir` (unit, in the sheet plane) until it is `reach`
+ * past `center`: each step jumps to a point between STEP[0] and STEP[1] ahead, inside a forward cone, chosen by `pick`.
+ */
+export function crossing(points: Vector3[], from: number, dir: Vector3, center: Vector3, reach: number, pick: (n: number) => number) {
+  const path = [from];
+  const v = new Vector3();
+  for (let cur = from; v.subVectors(points[cur], center).dot(dir) < reach && path.length < 200; ) {
+    const ahead: number[] = [];
+    points.forEach((q, j) => {
+      const along = v.subVectors(q, points[cur]).dot(dir);
+      if (along > STEP[0] && along < STEP[1] && v.lengthSq() - along * along < along * along * 0.6) ahead.push(j);
+    });
+    if (!ahead.length) break;
+    path.push((cur = ahead[pick(ahead.length)]));
+  }
+  return path;
+}
+
 /** Points in soft clusters, each wired (both ways) to its nearest `NEIGHBOURS`; a cluster shares one hue, like one concept. */
 function embedding(width: number, height: number) {
   const [cols, rows] = GRID;
@@ -127,6 +153,7 @@ export function AgentNetwork() {
   const sway = useRef<Group>(null);
   const nodes = useRef<InstancedMesh>(null);
   const edges = useRef<LineSegments>(null);
+  const streak = useRef<LineSegments>(null);
   const camera = useThree((s) => s.camera);
   const offset = useStationOffset();
   const layout = useMemo(() => networkLayout(), []);
@@ -139,19 +166,31 @@ export function AgentNetwork() {
     const lines = new BufferGeometry();
     lines.setAttribute("position", new Float32BufferAttribute(pairs.flatMap(([a, b]) => [...points[a].toArray(), ...points[b].toArray()]), 3));
     lines.setAttribute("color", new Float32BufferAttribute(new Float32Array(pairs.length * 8), 4));
-    return { points, wires, tint, pairs, lines };
+    const streak = new BufferGeometry();
+    streak.setAttribute("position", new Float32BufferAttribute(new Float32Array(TRAIL * 6), 3));
+    streak.setAttribute("color", new Float32BufferAttribute(new Float32Array(TRAIL * 8), 4));
+    return { points, wires, tint, pairs, lines, streak };
   }, [layout]);
-  // per-frame state: when each neuron last fired, the current thought, scratch objects
-  const live = useRef({ fireAt: new Float32Array(COUNT).fill(-1e3), level: new Float32Array(COUNT), burst: -1, m: new Matrix4(), c: new Color() });
+  // per-frame state: when each neuron last fired, the streak segments (ring buffer), the current crossing, scratch objects
+  const live = useRef({
+    fireAt: new Float32Array(COUNT).fill(-1e3),
+    level: new Float32Array(COUNT),
+    trail: Array.from({ length: TRAIL }, () => ({ to: 0, at: -1e3 })),
+    head: 0,
+    cross: -1,
+    m: new Matrix4(),
+    c: new Color(),
+  });
 
   useEffect(() => {
     edges.current?.layers.set(LAYER);
+    streak.current?.layers.set(LAYER);
     nodes.current?.layers.set(LAYER);
     camera.layers.enable(LAYER);
   }, [camera]);
 
   useFrame(({ clock }) => {
-    if (!root.current || !sway.current || !nodes.current || !edges.current) return;
+    if (!root.current || !sway.current || !nodes.current || !edges.current || !streak.current) return;
     fade(root.current, stationWeight(offset.current, "agentic"));
     if (!root.current.visible) return;
     const t = clock.elapsedTime;
@@ -159,14 +198,32 @@ export function AgentNetwork() {
 
     const { points, wires, tint, pairs } = net;
     const s = live.current;
-    const { fireAt, level, m, c } = s;
-    const burst = Math.floor(t / BURST_EVERY);
-    if (burst !== s.burst) {
-      s.burst = burst;
-      const seed = Math.floor(rand(burst + 7) * COUNT);
-      const hops = cascade(wires, seed, MAX_HOPS, (a, b) => rand(burst * 31 + a * 7 + b) < PASS);
-      // a neuron still glowing from the last thought sits this one out (refractory)
-      for (const [i, h] of hops) if (t - fireAt[i] > 0.4) fireAt[i] = t + h * HOP_SECONDS;
+    const { fireAt, level, trail, m, c } = s;
+    const cross = Math.floor(t / CROSS_EVERY);
+    if (cross !== s.cross) {
+      s.cross = cross;
+      // enter on the far side of a random direction, at a random spot across it, and run to the other side
+      const angle = 2 * Math.PI * rand(cross + 7);
+      const dir = new Vector3(Math.cos(angle), Math.sin(angle), 0);
+      const reach = Math.hypot(0.28 * layout.width * dir.x, 0.35 * layout.height * dir.y); // about the visible window
+      const start = new Vector3(-dir.y, dir.x, 0).multiplyScalar((rand(cross + 11) - 0.5) * reach).addScaledVector(dir, -reach);
+      let from = 0;
+      points.forEach((p, i) => p.distanceToSquared(start) < points[from].distanceToSquared(start) && (from = i));
+      let step = 0;
+      const path = crossing(points, from, dir, new Vector3(), reach, (n) => Math.floor(rand(cross * 97 + step++) * n));
+      const pos = streak.current.geometry.getAttribute("position") as Float32BufferAttribute;
+      path.forEach((i, k) => {
+        const at = t + k * CROSS_HOP_SECONDS;
+        // a neuron still glowing from the last thought sits this one out (refractory)
+        const sparks = cascade(wires, i, SPARK_HOPS, (a, b) => rand(cross * 31 + a * 7 + b) < SPARK_PASS);
+        for (const [j, h] of sparks) if (t - fireAt[j] > 0.4) fireAt[j] = at + h * HOP_SECONDS;
+        if (!k) return;
+        const slot = s.head++ % TRAIL;
+        trail[slot] = { to: i, at };
+        pos.setXYZ(slot * 2, ...points[path[k - 1]].toArray());
+        pos.setXYZ(slot * 2 + 1, ...points[i].toArray());
+      });
+      pos.needsUpdate = true;
     }
 
     const glow = (i: number) => {
@@ -174,7 +231,7 @@ export function AgentNetwork() {
       const spike = since >= 0 ? Math.exp(-since * DECAY) : 0;
       // the odd neuron flickers on its own: two waves at its own unrelated rates line up only now and then, at no fixed beat
       const wave = Math.sin(t * (0.4 + rand(i + 2100)) + i * 12.9) * Math.sin(t * (0.3 + 0.8 * rand(i + 2300)) + i * 7.3);
-      const idle = Math.pow(Math.max(0, wave), 9) * 0.5;
+      const idle = Math.pow(Math.max(0, wave), 30) * 0.35;
       return Math.max(spike, idle);
     };
     points.forEach((p, i) => {
@@ -195,12 +252,22 @@ export function AgentNetwork() {
       }
     });
     col.needsUpdate = true;
+
+    const lit = streak.current.geometry.getAttribute("color") as Float32BufferAttribute;
+    trail.forEach(({ to, at }, slot) => {
+      const g = t >= at ? Math.exp(-(t - at) * TRAIL_DECAY) : 0;
+      for (const v of [0, 1]) lit.setXYZW(slot * 2 + v, tint[to].r, tint[to].g, tint[to].b, g);
+    });
+    lit.needsUpdate = true;
   });
 
   return (
     <group ref={root} position={layout.center} quaternion={layout.quaternion}>
       <group ref={sway}>
         <lineSegments ref={edges} geometry={net.lines}>
+          <lineBasicMaterial vertexColors transparent toneMapped={false} />
+        </lineSegments>
+        <lineSegments ref={streak} geometry={net.streak} frustumCulled={false}>
           <lineBasicMaterial vertexColors transparent toneMapped={false} />
         </lineSegments>
         <instancedMesh ref={nodes} args={[undefined, undefined, COUNT]}>
