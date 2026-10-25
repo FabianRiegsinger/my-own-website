@@ -24,8 +24,11 @@ const LOOSE = 0.2;
 const NEIGHBOURS = 3;
 const MAX_WIRE = 1.2;
 /** A thought: an impulse crosses the whole network in a random direction, one neuron to the next, leaving a streak. */
-const CROSS_EVERY = 1.8;
-const CROSS_HOP_SECONDS = 0.035;
+/** Gaps between crossings are random (exponential, so sometimes two come close together, sometimes a long pause), with
+ * this mean and floor; each crossing also picks its own speed. */
+const CROSS_MEAN = 1.8;
+const CROSS_MIN = 0.2;
+const CROSS_HOP_SECONDS = [0.02, 0.06] as const;
 /** How far one step of the impulse reaches ahead (sheet units). */
 const STEP = [0.4, 1.6] as const;
 /** Along the way it sparks into the wiring: up to this many hops, each passing on with this chance. */
@@ -177,7 +180,8 @@ export function AgentNetwork() {
     level: new Float32Array(COUNT),
     trail: Array.from({ length: TRAIL }, () => ({ to: 0, at: -1e3 })),
     head: 0,
-    cross: -1,
+    cross: 0,
+    next: 0,
     m: new Matrix4(),
     c: new Color(),
   });
@@ -199,9 +203,10 @@ export function AgentNetwork() {
     const { points, wires, tint, pairs } = net;
     const s = live.current;
     const { fireAt, level, trail, m, c } = s;
-    const cross = Math.floor(t / CROSS_EVERY);
-    if (cross !== s.cross) {
-      s.cross = cross;
+    if (t >= s.next) {
+      const cross = s.cross++;
+      s.next = t + CROSS_MIN - CROSS_MEAN * Math.log(1 - rand(cross + 3));
+      const hop = CROSS_HOP_SECONDS[0] + (CROSS_HOP_SECONDS[1] - CROSS_HOP_SECONDS[0]) * rand(cross + 5);
       // enter on the far side of a random direction, at a random spot across it, and run to the other side
       const angle = 2 * Math.PI * rand(cross + 7);
       const dir = new Vector3(Math.cos(angle), Math.sin(angle), 0);
@@ -213,7 +218,7 @@ export function AgentNetwork() {
       const path = crossing(points, from, dir, new Vector3(), reach, (n) => Math.floor(rand(cross * 97 + step++) * n));
       const pos = streak.current.geometry.getAttribute("position") as Float32BufferAttribute;
       path.forEach((i, k) => {
-        const at = t + k * CROSS_HOP_SECONDS;
+        const at = t + k * hop;
         // a neuron still glowing from the last thought sits this one out (refractory)
         const sparks = cascade(wires, i, SPARK_HOPS, (a, b) => rand(cross * 31 + a * 7 + b) < SPARK_PASS);
         for (const [j, h] of sparks) if (t - fireAt[j] > 0.4) fireAt[j] = at + h * HOP_SECONDS;
