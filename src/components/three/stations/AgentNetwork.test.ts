@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { Vector3 } from "three";
 import { STATIONS } from "@/lib/scroll-map";
-import { FOV_DEG, networkLayout } from "./AgentNetwork";
+import { cascade, FOV_DEG, networkLayout } from "./AgentNetwork";
 
 const agentic = STATIONS.find((s) => s.id === "agentic")!;
 const camera = new Vector3(...agentic.camera);
@@ -27,5 +27,20 @@ describe("networkLayout", () => {
     const { quaternion } = networkLayout();
     const normal = new Vector3(0, 0, 1).applyQuaternion(quaternion);
     expect(normal.dot(camera.clone().sub(center).normalize())).toBeGreaterThan(0.99);
+  });
+});
+
+describe("cascade", () => {
+  // a chain 0-1-2-3-4 with a branch 1-5
+  const wires = [[1], [0, 2, 5], [1, 3], [2, 4], [3], [1]];
+
+  it("counts hops from the seed and stops at maxHops", () => {
+    const hops = cascade(wires, 0, 3, () => true);
+    expect(Object.fromEntries(hops)).toEqual({ 0: 0, 1: 1, 2: 2, 5: 2, 3: 3 });
+  });
+
+  it("only spreads across wires the spike passes", () => {
+    const hops = cascade(wires, 0, 6, (_, b) => b !== 2);
+    expect([...hops.keys()].sort()).toEqual([0, 1, 5]);
   });
 });
