@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { preload } from "react-dom";
 import { ReducedMotionNotice } from "@/components/ReducedMotionNotice";
+import { SiteControls } from "@/components/SiteControls";
 import { cv } from "@/content/cv";
 import { SITE_URL } from "@/lib/site";
 import { THEME_SCRIPT } from "@/lib/theme";
@@ -46,6 +47,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full bg-bg text-ink font-sans">
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(personJsonLd) }} />
         {children}
+        <SiteControls />
         <ReducedMotionNotice />
         <Analytics />
       </body>

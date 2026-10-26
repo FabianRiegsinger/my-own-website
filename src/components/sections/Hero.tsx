@@ -1,5 +1,4 @@
 import type { CV } from "@/content/types";
-import { ThemeToggle } from "../ThemeToggle";
 import { ContactJumpLink } from "./JumpLink";
 import { Section } from "./Section";
 
@@ -9,11 +8,9 @@ const PILL =
 export function Hero({ cv, showFigure = false }: { cv: CV; showFigure?: boolean }) {
   return (
     <Section id="hero">
-      <div className="relative">
-        {/* Top-right corner of the panel; the name keeps clear of it. */}
-        <ThemeToggle className="absolute -top-2 -right-2 sm:-top-4 sm:-right-4 desk:-top-2 desk:-right-2" />
+      <div>
         <div>
-          <h1 className="pr-12 text-5xl font-semibold tracking-tight sm:text-6xl desk:text-[min(3.75rem,5.5vw)]">{cv.profile.name}</h1>
+          <h1 className="text-5xl font-semibold tracking-tight sm:text-6xl desk:text-[min(3.75rem,5.5vw)]">{cv.profile.name}</h1>
           <p className="mt-4 text-xl text-muted sm:text-2xl">{cv.profile.headline}</p>
           <p className="mt-8 text-xl font-semibold tracking-tight sm:text-2xl">Agentic Automotive Engineer</p>
           <div className="mt-8 flex flex-wrap gap-3">
