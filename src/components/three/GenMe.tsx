@@ -340,19 +340,33 @@ export function GenMe({ shadows, calm = false }: { shadows: boolean; calm?: bool
   }, [calm]);
 
   // Click and hold on him, then drag sideways to spin him about his centre. The canvas sits behind the page and takes
-  // no pointer events, so this listens on the window and hit-tests his bounding box (cheap enough for every move).
+  // no pointer events, so this listens on the window and hit-tests his posed body itself (about 5k triangles: cheap
+  // enough for every move). Not his bounding box: three takes that from the bind pose, a T-pose as wide as his arms.
   useEffect(() => {
     const ray = new Raycaster();
     const ndc = new Vector2();
-    const box = new Box3();
     const root = document.documentElement;
+    let loosened = false;
     const over = (e: PointerEvent) => {
       const m = model.current;
       if (!m) return false;
+      // The skinned mesh's raycast pre-checks a sphere and box cached from whatever pose they were first computed in:
+      // widen both once, so a raised arm or a jump is never culled before the triangle test.
+      if (!loosened) {
+        m.traverse((o) => {
+          const s = o as SkinnedMesh;
+          if (!s.isSkinnedMesh) return;
+          s.computeBoundingSphere();
+          s.computeBoundingBox();
+          s.boundingBox!.expandByScalar(s.boundingSphere!.radius * 0.5);
+          s.boundingSphere!.radius *= 1.5;
+        });
+        loosened = true;
+      }
       const r = gl.domElement.getBoundingClientRect();
       ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
       ray.setFromCamera(ndc, camera);
-      return ray.ray.intersectsBox(box.setFromObject(m));
+      return ray.intersectObject(m, true).length > 0;
     };
     const down = (e: PointerEvent) => {
       if (e.button !== 0 || !over(e)) return;
