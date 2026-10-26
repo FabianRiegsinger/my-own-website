@@ -8,7 +8,6 @@ import { pendulum } from "@/lib/pendulum";
 import { stationWeight } from "@/lib/scroll-map";
 import { fade } from "../fade";
 import { useStationOffset } from "../station-offset";
-import { useDark } from "../use-dark";
 
 /**
  * Graduation, after the photo at the Friedberg campus: a grey wall with a round niche holding a bronze bell that
@@ -175,30 +174,16 @@ function thmLogo() {
   return t;
 }
 
-/**
- * Alpha map that is opaque in the middle and fades to clear over the given fraction of each edge. `soft` (dark mode)
- * stretches each fade 1.8x and eases it (smoothstep, squared): a light wall on the dark page then dissolves gradually
- * instead of ending in the bright rim a linear ramp leaves, which the light page hides.
- */
-export function edgeFade(edges: { left: number; right: number; top: number; bottom: number }, hole?: { u: number; v: number; r: number }, soft = false) {
+/** Alpha map that is opaque in the middle and fades to clear over the given fraction of each edge. */
+export function edgeFade(edges: { left: number; right: number; top: number; bottom: number }, hole?: { u: number; v: number; r: number }) {
   const size = 512;
   const c = document.createElement("canvas");
   c.width = c.height = size;
   const ctx = c.getContext("2d")!;
-  const STEPS = 12;
-  const grey = (v: number) => `rgb(${Math.round(255 * v)} ${Math.round(255 * v)} ${Math.round(255 * v)})`;
-  const ease = (t: number) => (t * t * (3 - 2 * t)) ** 2;
   const ramp = (g: CanvasGradient, a: number, b: number) => {
-    if (soft) [a, b] = [Math.min(a * 1.8, 0.45), Math.min(b * 1.8, 0.45)];
-    if (!soft || a === 0) g.addColorStop(0, a > 0 ? "#000" : "#fff");
-    if (a > 0) {
-      if (soft) for (let i = 0; i < STEPS; i++) g.addColorStop((a * i) / STEPS, grey(ease(i / STEPS)));
-      g.addColorStop(a, "#fff");
-    }
-    if (b > 0) {
-      g.addColorStop(1 - b, "#fff");
-      if (soft) for (let i = STEPS - 1; i > 0; i--) g.addColorStop(1 - (b * i) / STEPS, grey(ease(i / STEPS)));
-    }
+    g.addColorStop(0, a > 0 ? "#000" : "#fff");
+    if (a > 0) g.addColorStop(a, "#fff");
+    if (b > 0) g.addColorStop(1 - b, "#fff");
     g.addColorStop(1, b > 0 ? "#000" : "#fff");
     return g;
   };
@@ -249,21 +234,14 @@ export function Graduation() {
   const offset = useStationOffset();
 
   const bell = useMemo(() => new LatheGeometry(BELL_PROFILE.map(([r, y]) => new Vector2(r, y)), 64), []);
-  const dark = useDark();
-  // Wall fades out at the sides and top; floor fades at the sides and front, so neither shows a hard edge.
-  const fades = useMemo(
+  const maps = useMemo(
     () => ({
+      // Wall fades out at the sides and top; floor fades at the sides and front, so neither shows a hard edge.
       wall: edgeFade(
         { left: 0.22, right: 0.22, top: 0.25, bottom: 0 },
         { u: (NICHE.center[0] - WALL.x) / WALL.width + 0.5, v: 1 - NICHE.center[1] / WALL.height, r: NICHE.radius / WALL.width },
-        dark,
       ),
-      floor: edgeFade({ left: 0.25, right: 0.25, top: 0, bottom: 0.45 }, undefined, dark),
-    }),
-    [dark],
-  );
-  const maps = useMemo(
-    () => ({
+      floor: edgeFade({ left: 0.25, right: 0.25, top: 0, bottom: 0.45 }),
       niche: nicheShade(),
       logo: thmLogo(),
       bronze: bronze(),
@@ -316,7 +294,7 @@ export function Graduation() {
     <group ref={root}>
       <mesh position={[WALL.x, WALL.height / 2, WALL.z]} receiveShadow>
         <planeGeometry args={[WALL.width, WALL.height]} />
-        <meshStandardMaterial color="#f2f2ef" roughness={0.95} alphaMap={fades.wall} transparent depthWrite={false} />
+        <meshStandardMaterial color="#f2f2ef" roughness={0.95} alphaMap={maps.wall} transparent depthWrite={false} />
       </mesh>
       {/* Niche: a round recess cut into the wall (the wall's alpha map has the hole), its back shaded darker under the lip. */}
       <group position={[NICHE.center[0], NICHE.center[1], WALL.z]}>
@@ -373,7 +351,7 @@ export function Graduation() {
       </group>
       <mesh position={[WALL.x, 0.001, WALL.z + FLOOR.depth / 2]} rotation-x={-Math.PI / 2} receiveShadow>
         <planeGeometry args={[FLOOR.width, FLOOR.depth]} />
-        <meshStandardMaterial color="#2c2d31" roughness={0.6} alphaMap={fades.floor} transparent depthWrite={false} />
+        <meshStandardMaterial color="#2c2d31" roughness={0.6} alphaMap={maps.floor} transparent depthWrite={false} />
       </mesh>
       <points geometry={chips}>
         <pointsMaterial color="#9a9a9a" size={0.02} />

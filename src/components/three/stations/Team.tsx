@@ -8,7 +8,6 @@ import { stationWeight } from "@/lib/scroll-map";
 import { Colleague, type ColleaguePose } from "../Colleague";
 import { fade } from "../fade";
 import { useStationOffset } from "../station-offset";
-import { useDark } from "../use-dark";
 import { FusionHologram } from "./FusionHologram";
 import { edgeFade } from "./Graduation";
 
@@ -24,8 +23,7 @@ export const GLAZING = { panes: 4, pane: 0.5, height: 2.6, frame: 0.028 };
 
 /** The angled back wall with its windows. */
 function RoomWall() {
-  const dark = useDark();
-  const wallFade = useMemo(() => edgeFade({ left: 0.22, right: 0.22, top: 0.3, bottom: 0 }, undefined, dark), [dark]);
+  const wallFade = useMemo(() => edgeFade({ left: 0.22, right: 0.22, top: 0.3, bottom: 0 }), []);
   const { panes, pane, height, frame } = GLAZING;
   const span = panes * pane;
   const frameMat = <meshStandardMaterial color="#b4b8be" roughness={0.6} />;

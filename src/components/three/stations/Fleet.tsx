@@ -7,7 +7,6 @@ import { stationWeight } from "@/lib/scroll-map";
 import { Colleague, type ColleaguePose } from "../Colleague";
 import { fade } from "../fade";
 import { useStationOffset } from "../station-offset";
-import { useDark } from "../use-dark";
 import { sedanGeometry } from "./FusionHologram";
 import { edgeFade } from "./Graduation";
 import { nodAt } from "./Team";
@@ -182,15 +181,14 @@ function useDoorMaterials() {
 
 /** The back wall with a roller door behind each car, and the floor with painted bay lines between them. */
 function Garage() {
-  const dark = useDark();
   const maps = useMemo(
     () => ({
       // Fades in metres (3.2 m on the wall, 4 m on the floor), so the wall's widening for the extra door keeps them.
-      wall: edgeFade({ left: 3.2 / GARAGE.width, right: 3.2 / GARAGE.width, top: 0.3, bottom: 0 }, undefined, dark),
-      floor: edgeFade({ left: 4 / GARAGE.width, right: 4 / GARAGE.width, top: 0.3, bottom: 0.4 }, undefined, dark),
+      wall: edgeFade({ left: 3.2 / GARAGE.width, right: 3.2 / GARAGE.width, top: 0.3, bottom: 0 }),
+      floor: edgeFade({ left: 4 / GARAGE.width, right: 4 / GARAGE.width, top: 0.3, bottom: 0.4 }),
       slats: slats(),
     }),
-    [dark],
+    [],
   );
   const doorMats = useDoorMaterials();
   const { z, x, width, height } = GARAGE;
