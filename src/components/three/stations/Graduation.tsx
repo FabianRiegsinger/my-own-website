@@ -8,7 +8,6 @@ import { pendulum } from "@/lib/pendulum";
 import { stationWeight } from "@/lib/scroll-map";
 import { fade } from "../fade";
 import { useStationOffset } from "../station-offset";
-import { DARK, useDark } from "../use-dark";
 
 /**
  * Graduation, after the photo at the Friedberg campus: a grey wall with a round niche holding a bronze bell that
@@ -134,7 +133,7 @@ function plaqueFace(title: string, subtitle: string) {
  * THM logo, redrawn as vector shapes in the artwork's own units (830 x 278): the square pattern, the divider, the
  * block letters THM, and the wordmark below, on a transparent background.
  */
-function thmLogo(grey: string) {
+function thmLogo() {
   const k = 2; // pixels per artwork unit
   const c = document.createElement("canvas");
   c.width = LOGO_ART.width * k;
@@ -142,6 +141,7 @@ function thmLogo(grey: string) {
   const ctx = c.getContext("2d")!;
   ctx.scale(k, k);
   const green = "#80ba24";
+  const grey = "#4a5c66";
   ctx.fillStyle = green;
   // Squares: 35 wide on a 52 pitch, three columns by four rows with the top-left one missing.
   for (let row = 0; row < 4; row++) for (let col = row === 0 ? 1 : 0; col < 3; col++) ctx.fillRect(col * 52, row * 52, 35, 35);
@@ -227,9 +227,6 @@ function nicheShade() {
 
 export function Graduation() {
   const root = useRef<Group>(null);
-  const dark = useDark();
-  // Divider and wordmark in the logo's slate grey, lightened on the dark wall.
-  const logo = useMemo(() => thmLogo(dark ? "#c3ccd2" : "#4a5c66"), [dark]);
   const confetti = useRef<InstancedMesh>(null);
   const swing = useRef<Group>(null);
   const clapper = useRef<Group>(null);
@@ -246,6 +243,7 @@ export function Graduation() {
       ),
       floor: edgeFade({ left: 0.25, right: 0.25, top: 0, bottom: 0.45 }),
       niche: nicheShade(),
+      logo: thmLogo(),
       bronze: bronze(),
       plaques: PLAQUES.map((p) => {
         const [title, ...field] = p.degree.split(" ");
@@ -296,22 +294,21 @@ export function Graduation() {
     <group ref={root}>
       <mesh position={[WALL.x, WALL.height / 2, WALL.z]} receiveShadow>
         <planeGeometry args={[WALL.width, WALL.height]} />
-        <meshStandardMaterial color={dark ? DARK.wall : "#f2f2ef"} roughness={0.95} alphaMap={maps.wall} transparent depthWrite={false} />
+        <meshStandardMaterial color="#f2f2ef" roughness={0.95} alphaMap={maps.wall} transparent depthWrite={false} />
       </mesh>
       {/* Niche: a round recess cut into the wall (the wall's alpha map has the hole), its back shaded darker under the lip. */}
       <group position={[NICHE.center[0], NICHE.center[1], WALL.z]}>
         <mesh position-z={-NICHE.depth / 2} rotation-x={Math.PI / 2} receiveShadow>
           <cylinderGeometry args={[NICHE.radius, NICHE.radius, NICHE.depth, 64, 1, true]} />
-          <meshStandardMaterial color={dark ? DARK.floor : "#a4a5a8"} roughness={0.95} side={BackSide} />
+          <meshStandardMaterial color="#a4a5a8" roughness={0.95} side={BackSide} />
         </mesh>
         <mesh position-z={-NICHE.depth} receiveShadow>
           <circleGeometry args={[NICHE.radius, 64]} />
-          {/* The colour tints the light shaded map down in dark mode. */}
-          <meshStandardMaterial map={maps.niche} color={dark ? DARK.tint : "#ffffff"} roughness={0.9} />
+          <meshStandardMaterial map={maps.niche} roughness={0.9} />
         </mesh>
         <mesh>
           <torusGeometry args={[NICHE.radius, 0.012, 8, 96]} />
-          <meshStandardMaterial color={dark ? DARK.trim : "#e4e4e1"} roughness={0.9} />
+          <meshStandardMaterial color="#e4e4e1" roughness={0.9} />
         </mesh>
       </group>
       {/* Bracket from the niche's back wall to the bell's crown. */}
@@ -361,7 +358,7 @@ export function Graduation() {
       </points>
       <mesh position={LOGO.position}>
         <planeGeometry args={[LOGO.width, LOGO.height]} />
-        <meshStandardMaterial map={logo} transparent roughness={0.9} depthWrite={false} />
+        <meshStandardMaterial map={maps.logo} transparent roughness={0.9} depthWrite={false} />
       </mesh>
       {PLAQUES.map((p, i) => (
         <group key={p.degree} position={p.position}>

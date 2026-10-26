@@ -7,7 +7,6 @@ import { STATIONS, stationWeight } from "@/lib/scroll-map";
 import { fade } from "../fade";
 import { sitePalette } from "./SkillCloud";
 import { useStationOffset } from "../station-offset";
-import { useDark } from "../use-dark";
 
 /** Vertical field of view of the scene camera (Experience3D). */
 export const FOV_DEG = 35;
@@ -46,7 +45,6 @@ const REST = 0.75;
 /** Wire opacity at rest and while carrying a spike. */
 const WIRE_REST = 0.15;
 const WIRE_LIT = 1;
-/** The page background resting neurons and wires sink toward; follows the theme (set in AgentNetwork). */
 const BG = new Color("#f5f5f7");
 /**
  * Render layer of the sheet. ContactShadows draws everything its camera sees on layer 0 (castShadow is ignored), so
@@ -155,8 +153,6 @@ function embedding(width: number, height: number) {
 /** Agentic page: an embedding space behind the figure whose points fire like neurons, thoughts spreading along the wiring. */
 export function AgentNetwork() {
   const root = useRef<Group>(null);
-  const dark = useDark();
-  useEffect(() => void BG.set(dark ? "#0b0c10" : "#f5f5f7"), [dark]); // --bg in globals.css
   const sway = useRef<Group>(null);
   const nodes = useRef<InstancedMesh>(null);
   const edges = useRef<LineSegments>(null);

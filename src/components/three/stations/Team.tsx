@@ -8,7 +8,6 @@ import { stationWeight } from "@/lib/scroll-map";
 import { Colleague, type ColleaguePose } from "../Colleague";
 import { fade } from "../fade";
 import { useStationOffset } from "../station-offset";
-import { DARK, useDark } from "../use-dark";
 import { FusionHologram } from "./FusionHologram";
 import { edgeFade } from "./Graduation";
 
@@ -25,7 +24,6 @@ export const GLAZING = { panes: 4, pane: 0.5, height: 2.6, frame: 0.028 };
 /** The angled back wall with its windows. */
 function RoomWall() {
   const wallFade = useMemo(() => edgeFade({ left: 0.22, right: 0.22, top: 0.3, bottom: 0 }), []);
-  const dark = useDark();
   const { panes, pane, height, frame } = GLAZING;
   const span = panes * pane;
   const frameMat = <meshStandardMaterial color="#b4b8be" roughness={0.6} />;
@@ -33,7 +31,7 @@ function RoomWall() {
     <group position={[ROOM_WALL.x, 0, ROOM_WALL.z]} rotation-y={ROOM_WALL.yaw}>
       <mesh position-y={ROOM_WALL.height / 2} receiveShadow>
         <planeGeometry args={[ROOM_WALL.width, ROOM_WALL.height]} />
-        <meshStandardMaterial color={dark ? DARK.wall : "#f2f2ef"} roughness={0.95} alphaMap={wallFade} transparent depthWrite={false} />
+        <meshStandardMaterial color="#f2f2ef" roughness={0.95} alphaMap={wallFade} transparent depthWrite={false} />
       </mesh>
       {Array.from({ length: panes }, (_, i) => (
         <mesh key={i} position={[-span / 2 + pane * (i + 0.5), height / 2, 0.005]}>
