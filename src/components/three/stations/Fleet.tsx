@@ -1,12 +1,13 @@
 "use client";
 
 import { useFrame } from "@react-three/fiber";
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { BoxGeometry, CanvasTexture, CircleGeometry, CylinderGeometry, type Group, MeshStandardMaterial, RepeatWrapping } from "three";
 import { stationWeight } from "@/lib/scroll-map";
 import { Colleague, type ColleaguePose } from "../Colleague";
 import { fade } from "../fade";
 import { useStationOffset } from "../station-offset";
+import { DARK, useDark } from "../use-dark";
 import { sedanGeometry } from "./FusionHologram";
 import { edgeFade } from "./Graduation";
 import { nodAt } from "./Team";
@@ -136,14 +137,15 @@ function rimFace() {
 }
 
 /** A roller door in its frame: slats, a row of small windows, a rubber seal along the floor and a handle. */
-function RollerDoor({ x, slatMap, m }: { x: number; slatMap: CanvasTexture; m: ReturnType<typeof useDoorMaterials> }) {
+function RollerDoor({ x, slatMap, m, dark }: { x: number; slatMap: CanvasTexture; m: ReturnType<typeof useDoorMaterials>; dark: boolean }) {
   const { width: w, height: h } = GARAGE.door;
   const frame = 0.09;
   return (
     <group position-x={x}>
       <mesh position={[0, h / 2, 0.01]}>
         <planeGeometry args={[w, h]} />
-        <meshStandardMaterial map={slatMap} roughness={0.55} metalness={0.15} transparent />
+        {/* The colour tints the light slat map down in dark mode. */}
+        <meshStandardMaterial map={slatMap} color={dark ? DARK.tint : "#ffffff"} roughness={0.55} metalness={0.15} transparent />
       </mesh>
       {[-1, 1].map((s) => (
         <mesh key={s} material={m.frame} position={[s * (w / 2 + frame / 2), (h + frame) / 2, 0.04]}>
@@ -191,6 +193,8 @@ function Garage() {
     [],
   );
   const doorMats = useDoorMaterials();
+  const dark = useDark();
+  useEffect(() => void doorMats.frame.color.set(dark ? DARK.trim : "#d5d8de"), [dark, doorMats]);
   const { z, x, width, height } = GARAGE;
   // Bay lines halfway between neighbouring cars and past the outer two, along the cars' heading.
   const step = FLEET[1].position.map((v, i) => v - FLEET[0].position[i]);
@@ -206,15 +210,15 @@ function Garage() {
       <group position={[x, 0, z]}>
         <mesh position-y={height / 2} receiveShadow>
           <planeGeometry args={[width, height]} />
-          <meshStandardMaterial color="#f1f2f4" roughness={0.95} alphaMap={maps.wall} transparent depthWrite={false} />
+          <meshStandardMaterial color={dark ? DARK.wall : "#f1f2f4"} roughness={0.95} alphaMap={maps.wall} transparent depthWrite={false} />
         </mesh>
         {DOORS.map((d) => (
-          <RollerDoor key={d} x={d - x} slatMap={maps.slats} m={doorMats} />
+          <RollerDoor key={d} x={d - x} slatMap={maps.slats} m={doorMats} dark={dark} />
         ))}
       </group>
       <mesh rotation-x={-Math.PI / 2} position={[x, -0.002, -3.4]} receiveShadow>
         <planeGeometry args={[width, 12]} />
-        <meshStandardMaterial color="#e6e8ec" roughness={0.9} alphaMap={maps.floor} transparent depthWrite={false} />
+        <meshStandardMaterial color={dark ? DARK.floor : "#e6e8ec"} roughness={0.9} alphaMap={maps.floor} transparent depthWrite={false} />
       </mesh>
       {lines.map((p, i) => (
         // Pulled back a little so each bay's front stays open toward the conversation.
