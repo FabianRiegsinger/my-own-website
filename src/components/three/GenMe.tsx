@@ -61,6 +61,7 @@ const JUMP = 0.22; // world units
 /** Waving hand: palm turned to the viewer (supination, shared with the forearm twist bones), tilted a little inward. */
 const PALM_TURN = Math.PI / 2;
 const HAND_TILT = 0.2;
+const PRESENT_RATE = 3.125; // about-page gesture easing (1/s): about 0.8 s to raise the arm
 /** Tablet hand (Mobileye): palm turned up to carry the tablet flat on it (a little past a quarter turn: level, not tipped sideways). */
 const PALM_UP = Math.PI / 2 + 0.2;
 const DEG = Math.PI / 180;
@@ -208,6 +209,7 @@ export function GenMe({ shadows, calm = false }: { shadows: boolean; calm?: bool
   const walk = useRef(0); // walk-cycle weight, eased so the stop is not a snap
   const walkT = useRef(0); // time into the walk: every walk starts on a heel strike
   const wave = useRef(0);
+  const present = useRef(0); // about-page presenting gesture, eased in and out
   const model = useRef<Object3D>(null);
   const spinner = useRef<Group>(null);
   const spin = useRef({ angle: 0, dragging: false, x: 0, x0: 0, t0: 0 });
@@ -582,6 +584,21 @@ export function GenMe({ shadows, calm = false }: { shadows: boolean; calm?: bool
       turn(joints.R_ForearmTwist01, Z, (tab * PALM_UP) / 3);
       turn(joints.R_ForearmTwist02, Z, (tab * PALM_UP) / 3);
       turn(joints.R_Hand, Z, tab * PALM_UP);
+    }
+    // About page: presents the text panel on his right, open palm up toward it, head turned to it. Eased in time, not
+    // by scroll, so the arm rises at its own pace however fast the page is scrolled in from the landing page.
+    present.current = MathUtils.damp(present.current, stationWeight(offset.current, "about", 0.04), PRESENT_RATE, dt);
+    const ab = present.current * (1 - w) * (1 - wave.current);
+    if (ab > 0.001) {
+      turn(joints.R_Upperarm, X, -ab * 0.5);
+      turn(joints.R_Upperarm, Z, ab * (0.75 + 0.05 * Math.sin(t * 1.2)));
+      turn(joints.R_Forearm, Y, ab * 0.25);
+      turn(joints.R_Hand, X, -(HAND_IN + 0.1) * ab);
+      turn(joints.R_ForearmTwist01, Z, (ab * PALM_UP) / 3);
+      turn(joints.R_ForearmTwist02, Z, (ab * PALM_UP) / 3);
+      turn(joints.R_Hand, Z, ab * PALM_UP);
+      turn(joints.Head, Y, -ab * 0.45);
+      turn(joints.Spine02, Y, -ab * 0.1);
     }
     // Feet on the floor: the body drops as the legs spread (the natural gait bob) instead of the feet lifting off.
     if (m) m.position.y = centre[1] + (ground - lowest(m, feet)) * scale + hop;
