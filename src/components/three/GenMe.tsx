@@ -210,6 +210,7 @@ export function GenMe({ shadows, calm = false }: { shadows: boolean; calm?: bool
   const walkT = useRef(0); // time into the walk: every walk starts on a heel strike
   const wave = useRef(0);
   const present = useRef(0); // about-page presenting gesture, eased in and out
+  const agent = useRef(0); // agentic-page pose, eased in and out
   const model = useRef<Object3D>(null);
   const spinner = useRef<Group>(null);
   const spin = useRef({ angle: 0, dragging: false, x: 0, x0: 0, t0: 0 });
@@ -599,6 +600,26 @@ export function GenMe({ shadows, calm = false }: { shadows: boolean; calm?: bool
       turn(joints.R_Hand, Z, ab * PALM_UP);
       turn(joints.Head, Y, -ab * 0.45);
       turn(joints.Spine02, Y, -ab * 0.1);
+    }
+    // Agentic page: lifts the neuron network (stations/AgentNetwork): both palms up in front of him, rising and sinking
+    // slowly as if raising it; head tipped up. Eased in time like the about page's gesture. Axes as above.
+    agent.current = MathUtils.damp(agent.current, stationWeight(offset.current, "agentic", 0.04), PRESENT_RATE, dt);
+    const ag = agent.current * (1 - w) * (1 - wave.current);
+    if (ag > 0.001) {
+      const rise = 0.5 + 0.5 * Math.sin(t * 0.9);
+      // Upper arms stay low (raised further, they pull out from under the sleeves): the lift is in the elbows.
+      turn(joints.R_Upperarm, X, -ag * 0.12);
+      turn(joints.L_Upperarm, X, ag * 0.12);
+      turn(joints.R_Upperarm, Z, ag * (0.35 + 0.15 * rise));
+      turn(joints.L_Upperarm, Z, ag * (0.35 + 0.15 * rise));
+      turn(joints.R_Forearm, Y, ag * (0.95 + 0.25 * rise));
+      turn(joints.L_Forearm, Y, -ag * (0.95 + 0.25 * rise));
+      turn(joints.R_ForearmTwist01, Z, (ag * PALM_UP) / 3);
+      turn(joints.R_ForearmTwist02, Z, (ag * PALM_UP) / 3);
+      turn(joints.R_Hand, Z, ag * PALM_UP);
+      // The left hand has no twist bones: a half turn past the right's mirror shows its palm too.
+      turn(joints.L_Hand, Z, ag * (Math.PI - PALM_UP));
+      turn(joints.Head, Z, ag * (0.1 + 0.08 * rise));
     }
     // Feet on the floor: the body drops as the legs spread (the natural gait bob) instead of the feet lifting off.
     if (m) m.position.y = centre[1] + (ground - lowest(m, feet)) * scale + hop;
