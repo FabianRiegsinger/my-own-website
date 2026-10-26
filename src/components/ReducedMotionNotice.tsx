@@ -24,7 +24,7 @@ export function ReducedMotionNotice() {
   return (
     <aside
       role="status"
-      className="fixed right-4 bottom-4 z-50 w-72 max-w-[calc(100vw-2rem)] rounded-2xl bg-white/90 p-4 pr-11 text-xs text-ink shadow-lg ring-1 ring-black/10 backdrop-blur"
+      className="fixed right-4 bottom-4 z-50 w-72 max-w-[calc(100vw-2rem)] rounded-2xl bg-surface/90 p-4 pr-11 text-xs text-ink shadow-lg ring-1 ring-ink/10 backdrop-blur"
     >
       <button
         type="button"
@@ -39,7 +39,7 @@ export function ReducedMotionNotice() {
       <p className="font-semibold">Reduced motion is on</p>
       <p className="mt-1 text-muted">Your browser asks for less animation, so this page keeps its movement to a minimum.</p>
       {open && (
-        <div id={infoId} className="mt-3 border-t border-black/10 pt-3 text-muted">
+        <div id={infoId} className="mt-3 border-t border-ink/10 pt-3 text-muted">
           <p className="mb-1.5 text-ink">For the full animations, turn off reduced motion in your system settings:</p>
           <ul className="space-y-1">
             <li><b className="text-ink">macOS:</b> System Settings → Accessibility → Display → Reduce motion</li>
