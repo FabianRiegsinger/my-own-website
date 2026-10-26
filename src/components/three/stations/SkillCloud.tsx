@@ -21,7 +21,8 @@ const FONT = "/fonts/inter-700.typeface.json";
  */
 const CLOUD_SCALE = 0.86;
 const CLOUD_X = -0.15 * CLOUD_SCALE;
-const CLOUD_Y = 1.5 - 0.2 * CLOUD_SCALE;
+// Raised 0.35 above that: his open "ta-da" arms (GenMe) stay below the words.
+const CLOUD_Y = 1.85 - 0.2 * CLOUD_SCALE;
 const CLOUD_Z = -1.6;
 /**
  * Him as the camera sees him on the cloud plane, kept free so no word runs behind him. The plane is 1.25x farther

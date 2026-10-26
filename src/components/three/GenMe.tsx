@@ -211,6 +211,8 @@ export function GenMe({ shadows, calm = false }: { shadows: boolean; calm?: bool
   const wave = useRef(0);
   const present = useRef(0); // about-page presenting gesture, eased in and out
   const agent = useRef(0); // agentic-page pose, eased in and out
+  const tada = useRef(0); // skills-page pose, eased in and out
+  const shade = useRef(0); // launch-page pose, eased in and out
   const model = useRef<Object3D>(null);
   const spinner = useRef<Group>(null);
   const spin = useRef({ angle: 0, dragging: false, x: 0, x0: 0, t0: 0 });
@@ -620,6 +622,34 @@ export function GenMe({ shadows, calm = false }: { shadows: boolean; calm?: bool
       // The left hand has no twist bones: a half turn past the right's mirror shows its palm too.
       turn(joints.L_Hand, Z, ag * (Math.PI - PALM_UP));
       turn(joints.Head, Z, ag * (0.1 + 0.08 * rise));
+    }
+    // Skills page: "ta-da", showing off the word cloud (stations/SkillCloud) with arms open wide and low, palms up, head
+    // tilting. Eased in time like the other page gestures. Axes as above.
+    tada.current = MathUtils.damp(tada.current, stationWeight(offset.current, "skills", 0.04), PRESENT_RATE, dt);
+    const td = tada.current * (1 - w) * (1 - wave.current);
+    if (td > 0.001) {
+      turn(joints.R_Upperarm, X, -td * 0.75);
+      turn(joints.L_Upperarm, X, td * 0.75);
+      turn(joints.R_Upperarm, Z, td * 0.25);
+      turn(joints.L_Upperarm, Z, td * 0.25);
+      turn(joints.R_Forearm, Y, td * 0.25);
+      turn(joints.L_Forearm, Y, -td * 0.25);
+      turn(joints.R_ForearmTwist01, Z, (td * PALM_UP) / 3);
+      turn(joints.R_ForearmTwist02, Z, (td * PALM_UP) / 3);
+      turn(joints.R_Hand, Z, td * PALM_UP);
+      turn(joints.L_Hand, Z, td * (Math.PI - PALM_UP)); // no twist bones: as on the agentic page
+      turn(joints.Head, X, td * 0.1 * Math.sin(t * 0.8));
+    }
+    // Launch page: shades his eyes with his right hand, looking up at the rocket (stations/Launch) he is turned toward.
+    shade.current = MathUtils.damp(shade.current, stationWeight(offset.current, "launch", 0.04), PRESENT_RATE, dt);
+    const sh = shade.current * (1 - w) * (1 - wave.current);
+    if (sh > 0.001 && frame) {
+      turn(joints.Head, Z, sh * 0.3);
+      g.updateMatrixWorld(true);
+      // A point above and in front of his brow (bind pose, metres), following the head as it tips up.
+      mouth.set(0.34, 1.68, 0.08).applyMatrix4(mouthMat.copy(joints.Head.bone.matrixWorld).multiply(unbind.Head));
+      pole.set(0.4, -0.2, 1).applyQuaternion(frame.getWorldQuaternion(poleQ));
+      reach(joints.R_Upperarm.bone, joints.R_Forearm.bone, joints.R_Hand.bone, mouth, pole, sh);
     }
     // Feet on the floor: the body drops as the legs spread (the natural gait bob) instead of the feet lifting off.
     if (m) m.position.y = centre[1] + (ground - lowest(m, feet)) * scale + hop;
