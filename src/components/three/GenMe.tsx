@@ -1,8 +1,8 @@
 "use client";
 
-import { useGLTF } from "@react-three/drei";
+import { Html, useGLTF } from "@react-three/drei";
 import { useFrame, useThree } from "@react-three/fiber";
-import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Box3, Euler, BufferAttribute, CanvasTexture, CapsuleGeometry, Color, MathUtils, Matrix4, Raycaster, Vector2, MeshStandardMaterial, Quaternion, SkinnedMesh, type Sprite, Vector3, type Group, type Material, type Mesh, type Object3D } from "three";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import { JUMP_PERIOD, jumpBeats } from "@/lib/cheer";
@@ -224,6 +224,7 @@ export function GenMe({ shadows, calm = false }: { shadows: boolean; calm?: bool
   }, []);
   const tabletRef = useRef<Group>(null);
   const greet = useRef(-1); // seconds into a click greeting, -1 when none
+  const [hello, setHello] = useState(false); // speech bubble, shown for the click greeting
   const headYaw = useRef(0);
   const gown = useRef<Group>(null);
   const badges = useRef<(Group | null)[]>([]);
@@ -386,7 +387,10 @@ export function GenMe({ shadows, calm = false }: { shadows: boolean; calm?: bool
       const sp = spin.current;
       if (!sp.dragging) return;
       sp.dragging = false;
-      if (e?.type === "pointerup" && Math.abs(e.clientX - sp.x0) < CLICK_PX && e.timeStamp - sp.t0 < CLICK_MS) greet.current = 0;
+      if (e?.type === "pointerup" && Math.abs(e.clientX - sp.x0) < CLICK_PX && e.timeStamp - sp.t0 < CLICK_MS) {
+        greet.current = 0;
+        setHello(true);
+      }
       root.style.cursor = "";
       root.style.userSelect = "";
     };
@@ -432,6 +436,7 @@ export function GenMe({ shadows, calm = false }: { shadows: boolean; calm?: bool
     if (spinner.current) spinner.current.rotation.y = sp.angle;
     walk.current = MathUtils.damp(walk.current, walking, 8, dt);
     if (greet.current >= 0) greet.current = greet.current + dt > GREET ? -1 : greet.current + dt;
+    if (greet.current < 0 && hello) setHello(false);
     const gt = greet.current;
     const greeting = gt < 0 ? 0 : Math.min(MathUtils.smoothstep(gt, 0, 0.3), MathUtils.smoothstep(GREET - gt, 0, 0.5));
     wave.current = MathUtils.damp(wave.current, Math.max(waving, greeting), 6, dt);
@@ -772,6 +777,14 @@ export function GenMe({ shadows, calm = false }: { shadows: boolean; calm?: bool
           ))}
         </group>
       </group>
+      {hello && (
+        <Html position={[0, HEIGHT + 0.2, 0]} center pointerEvents="none">
+          <div className="relative whitespace-nowrap rounded-2xl bg-surface px-4 py-2 text-sm font-medium text-ink shadow-lg">
+            Hello there
+            <span className="absolute left-1/2 top-full -translate-x-1/2 border-8 border-transparent border-t-surface" />
+          </div>
+        </Html>
+      )}
     </group>
   );
 }
