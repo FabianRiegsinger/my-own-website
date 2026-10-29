@@ -779,9 +779,13 @@ export function GenMe({ shadows, calm = false }: { shadows: boolean; calm?: bool
       </group>
       {hello && (
         <Html position={[0, HEIGHT + 0.2, 0]} center pointerEvents="none">
-          <div className="relative whitespace-nowrap rounded-2xl bg-surface px-4 py-2 text-sm font-medium text-ink shadow-lg">
+          {/* Classic comic bubble: black-outlined white oval, curved tail down to his head; same in both themes. */}
+          <div className="relative whitespace-nowrap rounded-[50%] border-2 border-black bg-white px-7 py-4 text-base font-bold text-black">
             Hello there
-            <span className="absolute left-1/2 top-full -translate-x-1/2 border-8 border-transparent border-t-surface" />
+            <svg className="absolute left-[42%] top-full -mt-[3px]" width="26" height="28" viewBox="0 0 26 28" aria-hidden="true">
+              {/* Open path: the fill covers the bubble's outline where the tail joins, the stroke draws only its two sides. */}
+              <path d="M2 1 Q8 16 1 27 Q16 18 22 1" fill="white" stroke="black" strokeWidth="2" strokeLinejoin="round" />
+            </svg>
           </div>
         </Html>
       )}
