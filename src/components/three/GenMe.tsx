@@ -56,6 +56,13 @@ const CLICK_PX = 5;
 const CLICK_MS = 400;
 const GREET = 2.6; // s
 const GREET_TILT = 0.12; // head tilt (rad) while greeting
+/** "Hello there" bubble shown while greeting: tune its look here. */
+const BUBBLE = {
+  fontSize: "20px",
+  fontFamily: "var(--font-inter)", // any CSS font-family, e.g. "Georgia, serif"
+  padding: "12px 24px", // vertical horizontal
+  tail: 10, // px
+};
 const CHEER_V = 2.6; // rad up from arms-down: a V above the shoulders
 const JUMP = 0.22; // world units
 /** Waving hand: palm turned to the viewer (supination, shared with the forearm twist bones), tilted a little inward. */
@@ -779,13 +786,12 @@ export function GenMe({ shadows, calm = false }: { shadows: boolean; calm?: bool
       </group>
       {hello && (
         <Html position={[0, HEIGHT + 0.2, 0]} center pointerEvents="none">
-          {/* Classic comic bubble: black-outlined white oval, curved tail down to his head; same in both themes. */}
-          <div className="relative whitespace-nowrap rounded-[50%] border-2 border-black bg-white px-7 py-4 text-base font-bold text-black">
+          <div
+            className="relative whitespace-nowrap rounded-2xl bg-surface font-medium text-ink shadow-lg"
+            style={{ fontSize: BUBBLE.fontSize, fontFamily: BUBBLE.fontFamily, padding: BUBBLE.padding }}
+          >
             Hello there
-            <svg className="absolute left-[42%] top-full -mt-[3px]" width="26" height="28" viewBox="0 0 26 28" aria-hidden="true">
-              {/* Open path: the fill covers the bubble's outline where the tail joins, the stroke draws only its two sides. */}
-              <path d="M2 1 Q8 16 1 27 Q16 18 22 1" fill="white" stroke="black" strokeWidth="2" strokeLinejoin="round" />
-            </svg>
+            <span className="absolute left-1/2 top-full -translate-x-1/2 border-transparent border-t-surface" style={{ borderWidth: BUBBLE.tail }} />
           </div>
         </Html>
       )}
