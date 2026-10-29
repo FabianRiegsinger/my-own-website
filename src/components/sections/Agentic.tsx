@@ -26,7 +26,7 @@ export function Agentic({ cv, projects }: { cv: CV; projects: Project[] }) {
           <li key={p.name}>
             <a
               href={p.homepage ?? p.url}
-              className="block h-full cursor-pointer rounded-2xl bg-white/45 p-5 ring-1 ring-white/70 transition-colors duration-200 hover:bg-white/80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              className="block h-full cursor-pointer rounded-2xl bg-surface/45 p-5 ring-1 ring-surface/70 transition-colors duration-200 hover:bg-surface/80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             >
               <p className="text-lg font-semibold">{p.name}</p>
               <p className="mt-2 leading-relaxed text-muted">{p.tagline ?? p.description}</p>

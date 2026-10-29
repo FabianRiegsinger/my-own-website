@@ -4,7 +4,7 @@ import { ICONS, Icon } from "./icons";
 import { Eyebrow, Section } from "./Section";
 
 const linkClass =
-  "inline-flex min-h-11 min-w-11 cursor-pointer items-center gap-3 rounded-full bg-white/55 px-5 py-3 font-medium ring-1 ring-white/80 transition-colors duration-200 hover:bg-white/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
+  "inline-flex min-h-11 min-w-11 cursor-pointer items-center gap-3 rounded-full bg-surface/55 px-5 py-3 font-medium ring-1 ring-surface/80 transition-colors duration-200 hover:bg-surface/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
 
 export function Contact({ cv }: { cv: CV }) {
   const { links } = cv.profile;

@@ -168,6 +168,21 @@ describe("skill word cloud", () => {
     });
   });
 
+  it("compacting pulls the words closer together without overlaps or leaving the outline", () => {
+    const inside = cloudShape(1.6);
+    const small = boxes.map((b) => ({ w: b.w * 0.6, h: b.h * 0.6 }));
+    const loose = packCloud(small, { inside, reserved: [figure] });
+    const tight = packCloud(small, { inside, reserved: [figure], compact: true });
+    const spread = (at: { x: number; y: number }[]) => at.reduce((a, p) => a + Math.hypot(p.x, p.y), 0);
+    expect(spread(tight)).toBeLessThan(spread(loose));
+    const rects = tight.map((p, i) => ({ ...p, ...small[i] }));
+    rects.forEach((a, i) => {
+      expect(apart(a, figure)).toBe(true);
+      rects.slice(i + 1).forEach((b) => expect(apart(a, b)).toBe(true));
+      for (const [dx, dy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) expect(inside(a.x + (dx * a.w) / 2, a.y + (dy * a.h) / 2)).toBe(true);
+    });
+  });
+
   it("packs the biggest words nearest the middle", () => {
     const dist = (i: number) => Math.hypot(placed[i].x, placed[i].y);
     const order = boxes.map((b, i) => i).sort((a, b) => boxes[b].w * boxes[b].h - boxes[a].w * boxes[a].h);

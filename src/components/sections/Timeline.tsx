@@ -16,7 +16,7 @@ export function Timeline({ cv }: { cv: CV }) {
         <ol className="mt-10 space-y-10 border-l border-ink/15 pl-6">
           {[...cv.education].reverse().map((e) => (
             <li key={e.degree} className="relative">
-              <span className="absolute -left-[31px] top-1.5 h-3 w-3 rounded-full border-2 border-accent bg-white" aria-hidden="true" />
+              <span className="absolute -left-[31px] top-1.5 h-3 w-3 rounded-full border-2 border-accent bg-bg" aria-hidden="true" />
               <p className="text-sm font-medium text-accent">{formatMonth(e.end)}</p>
               <h3 className="mt-1 text-xl font-semibold">{e.degree}</h3>
               <p className="text-muted">{e.school}</p>
@@ -40,7 +40,7 @@ export function Timeline({ cv }: { cv: CV }) {
           </ul>
           <ul className="mt-6 flex flex-wrap gap-2" aria-label="Tags">
             {e.tags.map((t) => (
-              <li key={t} className="rounded-full bg-white/60 px-3 py-1 text-sm text-ink ring-1 ring-white/80">
+              <li key={t} className="rounded-full bg-surface/60 px-3 py-1 text-sm text-ink ring-1 ring-surface/80">
                 {t}
               </li>
             ))}

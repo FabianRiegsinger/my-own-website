@@ -61,6 +61,7 @@ const JUMP = 0.22; // world units
 /** Waving hand: palm turned to the viewer (supination, shared with the forearm twist bones), tilted a little inward. */
 const PALM_TURN = Math.PI / 2;
 const HAND_TILT = 0.2;
+const PRESENT_RATE = 3.125; // about-page gesture easing (1/s): about 0.8 s to raise the arm
 /** Tablet hand (Mobileye): palm turned up to carry the tablet flat on it (a little past a quarter turn: level, not tipped sideways). */
 const PALM_UP = Math.PI / 2 + 0.2;
 const DEG = Math.PI / 180;
@@ -208,6 +209,10 @@ export function GenMe({ shadows, calm = false }: { shadows: boolean; calm?: bool
   const walk = useRef(0); // walk-cycle weight, eased so the stop is not a snap
   const walkT = useRef(0); // time into the walk: every walk starts on a heel strike
   const wave = useRef(0);
+  const present = useRef(0); // about-page presenting gesture, eased in and out
+  const agent = useRef(0); // agentic-page pose, eased in and out
+  const tada = useRef(0); // skills-page pose, eased in and out
+  const shade = useRef(0); // launch-page pose, eased in and out
   const model = useRef<Object3D>(null);
   const spinner = useRef<Group>(null);
   const spin = useRef({ angle: 0, dragging: false, x: 0, x0: 0, t0: 0 });
@@ -335,19 +340,33 @@ export function GenMe({ shadows, calm = false }: { shadows: boolean; calm?: bool
   }, [calm]);
 
   // Click and hold on him, then drag sideways to spin him about his centre. The canvas sits behind the page and takes
-  // no pointer events, so this listens on the window and hit-tests his bounding box (cheap enough for every move).
+  // no pointer events, so this listens on the window and hit-tests his posed body itself (about 5k triangles: cheap
+  // enough for every move). Not his bounding box: three takes that from the bind pose, a T-pose as wide as his arms.
   useEffect(() => {
     const ray = new Raycaster();
     const ndc = new Vector2();
-    const box = new Box3();
     const root = document.documentElement;
+    let loosened = false;
     const over = (e: PointerEvent) => {
       const m = model.current;
       if (!m) return false;
+      // The skinned mesh's raycast pre-checks a sphere and box cached from whatever pose they were first computed in:
+      // widen both once, so a raised arm or a jump is never culled before the triangle test.
+      if (!loosened) {
+        m.traverse((o) => {
+          const s = o as SkinnedMesh;
+          if (!s.isSkinnedMesh) return;
+          s.computeBoundingSphere();
+          s.computeBoundingBox();
+          s.boundingBox!.expandByScalar(s.boundingSphere!.radius * 0.5);
+          s.boundingSphere!.radius *= 1.5;
+        });
+        loosened = true;
+      }
       const r = gl.domElement.getBoundingClientRect();
       ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
       ray.setFromCamera(ndc, camera);
-      return ray.ray.intersectsBox(box.setFromObject(m));
+      return ray.intersectObject(m, true).length > 0;
     };
     const down = (e: PointerEvent) => {
       if (e.button !== 0 || !over(e)) return;
@@ -582,6 +601,69 @@ export function GenMe({ shadows, calm = false }: { shadows: boolean; calm?: bool
       turn(joints.R_ForearmTwist01, Z, (tab * PALM_UP) / 3);
       turn(joints.R_ForearmTwist02, Z, (tab * PALM_UP) / 3);
       turn(joints.R_Hand, Z, tab * PALM_UP);
+    }
+    // About page: presents the text panel on his right, open palm up toward it, head turned to it. Eased in time, not
+    // by scroll, so the arm rises at its own pace however fast the page is scrolled in from the landing page.
+    present.current = MathUtils.damp(present.current, stationWeight(offset.current, "about", 0.04), PRESENT_RATE, dt);
+    const ab = present.current * (1 - w) * (1 - wave.current);
+    if (ab > 0.001) {
+      turn(joints.R_Upperarm, X, -ab * 0.5);
+      turn(joints.R_Upperarm, Z, ab * (0.75 + 0.05 * Math.sin(t * 1.2)));
+      turn(joints.R_Forearm, Y, ab * 0.25);
+      turn(joints.R_Hand, X, -(HAND_IN + 0.1) * ab);
+      turn(joints.R_ForearmTwist01, Z, (ab * PALM_UP) / 3);
+      turn(joints.R_ForearmTwist02, Z, (ab * PALM_UP) / 3);
+      turn(joints.R_Hand, Z, ab * PALM_UP);
+      turn(joints.Head, Y, -ab * 0.45);
+      turn(joints.Spine02, Y, -ab * 0.1);
+    }
+    // Agentic page: lifts the neuron network (stations/AgentNetwork): both palms up in front of him, rising and sinking
+    // slowly as if raising it; head tipped up. Eased in time like the about page's gesture. Axes as above.
+    agent.current = MathUtils.damp(agent.current, stationWeight(offset.current, "agentic", 0.04), PRESENT_RATE, dt);
+    const ag = agent.current * (1 - w) * (1 - wave.current);
+    if (ag > 0.001) {
+      const rise = 0.5 + 0.5 * Math.sin(t * 0.9);
+      // Upper arms stay low (raised further, they pull out from under the sleeves): the lift is in the elbows.
+      turn(joints.R_Upperarm, X, -ag * 0.12);
+      turn(joints.L_Upperarm, X, ag * 0.12);
+      turn(joints.R_Upperarm, Z, ag * (0.35 + 0.15 * rise));
+      turn(joints.L_Upperarm, Z, ag * (0.35 + 0.15 * rise));
+      turn(joints.R_Forearm, Y, ag * (0.95 + 0.25 * rise));
+      turn(joints.L_Forearm, Y, -ag * (0.95 + 0.25 * rise));
+      turn(joints.R_ForearmTwist01, Z, (ag * PALM_UP) / 3);
+      turn(joints.R_ForearmTwist02, Z, (ag * PALM_UP) / 3);
+      turn(joints.R_Hand, Z, ag * PALM_UP);
+      // The left hand has no twist bones: a half turn past the right's mirror shows its palm too.
+      turn(joints.L_Hand, Z, ag * (Math.PI - PALM_UP));
+      turn(joints.Head, Z, ag * (0.1 + 0.08 * rise));
+    }
+    // Skills page: "ta-da", showing off the word cloud (stations/SkillCloud) with arms open wide and low, palms up, head
+    // tilting. Eased in time like the other page gestures. Axes as above.
+    tada.current = MathUtils.damp(tada.current, stationWeight(offset.current, "skills", 0.04), PRESENT_RATE, dt);
+    const td = tada.current * (1 - w) * (1 - wave.current);
+    if (td > 0.001) {
+      turn(joints.R_Upperarm, X, -td * 0.75);
+      turn(joints.L_Upperarm, X, td * 0.75);
+      turn(joints.R_Upperarm, Z, td * 0.25);
+      turn(joints.L_Upperarm, Z, td * 0.25);
+      turn(joints.R_Forearm, Y, td * 0.25);
+      turn(joints.L_Forearm, Y, -td * 0.25);
+      turn(joints.R_ForearmTwist01, Z, (td * PALM_UP) / 3);
+      turn(joints.R_ForearmTwist02, Z, (td * PALM_UP) / 3);
+      turn(joints.R_Hand, Z, td * PALM_UP);
+      turn(joints.L_Hand, Z, td * (Math.PI - PALM_UP)); // no twist bones: as on the agentic page
+      turn(joints.Head, X, td * 0.1 * Math.sin(t * 0.8));
+    }
+    // Launch page: shades his eyes with his right hand, looking up at the rocket (stations/Launch) he is turned toward.
+    shade.current = MathUtils.damp(shade.current, stationWeight(offset.current, "launch", 0.04), PRESENT_RATE, dt);
+    const sh = shade.current * (1 - w) * (1 - wave.current);
+    if (sh > 0.001 && frame) {
+      turn(joints.Head, Z, sh * 0.3);
+      g.updateMatrixWorld(true);
+      // A point above and in front of his brow (bind pose, metres), following the head as it tips up.
+      mouth.set(0.34, 1.68, 0.08).applyMatrix4(mouthMat.copy(joints.Head.bone.matrixWorld).multiply(unbind.Head));
+      pole.set(0.4, -0.2, 1).applyQuaternion(frame.getWorldQuaternion(poleQ));
+      reach(joints.R_Upperarm.bone, joints.R_Forearm.bone, joints.R_Hand.bone, mouth, pole, sh);
     }
     // Feet on the floor: the body drops as the legs spread (the natural gait bob) instead of the feet lifting off.
     if (m) m.position.y = centre[1] + (ground - lowest(m, feet)) * scale + hop;

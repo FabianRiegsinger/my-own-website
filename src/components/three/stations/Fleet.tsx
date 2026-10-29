@@ -27,7 +27,11 @@ export const FLEET: Spot[] = [
 ];
 
 /** Back wall of the test garage, a roller door behind each bay; fades out at the sides and top like the ESAS wall. */
-export const GARAGE = { z: -9, x: -4.4, width: 16, height: 3.4, door: { width: 2, height: 2.3 } };
+export const GARAGE = { z: -9, x: -5.6, width: 18.4, height: 3.4, door: { width: 2, height: 2.3 } };
+/** Doors along the wall: one behind each car, and one more bay on the far left still waiting for its car. */
+const EMPTY_BAYS = 1;
+const BAY = FLEET[1].position[0] - FLEET[0].position[0];
+const DOORS = [...Array.from({ length: EMPTY_BAYS }, (_, i) => FLEET[0].position[0] - (EMPTY_BAYS - i) * BAY), ...FLEET.map((c) => c.position[0])];
 
 /** Hologram units (0.5 long) to a car a little under life size, as the rest of the Memoji-scale scene. */
 const CAR_SCALE = 5.8;
@@ -179,8 +183,9 @@ function useDoorMaterials() {
 function Garage() {
   const maps = useMemo(
     () => ({
-      wall: edgeFade({ left: 0.2, right: 0.2, top: 0.3, bottom: 0 }),
-      floor: edgeFade({ left: 0.25, right: 0.25, top: 0.3, bottom: 0.4 }),
+      // Fades in metres (3.2 m on the wall, 4 m on the floor), so the wall's widening for the extra door keeps them.
+      wall: edgeFade({ left: 3.2 / GARAGE.width, right: 3.2 / GARAGE.width, top: 0.3, bottom: 0 }),
+      floor: edgeFade({ left: 4 / GARAGE.width, right: 4 / GARAGE.width, top: 0.3, bottom: 0.4 }),
       slats: slats(),
     }),
     [],
@@ -189,7 +194,12 @@ function Garage() {
   const { z, x, width, height } = GARAGE;
   // Bay lines halfway between neighbouring cars and past the outer two, along the cars' heading.
   const step = FLEET[1].position.map((v, i) => v - FLEET[0].position[i]);
-  const lines = [...FLEET.map((c) => c.position.map((v, i) => v - step[i] / 2)), FLEET.at(-1)!.position.map((v, i) => v + step[i] / 2)];
+  const lines = [
+    // the empty bays' lines
+    ...Array.from({ length: EMPTY_BAYS }, (_, n) => FLEET[0].position.map((v, i) => v - (n + 1.5) * step[i])),
+    ...FLEET.map((c) => c.position.map((v, i) => v - step[i] / 2)),
+    FLEET.at(-1)!.position.map((v, i) => v + step[i] / 2),
+  ];
   const yaw = FLEET[0].yaw;
   return (
     <>
@@ -198,12 +208,12 @@ function Garage() {
           <planeGeometry args={[width, height]} />
           <meshStandardMaterial color="#f1f2f4" roughness={0.95} alphaMap={maps.wall} transparent depthWrite={false} />
         </mesh>
-        {FLEET.map((c) => (
-          <RollerDoor key={c.position[0]} x={c.position[0] - x} slatMap={maps.slats} m={doorMats} />
+        {DOORS.map((d) => (
+          <RollerDoor key={d} x={d - x} slatMap={maps.slats} m={doorMats} />
         ))}
       </group>
       <mesh rotation-x={-Math.PI / 2} position={[x, -0.002, -3.4]} receiveShadow>
-        <planeGeometry args={[16, 12]} />
+        <planeGeometry args={[width, 12]} />
         <meshStandardMaterial color="#e6e8ec" roughness={0.9} alphaMap={maps.floor} transparent depthWrite={false} />
       </mesh>
       {lines.map((p, i) => (

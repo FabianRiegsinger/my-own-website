@@ -3,8 +3,10 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { preload } from "react-dom";
 import { ReducedMotionNotice } from "@/components/ReducedMotionNotice";
+import { SiteControls } from "@/components/SiteControls";
 import { cv } from "@/content/cv";
 import { SITE_URL } from "@/lib/site";
+import { THEME_SCRIPT } from "@/lib/theme";
 import "./globals.css";
 
 const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
@@ -38,10 +40,14 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   preload("/draco/draco_wasm_wrapper.js", { as: "fetch", crossOrigin: "anonymous" });
   preload("/draco/draco_decoder.wasm", { as: "fetch", crossOrigin: "anonymous" });
   return (
-    <html lang="en" className={`${inter.variable} h-full antialiased`}>
+    <html lang="en" className={`${inter.variable} h-full antialiased`} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+      </head>
       <body className="min-h-full bg-bg text-ink font-sans">
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(personJsonLd) }} />
         {children}
+        <SiteControls />
         <ReducedMotionNotice />
         <Analytics />
       </body>

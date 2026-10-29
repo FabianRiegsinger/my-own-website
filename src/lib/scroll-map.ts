@@ -32,11 +32,13 @@ export const STATIONS: Station[] = [
   { id: "education", start: 0.24, end: 0.36, clip: "ring", camera: [0.4, 1.4, 5.4], target: [0, 1.5, 0], shift: BESIDE_PANEL, yaw: 0 },
   { id: "esas", start: 0.36, end: 0.48, clip: "laptop", camera: [0.3, 1.9, 5.8], target: [0.1, 1.1, 0], shift: BESIDE_PANEL - 0.055, yaw: 0.8 }, // the team stands on his right: shifted so the group, not he, is centred
   { id: "mobileye", start: 0.48, end: 0.6, clip: "tablet", camera: [1.6, 2.3, 6.2], target: [0, 1.3, -2], shift: BESIDE_PANEL + 0.11, yaw: -0.8 }, // the camera looks past him to the fleet: shifted so he and the customer, not he, are centred
-  { id: "agentic", start: 0.6, end: 0.74, clip: "typing", camera: [-3, 1.8, 4], target: [0, 1, 0], shift: 0.32, yaw: 0 },
+  // Lifting the neuron network, turned to face the camera (front-left, at atan2(-3, 4)).
+  { id: "agentic", start: 0.6, end: 0.74, clip: "typing", camera: [-3, 1.8, 4], target: [0, 1, 0], shift: 0.32, yaw: -0.64 },
   // A touch right of centre: the word cloud is wider than him and must clear the panel on the left and the screen edge.
   { id: "skills", start: 0.74, end: 0.84, clip: "idle", camera: [0, 2.2, 6.4], target: [0, 1.2, 0], shift: BESIDE_PANEL + 0.04, yaw: 0 },
   // What comes next: on the launch pad, looking up at the rocket (stations/Launch), which lifts off into contact.
-  { id: "launch", start: 0.84, end: 0.93, clip: "idle", camera: [0.8, 1.2, 7.4], target: [-0.6, 2, 0], shift: BESIDE_PANEL, yaw: -0.4 },
+  // Turned round to the rocket on his right (behind him, at atan2(-1.75, -1.9) = -2.4), shading his eyes, mostly back to the camera.
+  { id: "launch", start: 0.84, end: 0.93, clip: "idle", camera: [0.8, 1.2, 7.4], target: [-0.6, 2, 0], shift: BESIDE_PANEL, yaw: -2.7 },
   { id: "contact", start: 0.93, end: 1, clip: "wave", camera: [0, 1.3, 6], target: [0, 1, 0], shift: BESIDE_PANEL, yaw: 0 },
 ];
 

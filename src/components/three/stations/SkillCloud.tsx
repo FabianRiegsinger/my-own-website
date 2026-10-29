@@ -21,7 +21,8 @@ const FONT = "/fonts/inter-700.typeface.json";
  */
 const CLOUD_SCALE = 0.86;
 const CLOUD_X = -0.15 * CLOUD_SCALE;
-const CLOUD_Y = 1.5 - 0.2 * CLOUD_SCALE;
+// Raised 0.35 above that: his open "ta-da" arms (GenMe) stay below the words.
+const CLOUD_Y = 1.85 - 0.2 * CLOUD_SCALE;
 const CLOUD_Z = -1.6;
 /**
  * Him as the camera sees him on the cloud plane, kept free so no word runs behind him. The plane is 1.25x farther
@@ -45,49 +46,73 @@ function rand(seed: number) {
   return x - Math.floor(x);
 }
 
+/**
+ * Seed for the word order, sizes and runs: of the first 40 it packs the current skills densest.
+ * shortcut: picked for today's skill list; re-pick (try seeds, compare gaps) when skills change a lot.
+ */
+const SEED = 31;
+
 /** Skills in a shuffled order, each with its own font size (level plus a random factor) and a horizontal or vertical run. */
-export function cloudWords<T extends { name: string; level: Level }>(items: T[]): (T & { size: number; vertical: boolean })[] {
+export function cloudWords<T extends { name: string; level: Level }>(items: T[], seed = SEED): (T & { size: number; vertical: boolean })[] {
   const order = items.map((_, i) => i);
   for (let i = order.length - 1; i > 0; i--) {
-    const j = Math.floor(rand(i + 11) * (i + 1));
+    const j = Math.floor(rand(i + 11 + seed) * (i + 1));
     [order[i], order[j]] = [order[j], order[i]];
   }
   return order.map((k, i) => {
     const item = items[k];
-    const size = (0.09 + 0.036 * item.level) * (0.75 + rand(i + 31) * 0.6);
+    const size = (0.09 + 0.036 * item.level) * (0.75 + rand(i + 31 + seed) * 0.6);
     // Mostly horizontal: only short names may run vertically, and only some of them.
-    return { ...item, size: Math.min(size, MAX_LENGTH / (item.name.length * 0.6)), vertical: item.name.length < 10 && rand(i + 77) < 0.45 };
+    return { ...item, size: Math.min(size, MAX_LENGTH / (item.name.length * 0.6)), vertical: item.name.length < 10 && rand(i + 77 + seed) < 0.45 };
   });
 }
 
 /**
  * Word-cloud layout: biggest boxes first, each at the first free spot along an outward elliptical spiral, so nothing
- * overlaps another word or a `reserved` area and the heavy words gather in the middle. Centres in input order.
+ * overlaps another word or a `reserved` area and the heavy words gather in the middle. With `compact`, every word then
+ * slides toward the middle, across and up or down, until it touches a neighbour, closing the gaps the spiral leaves.
+ * Centres in input order.
  */
 export function packCloud(
   boxes: Box[],
-  { pad = 0.03, reserved = [] as Rect[], inside = undefined as ((x: number, y: number) => boolean) | undefined } = {},
+  {
+    pad = 0.03,
+    reserved = [] as Rect[],
+    inside = undefined as ((x: number, y: number) => boolean) | undefined,
+    compact = false,
+  } = {},
 ): { x: number; y: number }[] {
   const order = boxes.map((_, i) => i).sort((a, b) => boxes[b].w * boxes[b].h - boxes[a].w * boxes[a].h);
   const placed: Rect[] = [...reserved];
-  const out: { x: number; y: number }[] = new Array(boxes.length);
+  const out: Rect[] = new Array(boxes.length);
+  const fits = (r: Rect, others: Rect[]) =>
+    (!inside || [-1, 1].every((sx) => [-1, 1].every((sy) => inside(r.x + (sx * r.w) / 2, r.y + (sy * r.h) / 2)))) &&
+    others.every((p) => Math.abs(p.x - r.x) * 2 >= p.w + r.w + pad || Math.abs(p.y - r.y) * 2 >= p.h + r.h + pad);
   for (const i of order) {
     const { w, h } = boxes[i];
     let done = false;
     // Bounded search: a box that never fits throws instead of spinning forever.
     for (let t = 0; t < 600 && !done; t += 0.03) {
-      const x = 0.07 * t * Math.cos(t) * 2.4; // wide and low, like a cloud
-      const y = 0.07 * t * Math.sin(t);
-      const fits = !inside || [-1, 1].every((sx) => [-1, 1].every((sy) => inside(x + (sx * w) / 2, y + (sy * h) / 2)));
-      if (fits && placed.every((p) => Math.abs(p.x - x) * 2 >= p.w + w + pad || Math.abs(p.y - y) * 2 >= p.h + h + pad)) {
-        placed.push({ x, y, w, h });
-        out[i] = { x, y };
+      const r = { x: 0.07 * t * Math.cos(t) * 2.4, y: 0.07 * t * Math.sin(t), w, h }; // wide and low, like a cloud
+      if (fits(r, placed)) {
+        placed.push(r);
+        out[i] = r;
         done = true;
       }
     }
     if (!done) throw new Error(`packCloud: no room for box ${i}`);
   }
-  return out;
+  // A few passes, 1 cm steps: a word that moves can free room for one placed after it.
+  for (let pass = 0; compact && pass < 20; pass++) {
+    for (let i = 0; i < out.length; i++) {
+      const others = [...reserved, ...out.filter((_, j) => j !== i)];
+      for (const axis of ["x", "y"] as const) {
+        const step = -Math.sign(out[i][axis]) * 0.01;
+        while (step && Math.abs(out[i][axis]) > 0.01 && fits({ ...out[i], [axis]: out[i][axis] + step }, others)) out[i] = { ...out[i], [axis]: out[i][axis] + step };
+      }
+    }
+  }
+  return out.map(({ x, y }) => ({ x, y }));
 }
 
 /** Cartoon-cloud outline at `scale` (unit cloud ~5.8 wide, ~2.2 tall): a flat base under five rounded puffs. */
@@ -167,17 +192,17 @@ export function SkillCloud({ skills }: { skills: SkillGroup[] }) {
     let k = Math.sqrt((0.5 * free) / built.reduce((a, w) => a + w.box.w * w.box.h, 0));
     let at: { x: number; y: number }[] | null = null;
     const crown = built.findIndex((w) => w.name === CROWN);
-    for (let tries = 0; !at; tries++, k *= 0.92) {
+    for (let tries = 0; !at; tries++, k *= 0.97) {
       const boxes = built.map((w) => ({ w: w.box.w * k, h: w.box.h * k }));
       const reserved = [HEAD_SPOT, BODY_SPOT];
       const top = crown < 0 ? null : { x: HEAD_SPOT.x, y: HEAD_SPOT.y + (HEAD_SPOT.h + boxes[crown].h) / 2 + 0.03, ...boxes[crown] };
       if (top) reserved.push(top);
       try {
         // The others pack around the reserved crown spot; the crown word goes back in at its own index.
-        const packed = packCloud(boxes.filter((_, i) => i !== crown), { inside, reserved });
+        const packed = packCloud(boxes.filter((_, i) => i !== crown), { inside, reserved, compact: true });
         at = top ? [...packed.slice(0, crown), { x: top.x, y: top.y }, ...packed.slice(crown)] : packed;
       } catch (e) {
-        if (tries > 15) throw e;
+        if (tries > 40) throw e;
       }
     }
     const [left, right] = [Math.min(...at.map((p) => p.x)), Math.max(...at.map((p) => p.x))];
