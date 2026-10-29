@@ -32,7 +32,10 @@ export default function Privacy() {
         werden keine Cookies gesetzt; Besucher werden über einen täglich wechselnden Hash aus IP-Adresse und Anfrage
         unterschieden, der nach 24 Stunden verworfen wird, sodass keine seitenübergreifende Wiedererkennung möglich ist.
         Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an der Auswertung der Nutzung der
-        Website). [TO FILL: Angaben mit der aktuellen Vercel-Dokumentation zu Web Analytics abgleichen.]
+        Website). Zusätzlich misst Vercel Speed Insights die Ladegeschwindigkeit (Web Vitals) zusammen mit aufgerufener
+        Seite, Browser und Gerätetyp, ebenfalls ohne Cookies und ohne Wiedererkennung; Rechtsgrundlage ist Art. 6 Abs. 1
+        lit. f DSGVO (berechtigtes Interesse an einer schnellen Website). [TO FILL: Angaben mit der aktuellen
+        Vercel-Dokumentation zu Web Analytics und Speed Insights abgleichen.]
       </p>
       <h2>Externe Inhalte</h2>
       <p>
@@ -67,8 +70,11 @@ export default function Privacy() {
           visits. Analytics records the page visited, the referrer, country, browser, operating system and device type.
           No cookies are set; visitors are told apart by a hash of the IP address and the request that changes daily and
           is discarded after 24 hours, so visitors cannot be recognised across sites. The legal basis is Art. 6(1)(f)
-          GDPR (legitimate interest in understanding how the website is used). [TO FILL: check these details against
-          Vercel&apos;s current Web Analytics documentation.]
+          GDPR (legitimate interest in understanding how the website is used). Vercel Speed Insights also measures
+          loading performance (Web Vitals) together with the page visited, browser and device type, likewise without
+          cookies or recognising visitors; the legal basis is Art. 6(1)(f) GDPR (legitimate interest in a fast
+          website). [TO FILL: check these details against Vercel&apos;s current Web Analytics and Speed Insights
+          documentation.]
         </p>
         <h2>External content</h2>
         <p>
