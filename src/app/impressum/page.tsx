@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { LegalPage } from "@/components/LegalPage";
+import { cv } from "@/content/cv";
 
 export const metadata: Metadata = { title: "Impressum", robots: { index: false } };
 
@@ -18,7 +19,10 @@ export default function Impressum() {
         Deutschland
       </p>
       <h2>Kontakt</h2>
-      <p>E-Mail: [TO FILL: E-Mail-Adresse]</p>
+      {/* Shown as text on purpose: § 5 DDG requires the address to be readable, unlike the click-only EmailLink. */}
+      <p>
+        E-Mail: {cv.profile.links.email.user}@{cv.profile.links.email.domain}
+      </p>
       <h2>Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV</h2>
       <p>Fabian Riegsinger, Anschrift wie oben</p>
     </LegalPage>

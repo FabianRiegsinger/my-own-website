@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
 import { LegalPage } from "@/components/LegalPage";
+import { cv } from "@/content/cv";
+
+const email = `${cv.profile.links.email.user}@${cv.profile.links.email.domain}`;
 
 export const metadata: Metadata = { title: "Privacy", robots: { index: false } };
 
@@ -13,7 +16,7 @@ export default function Privacy() {
         </a>
       </p>
       <h2>Verantwortlicher</h2>
-      <p>Fabian Riegsinger, [TO FILL: Anschrift], [TO FILL: E-Mail-Adresse]</p>
+      <p>Fabian Riegsinger, [TO FILL: Anschrift], {email}</p>
       <h2>Hosting</h2>
       <p>
         Diese Website wird bei Vercel Inc., 440 N Barranca Ave #4133, Covina, CA 91723, USA gehostet. Beim Aufruf
@@ -49,7 +52,7 @@ export default function Privacy() {
         </h2>
         <p>This translation is provided for convenience. The German version above is the binding one.</p>
         <h2>Controller</h2>
-        <p>Fabian Riegsinger, [TO FILL: address], [TO FILL: email address]</p>
+        <p>Fabian Riegsinger, [TO FILL: address], {email}</p>
         <h2>Hosting</h2>
         <p>
           This website is hosted by Vercel Inc., 440 N Barranca Ave #4133, Covina, CA 91723, USA. When you visit it,
