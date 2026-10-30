@@ -1,5 +1,5 @@
 import { ImageResponse } from "next/og";
-import { cv } from "@/content/cv";
+import { cvEn as cv } from "@/content/cv.en";
 
 export const alt = "Fabian Riegsinger — Agentic Automotive Engineer";
 export const size = { width: 1200, height: 630 };

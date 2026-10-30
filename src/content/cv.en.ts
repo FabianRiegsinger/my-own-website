@@ -1,6 +1,6 @@
 import type { CV } from "./types";
 
-export const cv: CV = {
+export const cvEn: CV = {
   profile: {
     name: "Fabian Riegsinger",
     headline: "System Integration & Software Engineer",

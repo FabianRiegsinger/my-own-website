@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { LegalPage } from "@/components/LegalPage";
-import { cv } from "@/content/cv";
+import { cvEn as cv } from "@/content/cv.en";
 
 export const metadata: Metadata = { title: "Impressum", robots: { index: false } };
 

@@ -3,7 +3,7 @@
 import { useFrame } from "@react-three/fiber";
 import { useLayoutEffect, useMemo, useRef } from "react";
 import { BackSide, MathUtils, BufferGeometry, CanvasTexture, Color, DoubleSide, Float32BufferAttribute, type Group, type InstancedMesh, LatheGeometry, Object3D, Vector2 } from "three";
-import { cv } from "@/content/cv";
+import { cvEn as cv } from "@/content/cv.en";
 import { pendulum } from "@/lib/pendulum";
 import { stationWeight } from "@/lib/scroll-map";
 import { fade } from "../fade";

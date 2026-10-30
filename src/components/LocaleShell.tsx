@@ -3,7 +3,7 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Inter } from "next/font/google";
 import { preload } from "react-dom";
 import type { ReactNode } from "react";
-import { cv } from "@/content/cv";
+import { cvEn as cv } from "@/content/cv.en";
 import type { Locale } from "@/lib/locale";
 import { SITE_URL } from "@/lib/site";
 import { THEME_SCRIPT } from "@/lib/theme";

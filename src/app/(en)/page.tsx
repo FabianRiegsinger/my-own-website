@@ -1,6 +1,6 @@
 import { ExperienceGate } from "@/components/ExperienceGate";
 import { StaticPage } from "@/components/StaticPage";
-import { cv } from "@/content/cv";
+import { cvEn as cv } from "@/content/cv.en";
 import { loadProjects } from "@/lib/projects-cache";
 
 export default async function Home() {

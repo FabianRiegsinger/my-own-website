@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, cleanup } from "@testing-library/react";
 import { ExperienceGate } from "./ExperienceGate";
-import { cv } from "@/content/cv";
+import { cvEn as cv } from "@/content/cv.en";
 
 const env = vi.hoisted(() => ({ hasWebGL: true, reducedMotion: false, isMobile: false }));
 vi.mock("@/lib/capabilities", async (orig) => ({

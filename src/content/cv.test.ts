@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { cv } from "./cv";
+import { cvEn as cv } from "./cv.en";
 import { JOB_STATIONS } from "@/lib/scroll-map";
 
 function strings(v: unknown): string[] {

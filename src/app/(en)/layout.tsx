@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { LocaleShell } from "@/components/LocaleShell";
-import { cv } from "@/content/cv";
+import { cvEn as cv } from "@/content/cv.en";
 import { SITE_URL } from "@/lib/site";
 import "../globals.css";
 
