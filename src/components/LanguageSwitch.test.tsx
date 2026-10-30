@@ -5,7 +5,7 @@ import { LanguageSwitch } from "./LanguageSwitch";
 describe("LanguageSwitch", () => {
   it("on English, offers German for the same page", () => {
     render(<LanguageSwitch locale="en" page="/privacy" className="" />);
-    const link = screen.getByRole("link", { name: /deutsch/i });
+    const link = screen.getByRole("link", { name: /german/i });
     expect(link.getAttribute("href")).toBe("/language?to=de&page=%2Fprivacy");
     expect(link.textContent).toBe("DE");
   });

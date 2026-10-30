@@ -3,7 +3,7 @@ export const en = {
   nav: {
     home: "Back to the start",
     toggleTheme: "Toggle dark mode",
-    switch: { label: "Switch to Deutsch", short: "DE" },
+    switch: { label: "Switch to German", short: "DE" },
   },
   hero: {
     seeStory: "See my story",
