@@ -171,6 +171,10 @@ test("glass panel tilts toward the mouse and settles when it leaves", async ({ p
   }).toPass({ timeout: 10_000 });
   const ry = await panel.evaluate((el) => parseFloat(/rotateY\((-?[\d.]+)deg\)/.exec(el.style.transform)![1]));
   expect(ry).toBeGreaterThan(2);
+  // The glow under the glass follows the mouse to the right edge and is lit.
+  const glowX = await panel.evaluate((el) => parseFloat(el.style.getPropertyValue("--glow-x")));
+  expect(glowX).toBeGreaterThan((await panel.boundingBox())!.width / 2);
+  await expect.poll(() => panel.evaluate((el) => getComputedStyle(el).getPropertyValue("--glow"))).not.toMatch(/transparent|rgba\(0, 0, 0, 0\)/);
   // Same for leaving: re-enter and leave until the panel settles.
   await expect(async () => {
     const box = (await panel.boundingBox())!;
