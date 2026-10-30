@@ -36,8 +36,8 @@
   --glass-lo: rgb(255 255 255 / 0.25);
   --glass-shadow: rgb(30 40 90 / 0.05);
   --glass-solid: rgb(255 255 255 / 0.5);
-  /* Strength of the hover glow under the glass (share of the accent). */
-  --glass-glow: 22%;
+  /* Strength of the hover glow under the glass (share of the page's main colour field, --blob-a, itself about half opaque). */
+  --glass-glow: 45%;
 }
 
 :root[data-theme="dark"] {
@@ -55,7 +55,7 @@
   --glass-lo: rgb(255 255 255 / 0.04);
   --glass-shadow: rgb(0 0 0 / 0.3);
   --glass-solid: rgb(28 30 38 / 0.55);
-  --glass-glow: 45%;
+  --glass-glow: 90%;
 }
 
 html {
@@ -173,13 +173,13 @@ body {
 
 @utility glass {
   border-radius: 2rem;
-  /* Under the translucent face: a soft accent glow at the mouse (--glow-x/y, set by GlassPanel), so it reads as light behind the glass. */
+  /* Under the translucent face: a soft glow in the page's colour at the mouse (--glow-x/y, set by GlassPanel), so it reads as light behind the glass. */
   background:
     linear-gradient(145deg, var(--glass-a), var(--glass-b)),
     radial-gradient(26rem circle at var(--glow-x, 50%) var(--glow-y, 50%), var(--glow), transparent 70%);
   @media (hover: hover) {
     &:hover {
-      --glow: color-mix(in srgb, var(--accent) var(--glass-glow), transparent);
+      --glow: color-mix(in srgb, var(--blob-a) var(--glass-glow), transparent);
     }
   }
   border: 1px solid var(--glass-rim);
