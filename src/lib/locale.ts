@@ -36,3 +36,9 @@ export function localePath(locale: Locale, page: SwitchablePage): string {
 export function alternatesFor(page: SwitchablePage): Record<Locale, string> {
   return { en: localePath("en", page), de: localePath("de", page) };
 }
+
+/** The switchable page behind a URL path, in either language. Unknown paths count as the homepage. */
+export function pageFromPath(pathname: string): SwitchablePage {
+  const withoutLocale = pathname === "/de" ? "/" : pathname.startsWith("/de/") ? pathname.slice(3) : pathname;
+  return safeSwitchPage(withoutLocale);
+}

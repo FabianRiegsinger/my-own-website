@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { alternatesFor, homeRedirect, localeFromCountry, localePath, parseLocale, safeSwitchPage } from "./locale";
+import { alternatesFor, homeRedirect, localeFromCountry, localePath, pageFromPath, parseLocale, safeSwitchPage } from "./locale";
 
 describe("parseLocale", () => {
   it("accepts exactly en and de", () => {
@@ -70,5 +70,18 @@ describe("alternatesFor", () => {
   it("lists both language URLs for a page", () => {
     expect(alternatesFor("/")).toEqual({ en: "/", de: "/de" });
     expect(alternatesFor("/privacy")).toEqual({ en: "/privacy", de: "/de/privacy" });
+  });
+});
+
+describe("pageFromPath", () => {
+  it("maps German URLs back to their switchable page", () => {
+    expect(pageFromPath("/de")).toBe("/");
+    expect(pageFromPath("/de/privacy")).toBe("/privacy");
+    expect(pageFromPath("/de/impressum")).toBe("/impressum");
+  });
+  it("keeps English URLs and falls back to / for anything unknown", () => {
+    expect(pageFromPath("/")).toBe("/");
+    expect(pageFromPath("/impressum")).toBe("/impressum");
+    expect(pageFromPath("/de/xyz")).toBe("/");
   });
 });
