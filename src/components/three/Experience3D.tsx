@@ -17,7 +17,7 @@ import { SkillCloud } from "./stations/SkillCloud";
 import { Team } from "./stations/Team";
 
 /** Fixed full-screen 3D world behind natively scrolling text; scroll position drives camera, figure and stations. */
-export function Experience3D({ cv, projects, lowPower: initialLowPower, calm, onFail }: ExperienceProps) {
+export function Experience3D({ cv, projects, t, lowPower: initialLowPower, calm, onFail }: ExperienceProps) {
   const [lowPower, setLowPower] = useState(initialLowPower);
   const content = useRef<HTMLDivElement>(null);
   const stationOffset = useRef(0);
@@ -43,13 +43,13 @@ export function Experience3D({ cv, projects, lowPower: initialLowPower, calm, on
           <ScrollTracker content={content} />
           <CameraRig calm={calm} />
           <Suspense fallback={null}>
-            <GenMe shadows={!lowPower} calm={calm} />
+            <GenMe shadows={!lowPower} calm={calm} greeting={t.scene.hello} />
           </Suspense>
-          <Graduation />
+          <Graduation education={cv.education} />
           {/* Anything that loads (models, the label font) suspends here, inside the canvas; uncaught it would
               bubble up to the page's fallback and flash the static page back in. */}
           <Suspense fallback={null}>
-            <Team />
+            <Team labels={t.scene.fusion} />
             <Fleet />
             <SkillCloud skills={cv.skills} />
           </Suspense>
@@ -61,7 +61,7 @@ export function Experience3D({ cv, projects, lowPower: initialLowPower, calm, on
         </Canvas>
       </div>
       <main ref={content} className="relative">
-        <Sections cv={cv} projects={projects} />
+        <Sections cv={cv} projects={projects} t={t} />
       </main>
     </StationOffset.Provider>
   );

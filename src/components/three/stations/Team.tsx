@@ -107,7 +107,7 @@ export const TEAM: Member[] = [
 ];
 
 /** ESAS: Fabian demos his sensor fusion on a hologram; each colleague owns one sensor stream. */
-export function Team() {
+export function Team({ labels }: { labels: { fused: string; sensors: string[] } }) {
   const root = useRef<Group>(null);
   const offset = useStationOffset();
   const poses = useRef(TEAM.map((): ColleaguePose => ({ point: 0, think: 0, nod: 0, thumb: 0 })));
@@ -135,7 +135,7 @@ export function Team() {
           <Colleague key={m.id} model={m.model} position={m.position} yaw={m.yaw} height={m.height} width={m.width} head={m.head} phase={m.phase} pose={() => poses.current[i]} />
         ))}
       </group>
-      <FusionHologram at={HOLO} team={TEAM} beats={beats} />
+      <FusionHologram at={HOLO} team={TEAM} beats={beats} labels={labels} />
     </>
   );
 }

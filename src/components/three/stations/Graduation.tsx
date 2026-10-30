@@ -3,7 +3,8 @@
 import { useFrame } from "@react-three/fiber";
 import { useLayoutEffect, useMemo, useRef } from "react";
 import { BackSide, MathUtils, BufferGeometry, CanvasTexture, Color, DoubleSide, Float32BufferAttribute, type Group, type InstancedMesh, LatheGeometry, Object3D, Vector2 } from "three";
-import { cv } from "@/content/cv";
+import { cvEn as cv } from "@/content/cv.en";
+import type { CV } from "@/content/types";
 import { pendulum } from "@/lib/pendulum";
 import { stationWeight } from "@/lib/scroll-map";
 import { fade } from "../fade";
@@ -33,7 +34,10 @@ const CLAPPER = { lag: 0.14, gain: 1.35, strike: 0.38 };
 const PULL = { lag: 0.34, gain: 0.8 };
 const FLOOR = { width: 3, depth: 1.8 };
 /** Plaques on the wall, on his left (+x), clear of the niche. */
-export const PLAQUES = cv.education.map((e, i) => ({ ...e, position: [0.72, 2.05 - i * 0.43, WALL.z + 0.012] as [number, number, number] }));
+export function plaquesFor(education: CV["education"]) {
+  return education.map((e, i) => ({ ...e, position: [0.72, 2.05 - i * 0.43, WALL.z + 0.012] as [number, number, number] }));
+}
+export const PLAQUES = plaquesFor(cv.education);
 export const PLAQUE = { width: 0.62, height: 0.31 };
 /** THM logo printed on the wall above the plaques, twice their width; aspect from the logo artwork (830 x 278). */
 const LOGO_ART = { width: 830, height: 278 };
@@ -225,7 +229,8 @@ function nicheShade() {
   return t;
 }
 
-export function Graduation() {
+export function Graduation({ education }: { education: CV["education"] }) {
+  const wallPlaques = useMemo(() => plaquesFor(education), [education]);
   const root = useRef<Group>(null);
   const confetti = useRef<InstancedMesh>(null);
   const swing = useRef<Group>(null);
@@ -245,12 +250,12 @@ export function Graduation() {
       niche: nicheShade(),
       logo: thmLogo(),
       bronze: bronze(),
-      plaques: PLAQUES.map((p) => {
+      plaques: wallPlaques.map((p) => {
         const [title, ...field] = p.degree.split(" ");
         return plaqueFace(`${title} ${p.end.slice(0, 4)}`, field.join(" "));
       }),
     }),
-    [],
+    [wallPlaques],
   );
   // Confetti flakes: seeded spot over the floor, fall speed, phase and tumble.
   const flakes = useMemo(
@@ -360,7 +365,7 @@ export function Graduation() {
         <planeGeometry args={[LOGO.width, LOGO.height]} />
         <meshStandardMaterial map={maps.logo} transparent roughness={0.9} depthWrite={false} />
       </mesh>
-      {PLAQUES.map((p, i) => (
+      {wallPlaques.map((p, i) => (
         <group key={p.degree} position={p.position}>
           <mesh castShadow>
             <boxGeometry args={[PLAQUE.width, PLAQUE.height, 0.02]} />

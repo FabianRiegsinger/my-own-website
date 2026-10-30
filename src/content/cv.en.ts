@@ -1,12 +1,12 @@
 import type { CV } from "./types";
 
-export const cv: CV = {
+export const cvEn: CV = {
   profile: {
     name: "Fabian Riegsinger",
     headline: "System Integration & Software Engineer",
     location: "Ingolstadt, Germany",
     summary:
-      "I'm a software development and integration engineer with more than eight years of experience in the automotive industry. At ESAS Automotive I built software for autonomous-driving stacks in C++ and Python while taking on project lead responsibilities. For Mobileye I work on site at the customer on a Level 3 ADAS program, building and keeping a large fleet of development vehicles running and coordinating critical issues between the OEM's engineers and Mobileye's R&D team, while developing agentic software that automates test vehicle maintenance workflows.",
+      "I'm a software development and integration engineer with more than eight years of experience in the automotive industry contributing to autonomous driving stacks. At ESAS Automotive, I built software for autonomous-driving cars in C++ and Python, while taking on project and team lead responsibilities. For Mobileye I work as a Forward Deployed Engineer at the customer's site on a Level 3 ADAS program, building and keeping a large fleet of development vehicles running. Coordinating critical issues between the OEM's engineers and Mobileye's R&D team, while developing agentic software that automates test vehicle maintenance workflows belong to my daily challenges.",
     links: {
       github: "https://github.com/FabianRiegsinger",
       linkedin: "https://www.linkedin.com/in/fabian-riegsinger-736b78b7/",
@@ -17,33 +17,32 @@ export const cv: CV = {
   experience: [
     {
       company: "Mobileye Germany GmbH",
-      role: "Technical Support Resident (R&D), AUDI project",
+      role: "Forward Deployed Engineer (R&D)",
       start: "2024-12",
       end: null,
       location: "Ingolstadt, Germany",
       highlights: [
-        "First escalation point at AUDI for software and integration issues in the ADAS/AD stack on ~30 test vehicles.",
+        "First escalation point on site for software and integration issues in the ADAS/AD stack on a large set of test vehicles.",
         "Triage sensor and perception issues from logs, CAN/Ethernet traces and vehicle telemetry; several field issues a day.",
-        "Build Python tooling that speeds up software rollout and fleet upgrades.",
-        "Coordinate EyeQ software integration with AUDI's vehicle platform: bug reports, reproduction steps, fix verification.",
-        "Maintain flashing, software versions and calibration across the fleet.",
+        "Build Python tooling that speeds up software rollout and fleet upgrades - generally accelerating the project's agility.",
+        "Coordinate EyeQ software integration with customer's vehicle platform: deep system debugging, collaboration with remote expert teams, handling software improvement processes.",
+        "Maintaining customer's tooling ecosystem, software versions deployment and sensor calibration across the fleet.",
       ],
-      tags: ["ADAS L3", "EyeQ", "Python", "CAN", "Automotive Ethernet"],
+      tags: ["ADAS L3", "Embedded Hardware", "Python", "CAN", "Automotive Ethernet", "FlexRay"],
     },
     {
       company: "ESAS Automotive GmbH",
-      role: "Software Developer & Project Coordinator",
+      role: "Software Development and Integration & Project Coordination",
       start: "2018-07",
       end: "2024-11",
       location: "Ingolstadt, Germany",
       highlights: [
         "Designed a React/Electron/Capacitor environment-visualization tool, now the standard visualization on AUDI's test fleet.",
         "Promoted from developer to coordinator of a 4-engineer team; screened applicants and ran technical interviews.",
-        "Built C++ sensor-fusion modules combining camera, LiDAR and radar detections.",
-        "Wrote C++ FlexRay/CAN/Ethernet protocol transformers between third-party and in-house components.",
-        "Built cloud data-evaluation pipelines and a Route Evaluator in Python/React.",
+        "Wrote C++ sensor-fusion modules (camera, LiDAR and radar detections) and C++ FlexRay/CAN/Ethernet protocol transformers, among others.",
+        "Built cloud data-evaluation pipelines and several Python applications.",
       ],
-      tags: ["C++", "Sensor fusion", "React", "FlexRay", "Team lead"],
+      tags: ["C++", "Python", "Sensor fusion", "React", "Project Coordination", "Team lead"],
     },
   ],
   education: [
@@ -108,10 +107,10 @@ export const cv: CV = {
   ],
   agentic: {
     intro:
-      "I spent eight years integrating and debugging software in test vehicles. Now I use AI agents for a large part of my coding.",
-    tools: ["Claude Code", "Cursor"],
+      "I spent eight years developing, integrating and debugging software in cutting-edge hardware and software stacks in the automotive industry. In order to stay ahead of the curve in AI, I see the integration of it in every possible layer of my daily work routine as a must.",
+    tools: ["Claude Code", "Cursor", "VS Code"],
     workUse:
-      "I use Claude Code and Cursor every day, at work and on private side projects. Even this website.",
+      "I use Claude Code and Cursor every day, at work and on private side projects.",
   },
   next: {
     intro: "Eight years of software in test vehicles taught me how systems fail in the real world. Next, I want to work where AI is built at scale.",

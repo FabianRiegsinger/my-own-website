@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { cv } from "./cv";
+import { cvEn as cv } from "./cv.en";
 import { JOB_STATIONS } from "@/lib/scroll-map";
 
 function strings(v: unknown): string[] {
@@ -35,7 +35,7 @@ describe("cv", () => {
   });
 
   it("agentic tools", () => {
-    expect(cv.agentic.tools).toEqual(["Claude Code", "Cursor"]);
+    expect(cv.agentic.tools).toEqual(["Claude Code", "Cursor", "VS Code"]);
   });
 
   it("every job has its own career page", () => {

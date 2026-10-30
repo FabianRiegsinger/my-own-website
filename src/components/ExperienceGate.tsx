@@ -2,12 +2,14 @@
 
 import { Component, lazy, Suspense, useEffect, useState, type ComponentType, type ReactNode } from "react";
 import type { CV } from "@/content/types";
+import type { Dictionary } from "@/i18n";
 import { canRender3D, detectEnv } from "@/lib/capabilities";
 import type { Project } from "@/lib/projects";
 
 export interface ExperienceProps {
   cv: CV;
   projects: Project[];
+  t: Dictionary;
   lowPower: boolean;
   /** Reduced motion: the camera cuts between pages instead of gliding, and the landing walk-in is skipped. */
   calm: boolean;
@@ -39,11 +41,13 @@ class FallbackBoundary extends Component<{ fallback: ReactNode; children: ReactN
 export function ExperienceGate({
   cv,
   projects,
+  t,
   children,
   Experience = Experience3D,
 }: {
   cv: CV;
   projects: Project[];
+  t: Dictionary;
   children: ReactNode;
   Experience?: ComponentType<ExperienceProps>;
 }) {
@@ -65,7 +69,7 @@ export function ExperienceGate({
   return (
     <FallbackBoundary fallback={children}>
       <Suspense fallback={children}>
-        <Experience cv={cv} projects={projects} lowPower={lowPower} calm={calm} onFail={() => {
+        <Experience cv={cv} projects={projects} t={t} lowPower={lowPower} calm={calm} onFail={() => {
             markStatic();
             setMode("static");
           }} />

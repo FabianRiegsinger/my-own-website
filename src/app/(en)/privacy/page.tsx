@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import { LegalPage } from "@/components/LegalPage";
-import { cv } from "@/content/cv";
+import { cvEn as cv } from "@/content/cv.en";
+import { alternatesFor } from "@/lib/locale";
 
 const email = `${cv.profile.links.email.user}@${cv.profile.links.email.domain}`;
 
-export const metadata: Metadata = { title: "Privacy", robots: { index: false } };
+export const metadata: Metadata = { title: "Privacy", robots: { index: false }, alternates: { languages: alternatesFor("/privacy") } };
 
 // Template only — not legal advice. Review and fill every [TO FILL] before going live (GDPR).
 export default function Privacy() {

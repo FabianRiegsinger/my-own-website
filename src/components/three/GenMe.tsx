@@ -1,8 +1,8 @@
 "use client";
 
-import { useGLTF } from "@react-three/drei";
+import { Html, useGLTF } from "@react-three/drei";
 import { useFrame, useThree } from "@react-three/fiber";
-import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Box3, Euler, BufferAttribute, CanvasTexture, CapsuleGeometry, Color, MathUtils, Matrix4, Raycaster, Vector2, MeshStandardMaterial, Quaternion, SkinnedMesh, type Sprite, Vector3, type Group, type Material, type Mesh, type Object3D } from "three";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import { JUMP_PERIOD, jumpBeats } from "@/lib/cheer";
@@ -56,6 +56,13 @@ const CLICK_PX = 5;
 const CLICK_MS = 400;
 const GREET = 2.6; // s
 const GREET_TILT = 0.12; // head tilt (rad) while greeting
+/** "Hello there" bubble shown while greeting: tune its look here. */
+const BUBBLE = {
+  fontSize: "20px",
+  fontFamily: "var(--font-inter)", // any CSS font-family, e.g. "Georgia, serif"
+  padding: "12px 24px", // vertical horizontal
+  tail: 10, // px
+};
 const CHEER_V = 2.6; // rad up from arms-down: a V above the shoulders
 const JUMP = 0.22; // world units
 /** Waving hand: palm turned to the viewer (supination, shared with the forearm twist bones), tilted a little inward. */
@@ -201,7 +208,7 @@ export function lowest(root: Object3D, bones: Object3D[]) {
  * mannequin Figure: walk in, turn, wave), then a procedural idle (arms down, breathing, weight shift); turns with the scroll.
  * On the education page he wears gown and mortarboard (Gown) and jumps for joy: crouch, spring up with the arms in a V, land.
  */
-export function GenMe({ shadows, calm = false }: { shadows: boolean; calm?: boolean }) {
+export function GenMe({ shadows, calm = false, greeting }: { shadows: boolean; calm?: boolean; greeting: string }) {
   const { scene } = useGLTF(MODEL, "/draco/");
   const group = useRef<Group>(null);
   const offset = useStationOffset();
@@ -224,6 +231,7 @@ export function GenMe({ shadows, calm = false }: { shadows: boolean; calm?: bool
   }, []);
   const tabletRef = useRef<Group>(null);
   const greet = useRef(-1); // seconds into a click greeting, -1 when none
+  const [hello, setHello] = useState(false); // speech bubble, shown for the click greeting
   const headYaw = useRef(0);
   const gown = useRef<Group>(null);
   const badges = useRef<(Group | null)[]>([]);
@@ -386,7 +394,10 @@ export function GenMe({ shadows, calm = false }: { shadows: boolean; calm?: bool
       const sp = spin.current;
       if (!sp.dragging) return;
       sp.dragging = false;
-      if (e?.type === "pointerup" && Math.abs(e.clientX - sp.x0) < CLICK_PX && e.timeStamp - sp.t0 < CLICK_MS) greet.current = 0;
+      if (e?.type === "pointerup" && Math.abs(e.clientX - sp.x0) < CLICK_PX && e.timeStamp - sp.t0 < CLICK_MS) {
+        greet.current = 0;
+        setHello(true);
+      }
       root.style.cursor = "";
       root.style.userSelect = "";
     };
@@ -432,6 +443,7 @@ export function GenMe({ shadows, calm = false }: { shadows: boolean; calm?: bool
     if (spinner.current) spinner.current.rotation.y = sp.angle;
     walk.current = MathUtils.damp(walk.current, walking, 8, dt);
     if (greet.current >= 0) greet.current = greet.current + dt > GREET ? -1 : greet.current + dt;
+    if (greet.current < 0 && hello) setHello(false);
     const gt = greet.current;
     const greeting = gt < 0 ? 0 : Math.min(MathUtils.smoothstep(gt, 0, 0.3), MathUtils.smoothstep(GREET - gt, 0, 0.5));
     wave.current = MathUtils.damp(wave.current, Math.max(waving, greeting), 6, dt);
@@ -772,6 +784,17 @@ export function GenMe({ shadows, calm = false }: { shadows: boolean; calm?: bool
           ))}
         </group>
       </group>
+      {hello && (
+        <Html position={[0, HEIGHT + 0.2, 0]} center pointerEvents="none">
+          <div
+            className="relative whitespace-nowrap rounded-2xl bg-surface font-medium text-ink shadow-lg"
+            style={{ fontSize: BUBBLE.fontSize, fontFamily: BUBBLE.fontFamily, padding: BUBBLE.padding }}
+          >
+            {greeting}
+            <span className="absolute left-1/2 top-full -translate-x-1/2 border-transparent border-t-surface" style={{ borderWidth: BUBBLE.tail }} />
+          </div>
+        </Html>
+      )}
     </group>
   );
 }

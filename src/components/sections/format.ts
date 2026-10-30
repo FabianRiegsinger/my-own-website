@@ -1,8 +1,8 @@
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+import type { Dictionary } from "@/i18n";
 
-/** "2024-12" → "Dec 2024"; null → "Present" */
-export function formatMonth(ym: string | null): string {
-  if (!ym) return "Present";
+/** "2024-12" → "Dec 2024" (or "Dez 2024"); null → "Present" (or "heute") */
+export function formatMonth(ym: string | null, t: Dictionary["timeline"]): string {
+  if (!ym) return t.present;
   const [y, m] = ym.split("-");
-  return `${MONTHS[Number(m) - 1]} ${y}`;
+  return `${t.months[Number(m) - 1]} ${y}`;
 }
