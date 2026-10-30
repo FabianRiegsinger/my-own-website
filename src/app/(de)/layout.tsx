@@ -5,7 +5,7 @@ import { cvDe } from "@/content/cv.de";
 import { SITE_URL } from "@/lib/site";
 import "../globals.css";
 
-const title = "Fabian Riegsinger — Agentischer Automobilingenieur";
+const title = `${cvDe.profile.name} — ${cvDe.profile.headline}`;
 const description = cvDe.profile.summary.split(". ")[0] + ".";
 
 export const metadata: Metadata = {

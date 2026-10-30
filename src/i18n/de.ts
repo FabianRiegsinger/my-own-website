@@ -4,12 +4,11 @@ export const de = {
   nav: {
     home: "Zurück zum Anfang",
     toggleTheme: "Dunkelmodus umschalten",
-    switch: { label: "Zu English wechseln", short: "EN" },
+    switch: { label: "Zu Englisch wechseln", short: "EN" },
   },
   hero: {
     seeStory: "Meine Geschichte",
     contact: "Kontakt",
-    tagline: "Agentischer Automobilingenieur",
     avatarAlt: "Memoji-artiger 3D-Avatar von Fabian mit Brille, die Hände in die Hüften gestemmt",
   },
   about: { eyebrow: "Über mich" },
@@ -24,7 +23,7 @@ export const de = {
   },
   agentic: {
     eyebrow: "Aktuell",
-    title: "Ich baue mit KI-Agenten",
+    title: "Produktionsreife Software mit KI",
     tools: "Werkzeuge",
     sideProjects: "Nebenprojekte",
   },

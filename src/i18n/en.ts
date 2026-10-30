@@ -8,7 +8,6 @@ export const en = {
   hero: {
     seeStory: "See my story",
     contact: "Contact",
-    tagline: "Agentic Automotive Engineer",
     avatarAlt: "Memoji-style 3D avatar of Fabian with glasses, standing with hands on hips",
   },
   about: { eyebrow: "About" },
@@ -23,7 +22,7 @@ export const en = {
   },
   agentic: {
     eyebrow: "Now",
-    title: "Building with AI agents",
+    title: "Building production software with AI",
     tools: "Tools",
     sideProjects: "Side projects",
   },

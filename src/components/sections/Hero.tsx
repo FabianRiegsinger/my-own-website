@@ -13,7 +13,6 @@ export function Hero({ cv, t, showFigure = false }: { cv: CV; t: Dictionary; sho
         <div>
           <h1 className="text-5xl font-semibold tracking-tight sm:text-6xl desk:text-[min(3.75rem,5.5vw)]">{cv.profile.name}</h1>
           <p className="mt-4 text-xl text-muted sm:text-2xl">{cv.profile.headline}</p>
-          <p className="mt-8 text-xl font-semibold tracking-tight sm:text-2xl">{t.hero.tagline}</p>
           <div className="mt-8 flex flex-wrap gap-3">
             <a href="#about" className={PILL}>
               {t.hero.seeStory}

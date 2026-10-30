@@ -35,7 +35,7 @@ describe("cv", () => {
   });
 
   it("agentic tools", () => {
-    expect(cv.agentic.tools).toEqual(["Claude Code", "Cursor"]);
+    expect(cv.agentic.tools).toEqual(["Claude Code", "Cursor", "VS Code"]);
   });
 
   it("every job has its own career page", () => {

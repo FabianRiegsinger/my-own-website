@@ -91,7 +91,7 @@ for (const path of ["/impressum", "/privacy"]) {
 
 test("metadata", async ({ page }) => {
   await page.goto("/");
-  await expect(page).toHaveTitle("Fabian Riegsinger — Agentic Automotive Engineer");
+  await expect(page).toHaveTitle("Fabian Riegsinger — System Integration & Software Engineer");
   expect(await page.locator('meta[property="og:image"]').count()).toBeGreaterThan(0);
 });
 

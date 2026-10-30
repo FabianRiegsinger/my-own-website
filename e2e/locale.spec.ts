@@ -49,12 +49,12 @@ test("German homepage shows German text and the switch links to English", async 
   await page.goto("/de");
   await expect(page.locator("html")).toHaveAttribute("lang", "de");
   await expect(page.getByRole("link", { name: "Kontakt" }).first()).toBeAttached();
-  await expect(page.getByRole("link", { name: /English/ })).toHaveAttribute("href", "/language?to=en&page=%2F");
+  await expect(page.getByRole("link", { name: /Englisch/ })).toHaveAttribute("href", "/language?to=en&page=%2F");
 });
 
 test("the switch on the German privacy page points back to the English privacy page", async ({ page }) => {
   await page.goto("/de/privacy");
-  await expect(page.getByRole("link", { name: /English/ })).toHaveAttribute("href", "/language?to=en&page=%2Fprivacy");
+  await expect(page.getByRole("link", { name: /Englisch/ })).toHaveAttribute("href", "/language?to=en&page=%2Fprivacy");
 });
 
 test("German homepage footer links to the German legal pages", async ({ page }) => {

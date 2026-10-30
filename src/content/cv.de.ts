@@ -6,7 +6,7 @@ export const cvDe: CV = {
     headline: "System-Integrations- & Softwareingenieur",
     location: "Ingolstadt, Deutschland",
     summary:
-      "Ich bin Software- und Integrationsingenieur mit mehr als acht Jahren Erfahrung in der Automobilindustrie. Bei ESAS Automotive habe ich Software für autonome Fahrsysteme in C++ und Python entwickelt und zugleich Projektleitung übernommen. Bei Mobileye arbeite ich vor Ort beim Kunden an einem ADAS-Programm der Stufe 3 (Level 3): Ich baue und betreue eine große Flotte von Entwicklungsfahrzeugen und koordiniere kritische Probleme zwischen den Ingenieuren des OEM und dem R&D-Team von Mobileye. Zusätzlich entwickle ich agentische Software, die Wartungsabläufe für Testfahrzeuge automatisiert.",
+      "Ich bin Software- und Integrationsingenieur und arbeite seit mehr als acht Jahren in der Automobilindustrie in Ingolstadt. Dort arbeite ich an Software-Stacks für das autonome Fahren eines namhaften OEM. Bei ESAS Automotive habe ich in C++ und Python Software für das Ökosystem rund um das autonome Fahrzeug entwickelt und die Projektleitung übernommen. Heute arbeite ich für Mobileye als Forward Deployed Engineer direkt beim Kunden an einem Level-3-Programm für automatisiertes Fahren. Dort baue ich eine große Flotte von Entwicklungsfahrzeugen mit auf und halte sie einsatzbereit und auf dem neusten Stand. Zu meinen alltäglichen Aufgaben gehört die Koordination der Lösung kritischer Probleme zwischen den Ingenieuren des OEM und entsprechenden Teams von Mobileye. Außerdem entwickle ich mit Hilfe von cutting-edge KI-Lösungen Software, die sämtliche Abläufe rund um das Testfahrzeug automatisiert.",
     links: {
       github: "https://github.com/FabianRiegsinger",
       linkedin: "https://www.linkedin.com/in/fabian-riegsinger-736b78b7/",
@@ -17,33 +17,32 @@ export const cvDe: CV = {
   experience: [
     {
       company: "Mobileye Germany GmbH",
-      role: "Technical Support Resident (R&D), AUDI-Projekt",
+      role: "Forward Deployed Engineer (R&D)",
       start: "2024-12",
       end: null,
       location: "Ingolstadt, Deutschland",
       highlights: [
-        "Erste Eskalationsstelle bei AUDI für Software- und Integrationsprobleme im ADAS/AD-Stack auf rund 30 Testfahrzeugen.",
+        "Erste Eskalationsstelle vor Ort für Software- und Integrationsprobleme im ADAS/AD-Stack einer großen Testfahrzeugflotte.",
         "Sensor- und Wahrnehmungsprobleme aus Logs, CAN-/Ethernet-Mitschnitten und Fahrzeugtelemetrie analysieren; täglich mehrere Feldprobleme.",
-        "Python-Werkzeuge entwickeln, die die Software-Auslieferung und Flottenupdates beschleunigen.",
-        "Die Integration der EyeQ-Software in die Fahrzeugplattform von AUDI koordinieren: Fehlerberichte, Reproduktionsschritte, Verifikation der Fixes.",
-        "Flashen, Softwareversionen und Kalibrierung über die gesamte Flotte pflegen.",
+        "Python-Werkzeuge entwickeln, die Software-Auslieferung und Flottenupdates beschleunigen und das Projekt insgesamt agiler machen.",
+        "Die Integration der EyeQ-Software in die Fahrzeugplattform des Kunden koordinieren: tiefgehendes System-Debugging, Zusammenarbeit mit Expertenteams an anderen Standorten, Steuerung von Softwareverbesserungsprozessen.",
+        "Das Tooling-Ökosystem des Kunden, die Verteilung von Softwareversionen und die Sensorkalibrierung über die gesamte Flotte pflegen.",
       ],
-      tags: ["ADAS L3", "EyeQ", "Python", "CAN", "Automotive Ethernet"],
+      tags: ["ADAS L3", "Embedded-Hardware", "Python", "CAN", "Automotive Ethernet", "FlexRay"],
     },
     {
       company: "ESAS Automotive GmbH",
-      role: "Softwareentwickler & Projektkoordinator",
+      role: "Softwareentwicklung und -integration & Projektkoordination",
       start: "2018-07",
       end: "2024-11",
       location: "Ingolstadt, Deutschland",
       highlights: [
-        "Ein React/Electron/Capacitor-Werkzeug zur Umgebungsvisualisierung entwickelt, heute die Standardvisualisierung auf der Testflotte von AUDI.",
-        "Vom Entwickler zum Koordinator eines Teams aus 4 Ingenieuren befördert; Bewerber vorausgewählt und technische Interviews geführt.",
-        "C++-Module zur Sensorfusion entwickelt, die Kamera-, LiDAR- und Radar-Detektionen kombinieren.",
-        "C++-Transformer für FlexRay-, CAN- und Ethernet-Protokolle zwischen Fremd- und Eigenkomponenten geschrieben.",
-        "Cloud-Pipelines zur Datenauswertung und einen Route Evaluator in Python/React gebaut.",
+        "Ich entwickelte ein React/Electron/Capacitor-Tool zur Umgebungsvisualisierung im Fahrzeug, heute die Standardvisualisierung in der Testflotte.",
+        "Vom Entwickler zum Koordinator eines Teams aus vier Ingenieuren befördert; ich traf bei Bewerbern eine Vorauswahl und führte technische Interviews.",
+        "Ich schrieb unter anderem C++-Module zur Sensorfusion (Kamera-, LiDAR- und Radar-Detektionen) und C++-Transformer für FlexRay-, CAN- und Ethernet-Protokolle.",
+        "Python nutzte ich zum Beispiel für alles von Skripting-Lösungen bis zu Cloud-Pipelines zur Datenauswertung.",
       ],
-      tags: ["C++", "Sensorfusion", "React", "FlexRay", "Teamleitung"],
+      tags: ["C++", "Python", "Sensorfusion", "React", "Projektkoordination", "Teamleitung"],
     },
   ],
   education: [
@@ -108,10 +107,10 @@ export const cvDe: CV = {
   ],
   agentic: {
     intro:
-      "Ich habe acht Jahre damit verbracht, Software in Testfahrzeugen zu integrieren und zu debuggen. Heute nutze ich KI-Agenten für einen großen Teil meiner Programmierarbeit.",
-    tools: ["Claude Code", "Cursor"],
+      "Ich habe acht Jahre lang Software in hochmodernen Hardware- und Software-Stacks der Automobilindustrie entwickelt, integriert und debuggt. Um bei KI vorne mitzuhalten, halte ich es für unverzichtbar, sie in jede mögliche Ebene meiner täglichen Arbeit zu integrieren.",
+    tools: ["Claude Code", "Cursor", "VS Code"],
     workUse:
-      "Ich nutze Claude Code und Cursor täglich, bei der Arbeit und in privaten Nebenprojekten. Auch diese Website.",
+      "Ich nutze Claude Code und Cursor täglich, bei der Arbeit und in privaten Nebenprojekten.",
   },
   next: {
     intro: "Acht Jahre Software in Testfahrzeugen haben mir gezeigt, wie Systeme in der realen Welt versagen. Als Nächstes möchte ich dort arbeiten, wo KI im großen Maßstab entsteht.",

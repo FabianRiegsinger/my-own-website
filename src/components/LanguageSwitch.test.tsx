@@ -11,7 +11,7 @@ describe("LanguageSwitch", () => {
   });
   it("on German, offers English for the same page", () => {
     render(<LanguageSwitch locale="de" page="/" className="" />);
-    const link = screen.getByRole("link", { name: /english/i });
+    const link = screen.getByRole("link", { name: /englisch/i });
     expect(link.getAttribute("href")).toBe("/language?to=en&page=%2F");
     expect(link.textContent).toBe("EN");
   });
