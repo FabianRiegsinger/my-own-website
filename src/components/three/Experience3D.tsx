@@ -43,13 +43,13 @@ export function Experience3D({ cv, projects, t, lowPower: initialLowPower, calm,
           <ScrollTracker content={content} />
           <CameraRig calm={calm} />
           <Suspense fallback={null}>
-            <GenMe shadows={!lowPower} calm={calm} />
+            <GenMe shadows={!lowPower} calm={calm} greeting={t.scene.hello} />
           </Suspense>
-          <Graduation />
+          <Graduation education={cv.education} />
           {/* Anything that loads (models, the label font) suspends here, inside the canvas; uncaught it would
               bubble up to the page's fallback and flash the static page back in. */}
           <Suspense fallback={null}>
-            <Team />
+            <Team labels={t.scene.fusion} />
             <Fleet />
             <SkillCloud skills={cv.skills} />
           </Suspense>

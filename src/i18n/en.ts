@@ -45,6 +45,10 @@ export const en = {
     impressum: "Impressum",
     privacy: "Privacy",
   },
+  scene: {
+    hello: "Hello there",
+    fusion: { fused: "track 07 · fused", sensors: ["camera", "lidar", "radar"] },
+  },
   reducedMotion: {
     title: "Reduced motion is on",
     body: "Your browser asks for less animation, so this page keeps its movement to a minimum.",

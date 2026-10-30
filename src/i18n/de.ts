@@ -46,6 +46,10 @@ export const de = {
     impressum: "Impressum",
     privacy: "Datenschutz",
   },
+  scene: {
+    hello: "Hallo!",
+    fusion: { fused: "Spur 07 · fusioniert", sensors: ["Kamera", "Lidar", "Radar"] },
+  },
   reducedMotion: {
     title: "Reduzierte Bewegung ist aktiv",
     body: "Ihr Browser bittet um weniger Animation, deshalb bleibt die Bewegung auf dieser Seite auf ein Minimum beschränkt.",

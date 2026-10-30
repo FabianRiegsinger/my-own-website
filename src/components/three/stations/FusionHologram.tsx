@@ -181,7 +181,7 @@ function egoCar() {
   return car;
 }
 
-function build(team: { position: Vec3; height: number }[]) {
+function build(team: { position: Vec3; height: number }[], labels: { fused: string; sensors: string[] }) {
   const root = new Group();
   // Transparent so the page fade reaches them; still depth-writing, so they sort like solids.
   const prop = new MeshStandardMaterial({ color: "#b6b9c1", roughness: 0.9, transparent: true });
@@ -243,7 +243,7 @@ function build(team: { position: Vec3; height: number }[]) {
   fusedMat.userData.base = 1;
   const fused = new LineSegments(new EdgesGeometry(new BoxGeometry(0.12, 0.18, 0.12)), fusedMat);
   fused.renderOrder = 9;
-  const fusedTag = label("track 07 · fused", true, 0.08);
+  const fusedTag = label(labels.fused, true, 0.08);
   const trail = line("#ffffff", TRAIL);
   trail.material.userData.base = 0.7;
   holo.add(fused, fusedTag, trail);
@@ -251,7 +251,7 @@ function build(team: { position: Vec3; height: number }[]) {
 
   // Owners: a tag over each colleague, and a line in their stream's colour from them to the object while handing over.
   const tags = team.map((m, k) => {
-    const s = label(["camera", "lidar", "radar"][k], false, 0.12);
+    const s = label(labels.sensors[k], false, 0.12);
     s.position.set(m.position[0], m.height + 0.22, m.position[2]);
     return s;
   });
@@ -278,9 +278,9 @@ const b = new Vector3();
  * The fusion demo on the ESAS page: a projection table with a hologram of the ego car; camera, lidar and radar each
  * report the crossing object with their own error, then merge into one fused track. Placed at `at` (world).
  */
-export function FusionHologram({ at, team, beats }: { at: Vec3; team: { position: Vec3; height: number }[]; beats: RefObject<Beats> }) {
+export function FusionHologram({ at, team, beats, labels }: { at: Vec3; team: { position: Vec3; height: number }[]; beats: RefObject<Beats>; labels: { fused: string; sensors: string[] } }) {
   const offset = useStationOffset();
-  const world = useMemo(() => build(team), [team]);
+  const world = useMemo(() => build(team, labels), [team, labels]);
   const ref = useRef<Group>(null);
   const yaw = STATIONS.find((s) => s.id === "esas")!.yaw;
 

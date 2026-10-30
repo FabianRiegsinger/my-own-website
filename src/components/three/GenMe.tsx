@@ -208,7 +208,7 @@ export function lowest(root: Object3D, bones: Object3D[]) {
  * mannequin Figure: walk in, turn, wave), then a procedural idle (arms down, breathing, weight shift); turns with the scroll.
  * On the education page he wears gown and mortarboard (Gown) and jumps for joy: crouch, spring up with the arms in a V, land.
  */
-export function GenMe({ shadows, calm = false }: { shadows: boolean; calm?: boolean }) {
+export function GenMe({ shadows, calm = false, greeting }: { shadows: boolean; calm?: boolean; greeting: string }) {
   const { scene } = useGLTF(MODEL, "/draco/");
   const group = useRef<Group>(null);
   const offset = useStationOffset();
@@ -790,7 +790,7 @@ export function GenMe({ shadows, calm = false }: { shadows: boolean; calm?: bool
             className="relative whitespace-nowrap rounded-2xl bg-surface font-medium text-ink shadow-lg"
             style={{ fontSize: BUBBLE.fontSize, fontFamily: BUBBLE.fontFamily, padding: BUBBLE.padding }}
           >
-            Hello there
+            {greeting}
             <span className="absolute left-1/2 top-full -translate-x-1/2 border-transparent border-t-surface" style={{ borderWidth: BUBBLE.tail }} />
           </div>
         </Html>
