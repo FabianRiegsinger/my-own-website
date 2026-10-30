@@ -22,3 +22,12 @@ describe("de dictionary", () => {
     expect(de.timeline.months).toHaveLength(12);
   });
 });
+
+describe("legal links", () => {
+  it("point to the legal pages of their own language", () => {
+    expect(en.contact.impressumHref).toBe("/impressum");
+    expect(en.contact.privacyHref).toBe("/privacy");
+    expect(de.contact.impressumHref).toBe("/de/impressum");
+    expect(de.contact.privacyHref).toBe("/de/privacy");
+  });
+});

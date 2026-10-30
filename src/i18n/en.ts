@@ -44,6 +44,8 @@ export const en = {
     email: "Email",
     impressum: "Impressum",
     privacy: "Privacy",
+    impressumHref: "/impressum",
+    privacyHref: "/privacy",
   },
   scene: {
     hello: "Hello there",

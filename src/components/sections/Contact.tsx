@@ -28,8 +28,8 @@ export function Contact({ cv, t }: { cv: CV; t: Dictionary }) {
         </EmailLink>
       </div>
       <footer className="mt-16 flex gap-6 text-sm text-muted">
-        <a href="/impressum" className="inline-flex min-h-11 min-w-11 items-center underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-accent">{t.contact.impressum}</a>
-        <a href="/privacy" className="inline-flex min-h-11 min-w-11 items-center underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-accent">{t.contact.privacy}</a>
+        <a href={t.contact.impressumHref} className="inline-flex min-h-11 min-w-11 items-center underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-accent">{t.contact.impressum}</a>
+        <a href={t.contact.privacyHref} className="inline-flex min-h-11 min-w-11 items-center underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-accent">{t.contact.privacy}</a>
       </footer>
     </Section>
   );

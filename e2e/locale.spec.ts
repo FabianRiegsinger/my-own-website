@@ -56,3 +56,9 @@ test("the switch on the German privacy page points back to the English privacy p
   await page.goto("/de/privacy");
   await expect(page.getByRole("link", { name: /English/ })).toHaveAttribute("href", "/language?to=en&page=%2Fprivacy");
 });
+
+test("German homepage footer links to the German legal pages", async ({ page }) => {
+  await page.goto("/de");
+  await expect(page.locator("footer a", { hasText: "Impressum" })).toHaveAttribute("href", "/de/impressum");
+  await expect(page.locator("footer a", { hasText: "Datenschutz" })).toHaveAttribute("href", "/de/privacy");
+});
