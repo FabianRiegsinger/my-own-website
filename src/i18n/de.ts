@@ -1,0 +1,65 @@
+import type { Dictionary } from "./en";
+
+export const de = {
+  nav: {
+    home: "Zurück zum Anfang",
+    toggleTheme: "Dunkelmodus umschalten",
+    switch: { label: "Zu English wechseln", short: "EN" },
+  },
+  hero: {
+    seeStory: "Meine Geschichte",
+    contact: "Kontakt",
+    tagline: "Agentischer Automobilingenieur",
+    avatarAlt: "Memoji-artiger 3D-Avatar von Fabian mit Brille, die Hände in die Hüften gestemmt",
+  },
+  about: { eyebrow: "Über mich" },
+  timeline: {
+    studies: "Werdegang · Studium",
+    education: "Ausbildung",
+    career: "Werdegang",
+    today: "Heute",
+    tags: "Schlagworte",
+    present: "heute",
+    months: ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"],
+  },
+  agentic: {
+    eyebrow: "Aktuell",
+    title: "Ich baue mit KI-Agenten",
+    tools: "Werkzeuge",
+    sideProjects: "Nebenprojekte",
+  },
+  skills: {
+    eyebrow: "Kenntnisse",
+    title: "Womit ich arbeite",
+    levelOf: "{n} von 5",
+    groups: { Languages: "Sprachen", Automotive: "Automobil", Tooling: "Werkzeuge", Leadership: "Führung", AI: "KI" },
+  },
+  launch: {
+    eyebrow: "Als Nächstes · Startsequenz",
+    title: "Was als Nächstes kommt",
+    countdown: "T-0 · Countdown starten",
+  },
+  contact: {
+    eyebrow: "Kontakt",
+    title: "Lassen Sie uns sprechen",
+    email: "E-Mail",
+    impressum: "Impressum",
+    privacy: "Datenschutz",
+  },
+  reducedMotion: {
+    title: "Reduzierte Bewegung ist aktiv",
+    body: "Ihr Browser bittet um weniger Animation, deshalb bleibt die Bewegung auf dieser Seite auf ein Minimum beschränkt.",
+    show: "So aktivieren Sie Animationen",
+    hide: "Hinweis zu Animationen ausblenden",
+    intro: "Für die volle Animation schalten Sie „Reduzierte Bewegung“ in den Systemeinstellungen aus:",
+    macos: "macOS:",
+    macosPath: "Systemeinstellungen → Bedienungshilfen → Anzeige → Bewegung reduzieren",
+    windows: "Windows:",
+    windowsPath: "Einstellungen → Barrierefreiheit → Visuelle Effekte → Animationseffekte (ein)",
+    ios: "iOS:",
+    iosPath: "Einstellungen → Bedienungshilfen → Bewegung → Bewegung reduzieren",
+    android: "Android:",
+    androidPath: "Einstellungen → Bedienungshilfen → Animationen entfernen",
+    reload: "Laden Sie die Seite danach neu.",
+  },
+} satisfies Dictionary;

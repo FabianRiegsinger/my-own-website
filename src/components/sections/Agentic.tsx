@@ -1,18 +1,19 @@
 import type { CV } from "@/content/types";
+import type { Dictionary } from "@/i18n";
 import type { Project } from "@/lib/projects";
 import { Eyebrow, Section, StickyHeader } from "./Section";
 
-export function Agentic({ cv, projects }: { cv: CV; projects: Project[] }) {
+export function Agentic({ cv, projects, t }: { cv: CV; projects: Project[]; t: Dictionary }) {
   return (
     <Section id="agentic">
       <StickyHeader>
-        <Eyebrow>Now</Eyebrow>
-        <h2 className="text-4xl font-semibold tracking-tight sm:text-5xl">Building with AI agents</h2>
+        <Eyebrow>{t.agentic.eyebrow}</Eyebrow>
+        <h2 className="text-4xl font-semibold tracking-tight sm:text-5xl">{t.agentic.title}</h2>
       </StickyHeader>
       <div className="max-w-2xl">
         <p className="mt-4 text-xl leading-relaxed">{cv.agentic.intro}</p>
         <p className="mt-4 leading-relaxed text-muted">{cv.agentic.workUse}</p>
-        <ul className="mt-6 flex flex-wrap gap-2" aria-label="Tools">
+        <ul className="mt-6 flex flex-wrap gap-2" aria-label={t.agentic.tools}>
           {cv.agentic.tools.map((t) => (
             <li key={t} className="rounded-full bg-ink px-4 py-1.5 text-sm font-medium text-bg">
               {t}
@@ -20,7 +21,7 @@ export function Agentic({ cv, projects }: { cv: CV; projects: Project[] }) {
           ))}
         </ul>
       </div>
-      <h3 className="mt-12 text-2xl font-semibold">Side projects</h3>
+      <h3 className="mt-12 text-2xl font-semibold">{t.agentic.sideProjects}</h3>
       <ul className="mt-6 grid gap-3 2xl:grid-cols-2">
         {projects.map((p) => (
           <li key={p.name}>

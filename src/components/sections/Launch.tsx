@@ -1,13 +1,14 @@
 import type { CV } from "@/content/types";
+import type { Dictionary } from "@/i18n";
 import { Eyebrow, Section } from "./Section";
 
 /** What comes next, as a launch countdown: each step a challenge he is heading for, lift-off hands over to contact. */
-export function Launch({ cv }: { cv: CV }) {
+export function Launch({ cv, t }: { cv: CV; t: Dictionary }) {
   const { intro, steps, liftoff } = cv.next;
   return (
     <Section id="launch">
-      <Eyebrow>Next · Launch sequence</Eyebrow>
-      <h2 className="text-4xl font-semibold tracking-tight sm:text-5xl">What comes next</h2>
+      <Eyebrow>{t.launch.eyebrow}</Eyebrow>
+      <h2 className="text-4xl font-semibold tracking-tight sm:text-5xl">{t.launch.title}</h2>
       <p className="mt-4 text-lg leading-relaxed">{intro}</p>
       <ol className="mt-8 space-y-5">
         {steps.map((s) => (
@@ -25,7 +26,7 @@ export function Launch({ cv }: { cv: CV }) {
         href="#contact"
         className="mt-4 inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-full bg-ink px-6 py-3 font-semibold text-bg transition-colors duration-200 hover:bg-ignition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
       >
-        T-0 · Start the countdown <span aria-hidden="true">→</span>
+        {t.launch.countdown} <span aria-hidden="true">→</span>
       </a>
     </Section>
   );

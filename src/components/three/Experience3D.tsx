@@ -17,7 +17,7 @@ import { SkillCloud } from "./stations/SkillCloud";
 import { Team } from "./stations/Team";
 
 /** Fixed full-screen 3D world behind natively scrolling text; scroll position drives camera, figure and stations. */
-export function Experience3D({ cv, projects, lowPower: initialLowPower, calm, onFail }: ExperienceProps) {
+export function Experience3D({ cv, projects, t, lowPower: initialLowPower, calm, onFail }: ExperienceProps) {
   const [lowPower, setLowPower] = useState(initialLowPower);
   const content = useRef<HTMLDivElement>(null);
   const stationOffset = useRef(0);
@@ -61,7 +61,7 @@ export function Experience3D({ cv, projects, lowPower: initialLowPower, calm, on
         </Canvas>
       </div>
       <main ref={content} className="relative">
-        <Sections cv={cv} projects={projects} />
+        <Sections cv={cv} projects={projects} t={t} />
       </main>
     </StationOffset.Provider>
   );

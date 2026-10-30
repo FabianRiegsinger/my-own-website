@@ -4,6 +4,7 @@ import { Inter } from "next/font/google";
 import { preload } from "react-dom";
 import type { ReactNode } from "react";
 import { cvEn as cv } from "@/content/cv.en";
+import { getDictionary } from "@/i18n";
 import type { Locale } from "@/lib/locale";
 import { SITE_URL } from "@/lib/site";
 import { THEME_SCRIPT } from "@/lib/theme";
@@ -30,16 +31,19 @@ export function LocaleShell({ locale, children }: { locale: Locale; children: Re
   // Its Draco decoder too, which DRACOLoader would otherwise only request once the 3D code has run.
   preload("/draco/draco_wasm_wrapper.js", { as: "fetch", crossOrigin: "anonymous" });
   preload("/draco/draco_decoder.wasm", { as: "fetch", crossOrigin: "anonymous" });
+  const t = getDictionary(locale);
   return (
     <html lang={locale} className={`${inter.variable} h-full antialiased`} suppressHydrationWarning>
+      {/* App Router layouts own <head>; next/head is for the Pages Router. */}
+      {/* eslint-disable-next-line @next/next/no-head-element */}
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
       </head>
       <body className="min-h-full bg-bg text-ink font-sans">
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(personJsonLd) }} />
         {children}
-        <SiteControls />
-        <ReducedMotionNotice />
+        <SiteControls locale={locale} t={t} />
+        <ReducedMotionNotice t={t} />
         <Analytics />
         <SpeedInsights />
       </body>
