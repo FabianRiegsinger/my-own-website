@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { LegalPage } from "@/components/LegalPage";
 import { cvEn as cv } from "@/content/cv.en";
+import { alternatesFor } from "@/lib/locale";
 
-export const metadata: Metadata = { title: "Impressum", robots: { index: false } };
+export const metadata: Metadata = { title: "Impressum", robots: { index: false }, alternates: { languages: alternatesFor("/impressum") } };
 
 // Template only — not legal advice. Fill every [TO FILL] before going live (§ 5 DDG).
 export default function Impressum() {

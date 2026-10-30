@@ -31,3 +31,8 @@ export function localePath(locale: Locale, page: SwitchablePage): string {
   if (locale === "en") return page;
   return page === "/" ? "/de" : `/de${page}`;
 }
+
+/** The URL of a page in each language, for hreflang alternates. */
+export function alternatesFor(page: SwitchablePage): Record<Locale, string> {
+  return { en: localePath("en", page), de: localePath("de", page) };
+}

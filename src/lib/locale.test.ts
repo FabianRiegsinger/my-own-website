@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { homeRedirect, localeFromCountry, localePath, parseLocale, safeSwitchPage } from "./locale";
+import { alternatesFor, homeRedirect, localeFromCountry, localePath, parseLocale, safeSwitchPage } from "./locale";
 
 describe("parseLocale", () => {
   it("accepts exactly en and de", () => {
@@ -63,5 +63,12 @@ describe("localePath", () => {
   it("keeps English URLs unchanged", () => {
     expect(localePath("en", "/")).toBe("/");
     expect(localePath("en", "/privacy")).toBe("/privacy");
+  });
+});
+
+describe("alternatesFor", () => {
+  it("lists both language URLs for a page", () => {
+    expect(alternatesFor("/")).toEqual({ en: "/", de: "/de" });
+    expect(alternatesFor("/privacy")).toEqual({ en: "/privacy", de: "/de/privacy" });
   });
 });

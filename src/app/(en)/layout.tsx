@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title,
   description,
-  openGraph: { title, description, type: "profile", url: "/" },
+  openGraph: { title, description, type: "profile", url: "/", locale: "en_US" },
   twitter: { card: "summary_large_image", title, description },
 };
 
