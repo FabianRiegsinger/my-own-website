@@ -42,7 +42,7 @@ export const de = {
     eyebrow: "Kontakt",
     title: "Lassen Sie uns sprechen",
     email: "E-Mail",
-    flip: "Kontakt anzeigen",
+    flip: "Details",
     flipBack: "Zurück zur Karte",
     impressum: "Impressum",
     privacy: "Datenschutz",

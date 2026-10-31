@@ -41,7 +41,7 @@ export const en = {
     eyebrow: "Contact",
     title: "Let's talk",
     email: "Email",
-    flip: "Show contact",
+    flip: "Details",
     flipBack: "Back to card",
     impressum: "Impressum",
     privacy: "Privacy",
