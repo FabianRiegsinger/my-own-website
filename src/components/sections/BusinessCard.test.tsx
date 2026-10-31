@@ -45,4 +45,16 @@ describe("BusinessCard", () => {
     expect(screen.getByRole("link", { name: en.contact.email }).getAttribute("href")).toBe("#");
     expect(container.innerHTML).not.toContain("@web.de");
   });
+
+  it("turns back on a click anywhere on the back, but not on a contact link", () => {
+    render(<BusinessCard profile={cvEn.profile} t={en.contact} />);
+    fireEvent.click(screen.getByText(cvEn.profile.name));
+    expect(card().getAttribute("data-flipped")).toBe("true");
+
+    fireEvent.click(screen.getByRole("link", { name: "GitHub" }));
+    expect(card().getAttribute("data-flipped")).toBe("true");
+
+    fireEvent.click(screen.getByRole("heading", { name: en.contact.title }));
+    expect(card().getAttribute("data-flipped")).toBe("false");
+  });
 });

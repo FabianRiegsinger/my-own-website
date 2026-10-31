@@ -91,7 +91,15 @@ export function BusinessCard({ profile, t }: { profile: CV["profile"]; t: Dictio
         </div>
       </div>
 
-      <div className={`${FACE} card-back @container`} onFocus={() => setFlipped(true)} onKeyDown={onBackKey}>
+      <div
+        className={`${FACE} card-back @container cursor-pointer`}
+        onFocus={() => setFlipped(true)}
+        onKeyDown={onBackKey}
+        // Like the front, a click anywhere turns it over, except on a contact link: that one opens.
+        onClick={(e) => {
+          if (!(e.target instanceof Element && e.target.closest("a"))) setFlipped(false);
+        }}
+      >
         <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">{t.title}</h2>
         {/* Two columns once the card is wide enough for "LinkedIn" beside an icon; a narrow card stacks them. */}
         <div className="mt-5 grid grid-cols-1 gap-3 @[17rem]:grid-cols-2">
