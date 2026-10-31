@@ -377,6 +377,8 @@ export function GenMe({ shadows, calm = false, greeting }: { shadows: boolean; c
       return ray.intersectObject(m, true).length > 0;
     };
     const down = (e: PointerEvent) => {
+      // A press on a glass panel (a card, a link, a button floating over him on a phone) is for the glass, not for him.
+      if (e.target instanceof Element && e.target.closest(".glass")) return;
       if (e.button !== 0 || !over(e)) return;
       e.preventDefault(); // no text selection while dragging
       Object.assign(spin.current, { dragging: true, x: e.clientX, x0: e.clientX, t0: e.timeStamp });

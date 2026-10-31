@@ -267,3 +267,43 @@ test("hero Contact button jumps straight to the contact page", async ({ page }) 
   expect(Math.abs(offset)).toBeLessThan(2);
   expect(page.url()).toMatch(/#contact$/);
 });
+
+test("on a phone the business card fits its contact links, and a tap on it is for the card, not the figure", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/de#contact");
+  await expect(page.locator("canvas")).toBeAttached({ timeout: 10_000 }); // act on the final (3D) DOM
+  const card = page.locator("#contact [data-flipped]");
+  const front = page.locator("#contact .card-front");
+  await front.scrollIntoViewIfNeeded();
+  const hello = page.getByText("Hallo!");
+  const box = (await front.boundingBox())!;
+  const spot = { x: box.x + box.width / 2, y: box.y + box.height * 0.4 }; // his torso, behind the card
+
+  // Control first: with the card out of the way, a tap on that spot is a tap on him, and he greets (retried while he
+  // walks in). Then let the greeting end.
+  await card.evaluate((el) => ((el as HTMLElement).style.visibility = "hidden"));
+  await expect(async () => {
+    await page.mouse.click(spot.x, spot.y);
+    await expect(hello).toBeVisible({ timeout: 1000 });
+  }).toPass({ timeout: 15_000 });
+  await expect(hello).toBeHidden({ timeout: 5000 });
+  await card.evaluate((el) => ((el as HTMLElement).style.visibility = ""));
+
+  // With the card there, the same tap turns the card over and leaves him alone: no greeting at any point after it.
+  await page.mouse.click(spot.x, spot.y);
+  await expect(card).toHaveAttribute("data-flipped", "true");
+  const greeted: boolean[] = [];
+  for (let i = 0; i < 15; i++) {
+    greeted.push(await hello.isVisible());
+    await page.waitForTimeout(100);
+  }
+  expect(greeted).not.toContain(true);
+  await page.waitForTimeout(500); // the rest of the turn
+
+  // The back (the taller face, in German) is never cut off by the card's ratio.
+  const overflow = await page.locator("#contact .card-back").evaluate((face) => {
+    const f = face.getBoundingClientRect();
+    return [...face.querySelectorAll("*")].some((el) => el.getBoundingClientRect().bottom > f.bottom + 0.5);
+  });
+  expect(overflow).toBe(false);
+});

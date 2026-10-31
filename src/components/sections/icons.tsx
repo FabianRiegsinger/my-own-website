@@ -7,10 +7,20 @@ const MAIL_PATH = "M2 4h20a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V6a2 2 
 
 export const ICONS = { github: siGithub.path, linkedin: LINKEDIN_PATH, xing: siXing.path, email: MAIL_PATH };
 
-export function Icon({ path }: { path: string }) {
+// Brand colours as on the real sites. GitHub's mark is black on light and white on dark, so it keeps the text colour.
+export const ICON_COLORS = { linkedin: "#0a66c2" };
+
+// The Xing mark is two-coloured: simple-icons draws the big right stroke first, then the small left one ("M3.648...").
+const [XING_RIGHT, XING_LEFT] = siXing.path.split(/(?=M3\.648)/);
+export const XING_PARTS = [
+  { path: XING_LEFT, color: "#0698a0" },
+  { path: XING_RIGHT, color: "#b7df4b" },
+];
+
+export function Icon({ path, color, parts }: { path?: string; color?: string; parts?: { path: string; color: string }[] }) {
   return (
-    <svg viewBox="0 0 24 24" className="h-6 w-6 fill-current" aria-hidden="true">
-      <path d={path} />
+    <svg viewBox="0 0 24 24" className="h-6 w-6 shrink-0 fill-current" style={color ? { color } : undefined} aria-hidden="true">
+      {parts ? parts.map((p) => <path key={p.color} d={p.path} fill={p.color} />) : <path d={path} />}
     </svg>
   );
 }
