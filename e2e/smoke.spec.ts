@@ -277,7 +277,7 @@ test("on a phone the business card fits its contact links, and a tap on it is fo
   await front.scrollIntoViewIfNeeded();
   const hello = page.getByText("Hallo!");
   const box = (await front.boundingBox())!;
-  const spot = { x: box.x + box.width / 2, y: box.y + box.height * 0.7 }; // where he stands, behind the card
+  const spot = { x: box.x + box.width / 2, y: box.y + box.height * 0.4 }; // his torso, behind the card
 
   // Control first: with the card out of the way, a tap on that spot is a tap on him, and he greets (retried while he
   // walks in). Then let the greeting end.

@@ -8,14 +8,14 @@ const LEGAL_LINK =
 
 export function Contact({ cv, t }: { cv: CV; t: Dictionary }) {
   return (
-    <Section id="contact" bare>
-      <div className="w-full desk:max-w-[36vw]">
-        <BusinessCard profile={cv.profile} t={t.contact} />
-        <footer className="glass mt-6 flex w-fit gap-2 px-4 text-sm text-muted">
-          <a href={t.contact.impressumHref} className={LEGAL_LINK}>{t.contact.impressum}</a>
-          <a href={t.contact.privacyHref} className={LEGAL_LINK}>{t.contact.privacy}</a>
-        </footer>
-      </div>
+    <Section id="contact" bare className="relative">
+      <BusinessCard profile={cv.profile} t={t.contact} />
+      {/* At the bottom of the screen, on the section's left gutter. The page is 100vh (the screen with the browser's
+          toolbars hidden); lifting by the difference to 100svh keeps it clear of a phone's toolbars when they show. */}
+      <footer className="glass absolute bottom-[calc(100lvh-100svh+1.5rem+env(safe-area-inset-bottom))] left-4 flex w-fit gap-2 px-4 text-sm text-muted sm:left-8 desk:left-[3vw]">
+        <a href={t.contact.impressumHref} className={LEGAL_LINK}>{t.contact.impressum}</a>
+        <a href={t.contact.privacyHref} className={LEGAL_LINK}>{t.contact.privacy}</a>
+      </footer>
     </Section>
   );
 }
