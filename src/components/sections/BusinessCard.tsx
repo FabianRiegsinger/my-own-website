@@ -12,9 +12,10 @@ const PILL =
   "inline-flex min-h-11 min-w-11 cursor-pointer items-center gap-2 rounded-full bg-surface/55 px-4 text-sm font-medium ring-1 ring-surface/80 transition-colors duration-200 hover:bg-surface/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
 const TILE =
   "flex min-h-11 whitespace-nowrap min-w-11 cursor-pointer items-center gap-3 rounded-2xl bg-surface/55 px-4 py-3 font-medium ring-1 ring-surface/80 transition-colors duration-200 hover:bg-surface/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
-// Both faces share one grid cell, so the card is as tall as the taller face, never shorter than a business card (85 x 55 mm).
-// The faces are full width (and the column can shrink): a face taller than the ratio must grow down, not push the card wider.
-const FACE = "glass card-face flex aspect-[85/55] w-full min-w-0 flex-col p-6 [grid-area:1/1] sm:p-8 desk:p-7";
+// Both faces and an empty strut share one grid cell: the strut holds the business-card ratio (85 x 55 mm) as a minimum,
+// the faces stretch to the row, so the card is as tall as the taller face. (The ratio sits on the strut, not the faces:
+// Safari does not let an overflow-clipped box with an aspect-ratio grow to its content, and cut the back face off.)
+const FACE = "glass card-face flex min-w-0 flex-col p-6 [grid-area:1/1] sm:p-8 desk:p-7";
 
 const FLIP_PATH = "M17.65 6.35A7.96 7.96 0 0 0 12 4a8 8 0 1 0 7.73 10h-2.08A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4z";
 const PIN_PATH = "M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z";
@@ -51,6 +52,7 @@ export function BusinessCard({ profile, t }: { profile: CV["profile"]; t: Dictio
       // desk:max-w-[36vw] inside the section's desk:px-[3vw] gutter = PANEL_EDGE in scroll-map; keep them in sync.
       className="reveal grid w-full grid-cols-[minmax(0,1fr)] transition-transform duration-300 ease-out desk:max-w-[36vw]"
     >
+      <div className="pointer-events-none aspect-[85/55] w-full [grid-area:1/1]" aria-hidden="true" />
       {/* The front is the page's glass panel (data-glass, one per page); the back is its other side. */}
       <div data-glass className={`${FACE} card-front cursor-pointer`} onFocus={() => setFlipped(false)} onClick={() => setFlipped(true)}>
         <div className="flex items-start justify-between gap-4">

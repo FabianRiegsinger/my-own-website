@@ -222,9 +222,10 @@ body {
    face's back side; it stays focusable, and focus entering it turns it up. */
 .card-face {
   backface-visibility: hidden;
+  /* Slow, eased in and out (no snap at either end); the face turned away goes transparent at the halfway point. */
   transition:
-    transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1),
-    opacity 0s linear 0.35s,
+    transform 1.1s cubic-bezier(0.65, 0, 0.35, 1),
+    opacity 0s linear 0.55s,
     --glow 0.3s ease-out;
 }
 .card-front {
@@ -253,7 +254,7 @@ body {
   .card-face,
   [data-flipped="true"] > .card-face {
     transform: none;
-    transition: opacity 0.25s ease;
+    transition: opacity 0.4s ease;
   }
 
   html {
