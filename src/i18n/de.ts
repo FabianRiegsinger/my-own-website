@@ -42,6 +42,8 @@ export const de = {
     eyebrow: "Kontakt",
     title: "Lassen Sie uns sprechen",
     email: "E-Mail",
+    flip: "Kontakt anzeigen",
+    flipBack: "Zurück zur Karte",
     impressum: "Impressum",
     privacy: "Datenschutz",
     impressumHref: "/de/impressum",

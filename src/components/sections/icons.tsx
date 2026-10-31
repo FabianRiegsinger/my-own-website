@@ -9,7 +9,7 @@ export const ICONS = { github: siGithub.path, linkedin: LINKEDIN_PATH, xing: siX
 
 export function Icon({ path }: { path: string }) {
   return (
-    <svg viewBox="0 0 24 24" className="h-6 w-6 fill-current" aria-hidden="true">
+    <svg viewBox="0 0 24 24" className="h-6 w-6 shrink-0 fill-current" aria-hidden="true">
       <path d={path} />
     </svg>
   );
