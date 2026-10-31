@@ -4,7 +4,7 @@ import { useRef, useState, type KeyboardEvent } from "react";
 import type { CV } from "@/content/types";
 import type { Dictionary } from "@/i18n";
 import { EmailLink } from "../EmailLink";
-import { ICONS, Icon } from "./icons";
+import { ICONS, ICON_COLORS, Icon } from "./icons";
 import { Eyebrow } from "./Section";
 import { useTilt } from "./useTilt";
 
@@ -107,13 +107,13 @@ export function BusinessCard({ profile, t }: { profile: CV["profile"]; t: Dictio
             <Icon path={ICONS.github} /> GitHub
           </a>
           <a href={links.linkedin} className={TILE} rel="me">
-            <Icon path={ICONS.linkedin} /> LinkedIn
+            <Icon path={ICONS.linkedin} color={ICON_COLORS.linkedin} /> LinkedIn
           </a>
           <a href={links.xing} className={TILE} rel="me">
-            <Icon path={ICONS.xing} /> Xing
+            <Icon path={ICONS.xing} color={ICON_COLORS.xing} /> Xing
           </a>
           <EmailLink user={links.email.user} domain={links.email.domain} className={TILE}>
-            <Icon path={ICONS.email} /> {t.email}
+            <Icon path={ICONS.email} color="var(--color-accent)" /> {t.email}
           </EmailLink>
         </div>
         <div className="mt-auto flex justify-end pt-4">
