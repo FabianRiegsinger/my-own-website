@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
 import { LegalPage } from "@/components/LegalPage";
-import { cvDe as cv } from "@/content/cv.de";
 import { alternatesFor } from "@/lib/locale";
 
-const email = `${cv.profile.links.email.user}@${cv.profile.links.email.domain}`;
+const email = "friegsinger@mail.online-impressum.de";
 
 export const metadata: Metadata = {
   title: "Datenschutz",
@@ -16,7 +15,7 @@ export default function DatenschutzDe() {
   return (
     <LegalPage title="Datenschutzerklärung" back={{ href: "/de", label: "← Zurück" }}>
       <h2>Verantwortlicher</h2>
-      <p>Fabian Riegsinger, [TO FILL: Anschrift], {email}</p>
+      <p>Fabian Riegsinger, c/o Online-Impressum 12540, Europaring 90, 53757 Sankt Augustin, {email}</p>
       <h2>Hosting</h2>
       <p>
         Diese Website wird bei Vercel Inc., 440 N Barranca Ave #4133, Covina, CA 91723, USA gehostet. Beim Aufruf
