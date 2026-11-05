@@ -28,7 +28,7 @@ export const cvEn: CV = {
         "Coordinate EyeQ software integration with customer's vehicle platform: deep system debugging, collaboration with remote expert teams, handling software improvement processes.",
         "Maintaining customer's tooling ecosystem, software versions deployment and sensor calibration across the fleet.",
       ],
-      tags: ["ADAS L3", "Embedded Hardware", "Python", "CAN", "Automotive Ethernet", "FlexRay"],
+      tags: ["ADAS L3", "Embedded Hardware", "Python", "CAN", "Automotive Ethernet", "FlexRay", "Docker"],
     },
     {
       company: "ESAS Automotive GmbH",
@@ -42,7 +42,7 @@ export const cvEn: CV = {
         "Wrote C++ sensor-fusion modules (camera, LiDAR and radar detections) and C++ FlexRay/CAN/Ethernet protocol transformers, among others.",
         "Built cloud data-evaluation pipelines and several Python applications.",
       ],
-      tags: ["C++", "Python", "Sensor fusion", "React", "Project Coordination", "Team lead"],
+      tags: ["C++", "Python", "Sensor fusion", "React", "Project Coordination", "Team lead", "Docker"],
     },
   ],
   education: [

@@ -28,7 +28,7 @@ export const cvDe: CV = {
         "Die Integration der EyeQ-Software in die Fahrzeugplattform des Kunden koordinieren: tiefgehendes System-Debugging, Zusammenarbeit mit Expertenteams an anderen Standorten, Steuerung von Softwareverbesserungsprozessen.",
         "Das Tooling-Ökosystem des Kunden, die Verteilung von Softwareversionen und die Sensorkalibrierung über die gesamte Flotte pflegen.",
       ],
-      tags: ["ADAS L3", "Embedded-Hardware", "Python", "CAN", "Automotive Ethernet", "FlexRay"],
+      tags: ["ADAS L3", "Embedded-Hardware", "Python", "CAN", "Automotive Ethernet", "FlexRay", "Docker"],
     },
     {
       company: "ESAS Automotive GmbH",
@@ -42,7 +42,7 @@ export const cvDe: CV = {
         "Ich schrieb unter anderem C++-Module zur Sensorfusion (Kamera-, LiDAR- und Radar-Detektionen) und C++-Transformer für FlexRay-, CAN- und Ethernet-Protokolle.",
         "Python nutzte ich zum Beispiel für alles von Skripting-Lösungen bis zu Cloud-Pipelines zur Datenauswertung.",
       ],
-      tags: ["C++", "Python", "Sensorfusion", "React", "Projektkoordination", "Teamleitung"],
+      tags: ["C++", "Python", "Sensorfusion", "React", "Projektkoordination", "Teamleitung", "Docker"],
     },
   ],
   education: [
