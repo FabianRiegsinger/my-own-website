@@ -11,29 +11,26 @@ const repo = (o: Partial<GitHubRepo>): GitHubRepo => ({
   pushed_at: "2026-01-01T00:00:00Z",
   fork: false,
   private: false,
-  topics: ["portfolio"],
   ...o,
 });
 
 describe("selectProjects", () => {
-  it("filters by portfolio topic, excludes forks and private", () => {
+  it("keeps every public repo, excludes forks, private and archived", () => {
     const out = selectProjects(
       [
-        repo({ name: "tagged" }),
-        repo({ name: "untagged", topics: [] }),
+        repo({ name: "a" }),
+        repo({ name: "b" }),
         repo({ name: "fork", fork: true }),
         repo({ name: "priv", private: true }),
+        repo({ name: "old", archived: true }),
       ],
       [],
     );
-    expect(out.map((p) => p.name)).toEqual(["tagged"]);
+    expect(out.map((p) => p.name).sort()).toEqual(["a", "b"]);
   });
 
-  it("handles null description, missing topics, empty homepage", () => {
-    const out = selectProjects(
-      [repo({ name: "a", description: null, homepage: "" }), repo({ name: "b", topics: undefined })],
-      [],
-    );
+  it("handles null description, empty homepage", () => {
+    const out = selectProjects([repo({ name: "a", description: null, homepage: "" })], []);
     expect(out).toHaveLength(1);
     expect(out[0].description).toBe("");
     expect(out[0].homepage).toBeNull();
@@ -61,8 +58,8 @@ describe("getProjects", () => {
     expect((await getProjects(f)).map((p) => p.name)).toEqual(["lime", "snap-notes"]);
   });
 
-  it("falls back to overrides when no repo is tagged", async () => {
-    const f = (async () => Response.json([repo({ name: "x", topics: [] })])) as typeof fetch;
+  it("falls back to overrides when no public repo is returned", async () => {
+    const f = (async () => Response.json([repo({ name: "x", fork: true })])) as typeof fetch;
     expect((await getProjects(f)).map((p) => p.name)).toEqual(["lime", "snap-notes"]);
   });
 
