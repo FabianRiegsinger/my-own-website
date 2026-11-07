@@ -1,6 +1,6 @@
 "use client";
 
-import { useFrame, useLoader } from "@react-three/fiber";
+import { useFrame, useLoader, useThree } from "@react-three/fiber";
 import { useMemo, useRef } from "react";
 import { Color, type Group, MeshStandardMaterial } from "three";
 import { FontLoader } from "three/examples/jsm/loaders/FontLoader.js";
@@ -161,8 +161,17 @@ export function cloudColor(u: number, level: Level): string {
   return `#${sitePalette(u).lerp(GLASS, 0.1 + (5 - level) * 0.17).getHexString()}`;
 }
 
-/** Skills page: the skill names as a cloud of extruded words behind Fabian. */
+/**
+ * Skills page: the skill names as a cloud of extruded words behind Fabian. Side-by-side layout only: otherwise the
+ * full-width panel covers the cloud (only stray letters would peek out at its edges), so it is not built at all there,
+ * which spares phones the font download and the word geometry, the heaviest set to build.
+ */
 export function SkillCloud({ skills }: { skills: SkillGroup[] }) {
+  const desktop = useThree((s) => isDesktop(s.size));
+  return desktop ? <Cloud skills={skills} /> : null;
+}
+
+function Cloud({ skills }: { skills: SkillGroup[] }) {
   const root = useRef<Group>(null);
   const offset = useStationOffset();
   const font = useLoader(FontLoader, FONT);
@@ -213,12 +222,10 @@ export function SkillCloud({ skills }: { skills: SkillGroup[] }) {
     });
   }, [skills, font]);
 
-  useFrame(({ size }) => {
+  useFrame(() => {
     if (!root.current) return;
     // Short fade: the launch page after it is shorter than the default fade, the cloud would still ghost behind the rocket.
     fade(root.current, stationWeight(offset.current, "skills"));
-    // Without the side-by-side layout the full-width panel covers the cloud; only stray letters would peek out at its edges.
-    if (!isDesktop(size)) root.current.visible = false;
   });
 
   // Upright, facing the camera, extruded toward it; vertical words turned a quarter to read bottom to top.
