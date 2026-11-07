@@ -21,14 +21,14 @@ npm run e2e        # browser tests (Playwright, builds first)
 
 ## 3D figure
 
-`public/models/figure.glb` holds the mannequin and its animation clips (`idle`, `walk`, `typing`, `wave`;
-missing clips fall back to `idle`). Rebuild from a GLB with:
+`public/models/me.glb` is the figure (`src/components/three/GenMe.tsx`): rigged, without animation clips; he is
+posed and animated in code. The ESAS colleagues (`public/models/colleague-*.glb`) are built from it with:
 
 ```bash
-node scripts/build-figure.mjs <in.glb> public/models/figure.glb idle=idle walk=walk
+node scripts/build-colleagues.mjs public/models/me.glb public/models
 ```
 
-Sources and licenses: `public/models/LICENSE.md`. The current figure is a placeholder; replace it before launch.
+Sources and licenses: `public/models/LICENSE.md`.
 
 ## Deploy
 

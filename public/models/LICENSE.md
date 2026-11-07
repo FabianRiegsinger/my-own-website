@@ -2,7 +2,6 @@
 
 | File | Source | License |
 |---|---|---|
-| `figure.glb` | **Placeholder.** three.js example `examples/models/gltf/Xbot.glb` (r186), originally from Mixamo. Clips kept: `idle`, `walk`. | Mixamo-derived; terms unverified for this use. **Replace before launch.** |
 
-Rebuild: `node scripts/build-figure.mjs <in.glb> public/models/figure.glb <srcClip>=<clip> ...`
-Clip names the site uses: `idle`, `walk`, `typing`, `wave`. Missing clips fall back to `idle`.
+Add a row for every model file here with its source and license. The former placeholder `figure.glb` (three.js
+example `Xbot.glb`, originally from Mixamo, terms unverified) has been removed and is no longer used.

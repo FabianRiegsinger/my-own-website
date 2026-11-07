@@ -204,8 +204,8 @@ export function lowest(root: Object3D, bones: Object3D[]) {
 }
 
 /**
- * Generated likeness of Fabian, rigged but without clips: walks in on the landing page (same choreography as the
- * mannequin Figure: walk in, turn, wave), then a procedural idle (arms down, breathing, weight shift); turns with the scroll.
+ * Generated likeness of Fabian, rigged but without clips: walks in on the landing page (walk in, turn, wave; see
+ * lib/entrance), then a procedural idle (arms down, breathing, weight shift); turns with the scroll.
  * On the education page he wears gown and mortarboard (Gown) and jumps for joy: crouch, spring up with the arms in a V, land.
  */
 export function GenMe({ shadows, calm = false, greeting }: { shadows: boolean; calm?: boolean; greeting: string }) {
