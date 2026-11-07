@@ -16,8 +16,13 @@ export interface ExperienceProps {
   onFail: () => void;
 }
 
+const loadExperience = () => import("./three/Experience3D");
+// Fetch the 3D code as soon as this module runs in a browser that has WebGL at all, instead of after hydration and
+// device detection: it is the largest download on the page. The import below then reuses the same request.
+if (typeof window !== "undefined" && "WebGLRenderingContext" in window) void loadExperience().catch(() => {});
+
 // lazy (not next/dynamic) so the Suspense fallback keeps the static page visible while the 3D chunk loads.
-const Experience3D = lazy(() => import("./three/Experience3D").then((m) => ({ default: m.Experience3D })));
+const Experience3D = lazy(() => loadExperience().then((m) => ({ default: m.Experience3D })));
 
 /** Tells CSS the page has settled on the static version, so its still of the figure may show (see globals.css). */
 function markStatic() {

@@ -27,10 +27,11 @@ const personJsonLd = {
 /** The document every locale shares: html/body, fonts, theme, structured data, controls and analytics. */
 export function LocaleShell({ locale, children }: { locale: Locale; children: ReactNode }) {
   // Start the hero likeness download with the HTML, not after the 3D code has loaded (same request useGLTF makes).
-  preload("/models/me.glb", { as: "fetch", crossOrigin: "anonymous" });
+  // Low priority: on a slow line it must not hold back the page's own scripts, which start the 3D code download.
+  preload("/models/me.glb", { as: "fetch", crossOrigin: "anonymous", fetchPriority: "low" });
   // Its Draco decoder too, which DRACOLoader would otherwise only request once the 3D code has run.
-  preload("/draco/draco_wasm_wrapper.js", { as: "fetch", crossOrigin: "anonymous" });
-  preload("/draco/draco_decoder.wasm", { as: "fetch", crossOrigin: "anonymous" });
+  preload("/draco/draco_wasm_wrapper.js", { as: "fetch", crossOrigin: "anonymous", fetchPriority: "low" });
+  preload("/draco/draco_decoder.wasm", { as: "fetch", crossOrigin: "anonymous", fetchPriority: "low" });
   const t = getDictionary(locale);
   return (
     <html lang={locale} className={`${inter.variable} h-full antialiased`} suppressHydrationWarning>
