@@ -1,15 +1,17 @@
 "use client";
 
 import { Canvas, useFrame } from "@react-three/fiber";
-import { ContactShadows, Environment, Lightformer, PerformanceMonitor } from "@react-three/drei";
+import { ContactShadows, Environment, Lightformer } from "@react-three/drei";
 import { memo, startTransition, Suspense, useEffect, useRef, useState, type ReactNode } from "react";
 import type { Group } from "three";
 import type { CV } from "@/content/types";
 import type { Dictionary } from "@/i18n";
+import { ENTRANCE } from "@/lib/entrance";
 import type { ExperienceProps } from "../ExperienceGate";
 import { Sections } from "../StaticPage";
 import { CameraRig } from "./CameraRig";
 import { GenMe } from "./GenMe";
+import { Pacer } from "./Pacer";
 import { ScrollTracker } from "./ScrollTracker";
 import { StationOffset } from "./station-offset";
 import { AgentNetwork } from "./stations/AgentNetwork";
@@ -94,8 +96,14 @@ const Lighting = memo(function Lighting() {
 });
 
 /** The figure, then every other page's set once he is up. Owns that state so its changes re-render only the scenes. */
-function Scenes({ cv, t, lowPower, calm }: { cv: CV; t: Dictionary; lowPower: boolean; calm: boolean }) {
+function Scenes({ cv, t, lowPower, calm, onDecline }: { cv: CV; t: Dictionary; lowPower: boolean; calm: boolean; onDecline: () => void }) {
   const [heroReady, setHeroReady] = useState(false);
+  // Full frame rate through his walk-in, which plays without any input; set once, when he first appears.
+  const [holdUntil, setHoldUntil] = useState(0);
+  const onHero = () => {
+    setHeroReady(true);
+    setHoldUntil((h) => h || performance.now() + (ENTRANCE.walk + ENTRANCE.turn + ENTRANCE.wave + ENTRANCE.settle) * 1000);
+  };
   const later = useIdleAfter(heroReady);
   useEffect(() => {
     const id = setTimeout(() => setHeroReady(true), HERO_TIMEOUT_MS);
@@ -104,9 +112,10 @@ function Scenes({ cv, t, lowPower, calm }: { cv: CV; t: Dictionary; lowPower: bo
 
   return (
     <>
+      <Pacer holdUntil={holdUntil} onDecline={onDecline} />
       <Suspense fallback={null}>
         <GenMe shadows={!lowPower} calm={calm} greeting={t.scene.hello} />
-        <Mounted onMount={() => setHeroReady(true)} />
+        <Mounted onMount={onHero} />
       </Suspense>
       {/* Anything that loads (models, the label font) suspends inside its own boundary, inside the canvas; uncaught
           it would bubble up to the page's fallback and flash the static page back in. */}
@@ -143,18 +152,18 @@ export function Experience3D({ cv, projects, t, lowPower: initialLowPower, calm,
       <div className="pointer-events-none fixed inset-0" aria-hidden="true">
         <Canvas
           dpr={[1, 1.5]}
+          frameloop="never" // Pacer drives it
           shadows={!lowPower}
           camera={{ position: [0, 1.4, 5], fov: 35 }}
           onCreated={({ gl }) => gl.domElement.addEventListener("webglcontextlost", onFail)}
         >
           {/* Transparent canvas: the page's soft colour field shows through, which the glass panels need to read as glass. */}
-          <PerformanceMonitor onDecline={() => setLowPower(true)} />
           <Lighting />
           <hemisphereLight args={["#ffffff", "#f5f5f7", 0.8]} />
           <directionalLight position={[3, 6, 4]} intensity={1.2} castShadow={!lowPower} />
           <ScrollTracker content={content} />
           <CameraRig calm={calm} />
-          <Scenes cv={cv} t={t} lowPower={lowPower} calm={calm} />
+          <Scenes cv={cv} t={t} lowPower={lowPower} calm={calm} onDecline={() => setLowPower(true)} />
           {/* Always live: freezing them on low power (frames={1}) would keep whatever stood on the floor at that moment
               (rocket pad, colleagues, cars) as a stale shadow on every later page. Cheaper at low resolution instead. */}
           <ContactShadows position={[0, 0, 0]} opacity={0.35} scale={10} blur={2.5} far={4} resolution={lowPower ? 256 : 512} />
