@@ -1,7 +1,6 @@
 import { projectOverrides } from "@/content/project-overrides";
 
 const USER = "FabianRiegsinger";
-const TOPIC = "portfolio";
 
 export interface Project {
   name: string;
@@ -28,13 +27,14 @@ export interface GitHubRepo {
   pushed_at: string;
   fork: boolean;
   private: boolean;
-  topics?: string[];
+  archived?: boolean;
 }
 
 export function selectProjects(repos: GitHubRepo[], overrides: ProjectOverride[]): Project[] {
   const byName = new Map(overrides.map((o) => [o.name, o]));
   return repos
-    .filter((r) => !r.fork && !r.private && r.topics?.includes(TOPIC))
+    // Every public repo you own; forks and archived repos are left out.
+    .filter((r) => !r.fork && !r.private && !r.archived)
     .map((r) => ({
       name: r.name,
       description: r.description ?? "",
@@ -45,7 +45,8 @@ export function selectProjects(repos: GitHubRepo[], overrides: ProjectOverride[]
       updatedAt: r.pushed_at,
       ...byName.get(r.name),
     }))
-    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+    // Most stars first; equal star counts in alphabetical order.
+    .sort((a, b) => b.stars - a.stars || a.name.localeCompare(b.name, "en", { sensitivity: "base" }));
 }
 
 function fromOverrides(overrides: ProjectOverride[]): Project[] {
@@ -66,7 +67,7 @@ export async function getProjects(
   token: string | undefined = process.env.GITHUB_TOKEN,
 ): Promise<Project[]> {
   try {
-    const res = await fetchImpl(`https://api.github.com/users/${USER}/repos?per_page=100`, {
+    const res = await fetchImpl(`https://api.github.com/users/${USER}/repos?type=owner&per_page=100`, {
       // Optional token: anonymous calls share Vercel's IPs and hit GitHub's 60/hour limit.
       headers: { Accept: "application/vnd.github+json", ...(token && { Authorization: `Bearer ${token}` }) },
     });

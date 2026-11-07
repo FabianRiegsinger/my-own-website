@@ -15,8 +15,8 @@ npm run e2e        # browser tests (Playwright, builds first)
 ## Edit content
 
 - **CV:** everything the site says lives in `src/content/cv.ts`.
-- **Projects:** add the topic `portfolio` to a public GitHub repo. It appears on the site within an hour, no
-  code change needed. Optional per-repo text/image overrides: `src/content/project-overrides.ts`.
+- **Projects:** every public, non-fork, non-archived GitHub repo is shown automatically. A new repo appears on
+  the site within an hour, no code change needed. Optional per-repo text/image overrides: `src/content/project-overrides.ts`.
 - **Legal pages:** fill every `[TO FILL]` in `src/app/impressum/page.tsx` and `src/app/privacy/page.tsx`.
 
 ## 3D figure
