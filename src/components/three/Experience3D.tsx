@@ -2,8 +2,10 @@
 
 import { Canvas, useFrame } from "@react-three/fiber";
 import { ContactShadows, Environment, Lightformer, PerformanceMonitor } from "@react-three/drei";
-import { startTransition, Suspense, useEffect, useRef, useState, type ReactNode } from "react";
+import { memo, startTransition, Suspense, useEffect, useRef, useState, type ReactNode } from "react";
 import type { Group } from "three";
+import type { CV } from "@/content/types";
+import type { Dictionary } from "@/i18n";
 import type { ExperienceProps } from "../ExperienceGate";
 import { Sections } from "../StaticPage";
 import { CameraRig } from "./CameraRig";
@@ -17,29 +19,28 @@ import { Fleet } from "./stations/Fleet";
 import { SkillCloud } from "./stations/SkillCloud";
 import { Team } from "./stations/Team";
 
-/** Scenes after the hero, in scroll order. Mounted one at a time once the hero figure is up (see useStaged). */
-const LATER = 6;
 /** Starts the later scenes anyway if the hero model is this slow, so a stuck download cannot hold back the rest. */
 const HERO_TIMEOUT_MS = 6000;
 
 /**
- * How many of the later scenes may mount: none until `go`, then one more each time the browser is idle. Building every
- * scene at once (3D text, gown, colleague models and their downloads) blocked the main thread for seconds and held the
- * hero figure back, though only the hero is on screen at first. Each scene is in place long before it is scrolled to.
+ * False until `go`, then true at the browser's next idle moment. Gates the scenes after the hero: building every scene
+ * at once (3D text, gown, colleague models and their downloads) held the hero figure back for seconds, though only the
+ * hero is on screen at first. They are built together in one go, not one by one: on a slow device each build also costs
+ * the graphics process a lot, and spreading that over many seconds kept the page sluggish while people use it.
  */
-function useStaged(go: boolean, total: number): number {
-  const [n, setN] = useState(0);
+function useIdleAfter(go: boolean): boolean {
+  const [idle, setIdle] = useState(false);
   useEffect(() => {
-    if (!go || n >= total) return;
+    if (!go || idle) return;
     // Safari has no requestIdleCallback.
     if (!window.requestIdleCallback) {
-      const id = setTimeout(() => startTransition(() => setN(n + 1)), 50);
+      const id = setTimeout(() => startTransition(() => setIdle(true)), 50);
       return () => clearTimeout(id);
     }
-    const id = window.requestIdleCallback(() => startTransition(() => setN(n + 1)), { timeout: 500 });
+    const id = window.requestIdleCallback(() => startTransition(() => setIdle(true)), { timeout: 500 });
     return () => window.cancelIdleCallback(id);
-  }, [go, n, total]);
-  return n;
+  }, [go, idle]);
+  return idle;
 }
 
 /** Runs `onMount` once its Suspense boundary has resolved, i.e. once everything before it in that boundary is loaded. */
@@ -65,16 +66,69 @@ function HiddenUntilFirstFrame({ children }: { children: ReactNode }) {
 }
 
 /**
- * One later scene: mounted at its turn, with its own boundary so its loading never hides a scene already shown. It
+ * One later scene: mounted once `show`, with its own boundary so its loading never hides a scene already shown. It
  * starts hidden: the contact shadows render the scene before a newly mounted set's own frame code has hidden it (it is
  * off its page), which would draw it once and compile shaders for it long before anyone scrolls to it.
  */
-function Later({ at, staged, children }: { at: number; staged: number; children: ReactNode }) {
-  if (staged <= at) return null;
+function Later({ show, children }: { show: boolean; children: ReactNode }) {
+  if (!show) return null;
   return (
     <Suspense fallback={null}>
       <HiddenUntilFirstFrame>{children}</HiddenUntilFirstFrame>
     </Suspense>
+  );
+}
+
+/**
+ * Image-based lighting, memoised: drei's Environment re-renders its cube map and blur whenever it re-renders (its
+ * children are new elements each time), a heavy GPU job that would otherwise run again on every state change above.
+ */
+const Lighting = memo(function Lighting() {
+  return (
+    <Environment resolution={256}>
+      <Lightformer intensity={2} position={[0, 5, -2]} scale={[10, 2, 1]} rotation-x={Math.PI / 2} />
+      <Lightformer intensity={1} position={[-5, 1, 0]} scale={[2, 6, 1]} rotation-y={Math.PI / 2} />
+      <Lightformer intensity={1} position={[5, 1, 0]} scale={[2, 6, 1]} rotation-y={-Math.PI / 2} />
+    </Environment>
+  );
+});
+
+/** The figure, then every other page's set once he is up. Owns that state so its changes re-render only the scenes. */
+function Scenes({ cv, t, lowPower, calm }: { cv: CV; t: Dictionary; lowPower: boolean; calm: boolean }) {
+  const [heroReady, setHeroReady] = useState(false);
+  const later = useIdleAfter(heroReady);
+  useEffect(() => {
+    const id = setTimeout(() => setHeroReady(true), HERO_TIMEOUT_MS);
+    return () => clearTimeout(id);
+  }, []);
+
+  return (
+    <>
+      <Suspense fallback={null}>
+        <GenMe shadows={!lowPower} calm={calm} greeting={t.scene.hello} />
+        <Mounted onMount={() => setHeroReady(true)} />
+      </Suspense>
+      {/* Anything that loads (models, the label font) suspends inside its own boundary, inside the canvas; uncaught
+          it would bubble up to the page's fallback and flash the static page back in. */}
+      <Later show={later}>
+        <Graduation education={cv.education} />
+      </Later>
+      <Later show={later}>
+        <Team labels={t.scene.fusion} />
+      </Later>
+      <Later show={later}>
+        <Fleet />
+      </Later>
+      <Later show={later}>
+        <AgentNetwork />
+      </Later>
+      <Later show={later}>
+        <SkillCloud skills={cv.skills} />
+      </Later>
+      <Later show={later}>
+        <Launch />
+      </Later>
+    </>
   );
 }
 
@@ -83,12 +137,6 @@ export function Experience3D({ cv, projects, t, lowPower: initialLowPower, calm,
   const [lowPower, setLowPower] = useState(initialLowPower);
   const content = useRef<HTMLDivElement>(null);
   const stationOffset = useRef(0);
-  const [heroReady, setHeroReady] = useState(false);
-  const staged = useStaged(heroReady, LATER);
-  useEffect(() => {
-    const id = setTimeout(() => setHeroReady(true), HERO_TIMEOUT_MS);
-    return () => clearTimeout(id);
-  }, []);
 
   return (
     <StationOffset.Provider value={stationOffset}>
@@ -101,39 +149,12 @@ export function Experience3D({ cv, projects, t, lowPower: initialLowPower, calm,
         >
           {/* Transparent canvas: the page's soft colour field shows through, which the glass panels need to read as glass. */}
           <PerformanceMonitor onDecline={() => setLowPower(true)} />
-          <Environment resolution={256}>
-            <Lightformer intensity={2} position={[0, 5, -2]} scale={[10, 2, 1]} rotation-x={Math.PI / 2} />
-            <Lightformer intensity={1} position={[-5, 1, 0]} scale={[2, 6, 1]} rotation-y={Math.PI / 2} />
-            <Lightformer intensity={1} position={[5, 1, 0]} scale={[2, 6, 1]} rotation-y={-Math.PI / 2} />
-          </Environment>
+          <Lighting />
           <hemisphereLight args={["#ffffff", "#f5f5f7", 0.8]} />
           <directionalLight position={[3, 6, 4]} intensity={1.2} castShadow={!lowPower} />
           <ScrollTracker content={content} />
           <CameraRig calm={calm} />
-          <Suspense fallback={null}>
-            <GenMe shadows={!lowPower} calm={calm} greeting={t.scene.hello} />
-            <Mounted onMount={() => setHeroReady(true)} />
-          </Suspense>
-          {/* Anything that loads (models, the label font) suspends inside its own boundary, inside the canvas; uncaught
-              it would bubble up to the page's fallback and flash the static page back in. */}
-          <Later at={0} staged={staged}>
-            <Graduation education={cv.education} />
-          </Later>
-          <Later at={1} staged={staged}>
-            <Team labels={t.scene.fusion} />
-          </Later>
-          <Later at={2} staged={staged}>
-            <Fleet />
-          </Later>
-          <Later at={3} staged={staged}>
-            <AgentNetwork />
-          </Later>
-          <Later at={4} staged={staged}>
-            <SkillCloud skills={cv.skills} />
-          </Later>
-          <Later at={5} staged={staged}>
-            <Launch />
-          </Later>
+          <Scenes cv={cv} t={t} lowPower={lowPower} calm={calm} />
           {/* Always live: freezing them on low power (frames={1}) would keep whatever stood on the floor at that moment
               (rocket pad, colleagues, cars) as a stale shadow on every later page. Cheaper at low resolution instead. */}
           <ContactShadows position={[0, 0, 0]} opacity={0.35} scale={10} blur={2.5} far={4} resolution={lowPower ? 256 : 512} />
