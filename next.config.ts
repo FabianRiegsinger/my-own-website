@@ -14,6 +14,15 @@ const nextConfig: NextConfig = {
           { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
         ],
       },
+      // Files in public/ are served with max-age=0 by default, so every repeat visit re-checks the 3D assets.
+      // The Draco decoder is vendored and only changes with a library upgrade: cache it for a year.
+      { source: "/draco/:file*", headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }] },
+      // Models, the 3D font and the fallback still keep their names when they change: fresh for a day, then served from
+      // cache while the browser re-checks in the background, so an updated model shows up by the next visit at the latest.
+      ...["/models/:file*", "/fonts/:file*", "/fallback.webp"].map((source) => ({
+        source,
+        headers: [{ key: "Cache-Control", value: "public, max-age=86400, stale-while-revalidate=2592000" }],
+      })),
     ];
   },
   cacheComponents: true,
