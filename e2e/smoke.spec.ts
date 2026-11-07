@@ -12,6 +12,14 @@ test("cv text in DOM", async ({ page }) => {
   }
 });
 
+test("3D assets are cached by the browser between visits", async ({ request }) => {
+  const cache = async (path: string) => (await request.head(path)).headers()["cache-control"];
+  expect(await cache("/draco/draco_decoder.wasm")).toBe("public, max-age=31536000, immutable");
+  for (const path of ["/models/me.glb", "/fonts/inter-700.typeface.json", "/fallback.webp"]) {
+    expect(await cache(path)).toBe("public, max-age=86400, stale-while-revalidate=2592000");
+  }
+});
+
 test("no phone number", async ({ page }) => {
   await page.goto("/");
   expect(await page.content()).not.toMatch(/\+49/);
