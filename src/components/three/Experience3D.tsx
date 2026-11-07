@@ -45,6 +45,21 @@ function useIdleAfter(go: boolean): boolean {
   return idle;
 }
 
+/**
+ * True once the visitor has scrolled at all (or the page opened scrolled, e.g. at #contact). Gates the sets with large
+ * downloads (the colleague models), which are pages away: a visitor who only looks at the landing page never fetches them.
+ */
+function useHasScrolled(): boolean {
+  const [scrolled, setScrolled] = useState(() => window.scrollY > 0);
+  useEffect(() => {
+    if (scrolled) return;
+    const onScroll = () => setScrolled(true);
+    window.addEventListener("scroll", onScroll, { passive: true, once: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [scrolled]);
+  return scrolled;
+}
+
 /** Runs `onMount` once its Suspense boundary has resolved, i.e. once everything before it in that boundary is loaded. */
 function Mounted({ onMount }: { onMount: () => void }) {
   useEffect(onMount, [onMount]);
@@ -105,6 +120,7 @@ function Scenes({ cv, t, lowPower, calm, onDecline }: { cv: CV; t: Dictionary; l
     setHoldUntil((h) => h || performance.now() + (ENTRANCE.walk + ENTRANCE.turn + ENTRANCE.wave + ENTRANCE.settle) * 1000);
   };
   const later = useIdleAfter(heroReady);
+  const scrolled = useHasScrolled();
   useEffect(() => {
     const id = setTimeout(() => setHeroReady(true), HERO_TIMEOUT_MS);
     return () => clearTimeout(id);
@@ -122,10 +138,11 @@ function Scenes({ cv, t, lowPower, calm, onDecline }: { cv: CV; t: Dictionary; l
       <Later show={later}>
         <Graduation education={cv.education} />
       </Later>
-      <Later show={later}>
+      {/* The team and the fleet load their colleague models (~200 kB) only once the visitor scrolls. */}
+      <Later show={later && scrolled}>
         <Team labels={t.scene.fusion} />
       </Later>
-      <Later show={later}>
+      <Later show={later && scrolled}>
         <Fleet />
       </Later>
       <Later show={later}>
