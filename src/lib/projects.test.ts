@@ -43,12 +43,18 @@ describe("selectProjects", () => {
     expect(out[0].language).toBe("Rust");
   });
 
-  it("sorts newest first", () => {
+  it("sorts by stars, then alphabetically", () => {
     const out = selectProjects(
-      [repo({ name: "old", pushed_at: "2025-01-01T00:00:00Z" }), repo({ name: "new", pushed_at: "2026-05-01T00:00:00Z" })],
+      [
+        repo({ name: "zeta", stargazers_count: 0 }),
+        repo({ name: "Beta", stargazers_count: 2 }),
+        repo({ name: "alpha", stargazers_count: 2 }),
+        repo({ name: "top", stargazers_count: 10 }),
+        repo({ name: "gamma", stargazers_count: 0 }),
+      ],
       [],
     );
-    expect(out.map((p) => p.name)).toEqual(["new", "old"]);
+    expect(out.map((p) => p.name)).toEqual(["top", "alpha", "Beta", "gamma", "zeta"]);
   });
 });
 

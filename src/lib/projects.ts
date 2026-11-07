@@ -45,7 +45,8 @@ export function selectProjects(repos: GitHubRepo[], overrides: ProjectOverride[]
       updatedAt: r.pushed_at,
       ...byName.get(r.name),
     }))
-    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+    // Most stars first; equal star counts in alphabetical order.
+    .sort((a, b) => b.stars - a.stars || a.name.localeCompare(b.name, "en", { sensitivity: "base" }));
 }
 
 function fromOverrides(overrides: ProjectOverride[]): Project[] {
