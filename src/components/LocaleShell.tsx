@@ -3,26 +3,17 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Inter } from "next/font/google";
 import { preload } from "react-dom";
 import type { ReactNode } from "react";
-import { cvEn as cv } from "@/content/cv.en";
+import { cvDe } from "@/content/cv.de";
+import { cvEn } from "@/content/cv.en";
 import { getDictionary } from "@/i18n";
 import type { Locale } from "@/lib/locale";
+import { siteStructuredData } from "@/lib/seo";
 import { SITE_URL } from "@/lib/site";
 import { THEME_SCRIPT } from "@/lib/theme";
 import { ReducedMotionNotice } from "./ReducedMotionNotice";
 import { SiteControls } from "./SiteControls";
 
 const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
-
-// No email or phone: structured data is public and scraped.
-const personJsonLd = {
-  "@context": "https://schema.org",
-  "@type": "Person",
-  name: cv.profile.name,
-  jobTitle: cv.profile.headline,
-  address: { "@type": "PostalAddress", addressLocality: "Ingolstadt", addressCountry: "DE" },
-  url: SITE_URL,
-  sameAs: [cv.profile.links.github, cv.profile.links.linkedin, cv.profile.links.xing],
-};
 
 /** The document every locale shares: html/body, fonts, theme, structured data, controls and analytics. */
 export function LocaleShell({ locale, children }: { locale: Locale; children: ReactNode }) {
@@ -33,6 +24,8 @@ export function LocaleShell({ locale, children }: { locale: Locale; children: Re
   preload("/draco/draco_wasm_wrapper.js", { as: "fetch", crossOrigin: "anonymous", fetchPriority: "low" });
   preload("/draco/draco_decoder.wasm", { as: "fetch", crossOrigin: "anonymous", fetchPriority: "low" });
   const t = getDictionary(locale);
+  // No email or phone: structured data is public and scraped.
+  const jsonLd = siteStructuredData(locale === "de" ? cvDe : cvEn, SITE_URL);
   return (
     <html lang={locale} className={`${inter.variable} h-full antialiased`} suppressHydrationWarning>
       {/* App Router layouts own <head>; next/head is for the Pages Router. */}
@@ -41,7 +34,7 @@ export function LocaleShell({ locale, children }: { locale: Locale; children: Re
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
       </head>
       <body className="min-h-full bg-bg text-ink font-sans">
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(personJsonLd) }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
         {children}
         <SiteControls locale={locale} t={t} />
         <ReducedMotionNotice t={t} />

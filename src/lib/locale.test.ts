@@ -68,8 +68,8 @@ describe("localePath", () => {
 
 describe("alternatesFor", () => {
   it("lists both language URLs for a page", () => {
-    expect(alternatesFor("/")).toEqual({ en: "/", de: "/de" });
-    expect(alternatesFor("/privacy")).toEqual({ en: "/privacy", de: "/de/privacy" });
+    expect(alternatesFor("/")).toEqual({ en: "/", de: "/de", "x-default": "/" });
+    expect(alternatesFor("/privacy")).toEqual({ en: "/privacy", de: "/de/privacy", "x-default": "/privacy" });
   });
 });
 

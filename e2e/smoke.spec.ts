@@ -84,11 +84,23 @@ test("missing model falls back", async ({ page }) => {
 
 test("json-ld present", async ({ page }) => {
   await page.goto("/");
-  const raw = await page.locator('script[type="application/ld+json"]').first().textContent();
-  const data = JSON.parse(raw!);
-  expect(data["@type"]).toBe("Person");
-  expect(data.sameAs).toHaveLength(3);
-  expect(raw).not.toContain("@web.de");
+  const blocks: { "@type"?: string; "@graph"?: { "@type": string; sameAs?: string[] }[] }[] = (
+    await page.locator('script[type="application/ld+json"]').allTextContents()
+  ).map((raw) => JSON.parse(raw));
+  const nodes = blocks.flatMap((b) => b["@graph"] ?? [b as { "@type": string }]);
+  expect(nodes.map((n) => n["@type"]).sort()).toEqual(["Person", "ProfilePage", "WebSite"]);
+  const person = nodes.find((n) => n["@type"] === "Person") as unknown as { sameAs: string[] };
+  expect(person.sameAs).toHaveLength(3);
+  expect(JSON.stringify(blocks)).not.toContain("@web.de");
+});
+
+test("legal pages carry the site data but are not profile pages", async ({ page }) => {
+  await page.goto("/privacy");
+  const types = (await page.locator('script[type="application/ld+json"]').allTextContents()).flatMap((raw) => {
+    const d = JSON.parse(raw);
+    return (d["@graph"] ?? [d]).map((n: { "@type": string }) => n["@type"]);
+  });
+  expect(types.sort()).toEqual(["Person", "WebSite"]);
 });
 
 for (const path of ["/impressum", "/privacy"]) {

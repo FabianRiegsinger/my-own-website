@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { LocaleShell } from "@/components/LocaleShell";
 import { cvEn as cv } from "@/content/cv.en";
+import { ROBOTS, verification } from "@/lib/seo";
 import { SITE_URL } from "@/lib/site";
 import "../globals.css";
 
@@ -12,6 +13,8 @@ export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title,
   description,
+  robots: ROBOTS,
+  verification: verification(),
   openGraph: { title, description, type: "profile", url: "/", locale: "en_US" },
   twitter: { card: "summary_large_image", title, description },
 };

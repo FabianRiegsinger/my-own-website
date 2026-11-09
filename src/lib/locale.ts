@@ -32,9 +32,9 @@ export function localePath(locale: Locale, page: SwitchablePage): string {
   return page === "/" ? "/de" : `/de${page}`;
 }
 
-/** The URL of a page in each language, for hreflang alternates. */
-export function alternatesFor(page: SwitchablePage): Record<Locale, string> {
-  return { en: localePath("en", page), de: localePath("de", page) };
+/** The URL of a page in each language, for hreflang alternates; `x-default` (any other language) is the English one. */
+export function alternatesFor(page: SwitchablePage): Record<Locale | "x-default", string> {
+  return { en: localePath("en", page), de: localePath("de", page), "x-default": localePath("en", page) };
 }
 
 /** The switchable page behind a URL path, in either language. Unknown paths count as the homepage. */
